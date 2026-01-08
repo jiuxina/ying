@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">萤</string>
+    <string name="shortcut_add_event_short">添加事件</string>
+    <string name="shortcut_add_event_long">添加新的倒数日</string>
+    <string name="widget_description">倒数日小部件 - 显示单个事件</string>
+    <string name="widget_description_large">倒数日大部件 - 主事件 + 事件列表</string>
+    <string name="widget_loading">加载中...</string>
+    <string name="widget_no_event">暂无事件</string>
+    <string name="widget_days_suffix">天</string>
+    <string name="widget_prefix_countdown">还有</string>
+    <string name="widget_prefix_countup">已经</string>
+    <string name="widget_prefix_passed">已过</string>
+    <string name="widget_no_more_events">暂无更多事件</string>
+</resources>

@@ -1,0 +1,95 @@
+name: ying
+description: "萤 - 用心记录每一个重要时刻"
+publish_to: 'none'
+
+version: 1.0.0+100
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  
+  # 状态管理
+  provider: ^6.1.1
+  
+  # 本地存储
+  sqflite: ^2.3.0
+  path_provider: ^2.1.1
+  shared_preferences: ^2.2.2
+  
+  # 日期和国际化
+  # 国际化与日历
+  intl: ^0.19.0
+  lunar: ^1.3.0
+  
+  # 路径处理
+  path: ^1.8.3
+  
+  # 工具
+  uuid: ^4.2.1
+  
+  # 通知（使用最新版本）
+  flutter_local_notifications: ^19.0.0
+  
+  # 桌面小部件
+  home_widget: ^0.7.0
+  
+  # 图片选择
+  image_picker: ^1.1.0
+  
+  # 链接和包信息
+  url_launcher: ^6.2.1
+  package_info_plus: ^8.0.0
+  
+  # 振动反馈
+  vibration: ^2.0.0
+  file_picker: ^10.3.8
+  google_fonts: ^6.3.3
+  gal: ^2.3.0
+  permission_handler: ^12.0.1
+  
+  # 网络请求
+  http: ^1.2.0
+  
+  # Markdown渲染
+  flutter_markdown_plus: ^1.0.0
+  
+  # 云同步
+  webdav_client: ^1.2.2
+  flutter_secure_storage: ^9.2.2
+
+  # 日历视图
+  table_calendar: ^3.1.0
+
+  # 分享
+  share_plus: ^10.0.0
+
+  # iCalendar解析
+  icalendar_parser: ^2.0.0
+  quick_actions: ^1.0.0
+  app_links: ^6.3.2
+  confetti: ^0.7.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "app.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "app.png"
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - app.png

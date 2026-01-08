@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="add_event"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_add_event_short"
+        android:shortcutLongLabel="@string/shortcut_add_event_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.jiuxina.ying"
+            android:targetClass="com.jiuxina.ying.MainActivity"
+            android:data="ying://add_event" />
+    </shortcut>
+</shortcuts>
