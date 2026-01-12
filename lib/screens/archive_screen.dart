@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/countdown_event.dart';
 import '../providers/events_provider.dart';
@@ -14,8 +15,37 @@ import 'event_detail_screen.dart';
 /// 归档页面
 /// ============================================================================
 
-class ArchiveScreen extends StatelessWidget {
+class ArchiveScreen extends StatefulWidget {
   const ArchiveScreen({super.key});
+
+  @override
+  State<ArchiveScreen> createState() => _ArchiveScreenState();
+}
+
+class _ArchiveScreenState extends State<ArchiveScreen> {
+  static const _swipeHintKey = 'archive_swipe_hint_shown';
+  bool _showSwipeHint = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _checkSwipeHint();
+  }
+  
+  Future<void> _checkSwipeHint() async {
+    final prefs = await SharedPreferences.getInstance();
+    final shown = prefs.getBool(_swipeHintKey) ?? false;
+    if (!shown && mounted) {
+      setState(() => _showSwipeHint = true);
+      // 3秒后自动隐藏提示
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) {
+          setState(() => _showSwipeHint = false);
+          prefs.setBool(_swipeHintKey, true);
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +55,40 @@ class ArchiveScreen extends StatelessWidget {
           child: Column(
             children: [
               _buildHeader(context),
+              // 滑动提示
+              if (_showSwipeHint)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.swipe, color: Theme.of(context).colorScheme.onPrimaryContainer),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '左滑删除，右滑取消归档',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.close, size: 18, color: Theme.of(context).colorScheme.onPrimaryContainer),
+                        onPressed: () async {
+                          setState(() => _showSwipeHint = false);
+                          final prefs = await SharedPreferences.getInstance();
+                          prefs.setBool(_swipeHintKey, true);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              if (_showSwipeHint) const SizedBox(height: 8),
               Expanded(
                 child: Consumer<EventsProvider>(
                   builder: (context, provider, child) {
@@ -126,7 +190,7 @@ class ArchiveScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(

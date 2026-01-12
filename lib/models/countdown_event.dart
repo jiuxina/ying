@@ -1,6 +1,4 @@
-import 'category_model.dart';
 import 'reminder.dart';
-import 'event_category.dart'; // Deprecated but maybe used elsewhere?
 
 /// 倒数日事件模型
 class CountdownEvent {
@@ -63,10 +61,10 @@ class CountdownEvent {
   }
 
   /// 计算进度百分比（用于进度条）
-  /// 对于倒数日：从创建日期到目标日期的进度
-  /// 对于正数日：固定返回100%
+  /// 对于倒数日：返回剩余时间百分比 (100% → 0%)
+  /// 对于正数日：固定返回0%（已完成）
   double get progressPercentage {
-    if (isCountUp) return 1.0;
+    if (isCountUp) return 0.0;
     
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -74,30 +72,38 @@ class CountdownEvent {
     final created = DateTime(createdAt.year, createdAt.month, createdAt.day);
     
     final totalDays = target.difference(created).inDays;
-    if (totalDays <= 0) return 1.0;
+    if (totalDays <= 0) return 0.0;
     
     final passedDays = today.difference(created).inDays;
-    final progress = passedDays / totalDays;
+    final progress = 1.0 - (passedDays / totalDays); // 剩余百分比 = 1 - 已过百分比
     return progress.clamp(0.0, 1.0);
   }
 
   /// 是否已过期
   bool get isExpired => daysRemaining < 0 && !isCountUp;
 
+  // 用于 copyWith 的哨兵值，表示"保持原值"
+  static const Object _sentinel = Object();
+
   /// 复制并修改
+  /// 
+  /// 注意：对于 nullable 字段 (note, groupId, backgroundImage 等)：
+  /// - 不传参数或传 _sentinel: 保持原值
+  /// - 显式传 null: 设置为 null
+  /// - 传其他值: 使用新值
   CountdownEvent copyWith({
     String? id,
     String? title,
-    String? note,
+    Object? note = _sentinel,
     DateTime? targetDate,
     bool? isLunar,
-    String? lunarDateStr,
+    Object? lunarDateStr = _sentinel,
     String? categoryId,
     bool? isCountUp,
     bool? isRepeating,
     bool? isPinned,
     bool? isArchived,
-    String? backgroundImage,
+    Object? backgroundImage = _sentinel,
     bool? enableBlur,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -105,22 +111,22 @@ class CountdownEvent {
     int? notifyDaysBefore,
     int? notifyHour,
     int? notifyMinute,
-    String? groupId,
+    Object? groupId = _sentinel,
     List<Reminder>? reminders,
   }) {
     return CountdownEvent(
       id: id ?? this.id,
       title: title ?? this.title,
-      note: note ?? this.note,
+      note: note == _sentinel ? this.note : note as String?,
       targetDate: targetDate ?? this.targetDate,
       isLunar: isLunar ?? this.isLunar,
-      lunarDateStr: lunarDateStr ?? this.lunarDateStr,
+      lunarDateStr: lunarDateStr == _sentinel ? this.lunarDateStr : lunarDateStr as String?,
       categoryId: categoryId ?? this.categoryId,
       isCountUp: isCountUp ?? this.isCountUp,
       isRepeating: isRepeating ?? this.isRepeating,
       isPinned: isPinned ?? this.isPinned,
       isArchived: isArchived ?? this.isArchived,
-      backgroundImage: backgroundImage ?? this.backgroundImage,
+      backgroundImage: backgroundImage == _sentinel ? this.backgroundImage : backgroundImage as String?,
       enableBlur: enableBlur ?? this.enableBlur,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -128,7 +134,7 @@ class CountdownEvent {
       notifyDaysBefore: notifyDaysBefore ?? this.notifyDaysBefore,
       notifyHour: notifyHour ?? this.notifyHour,
       notifyMinute: notifyMinute ?? this.notifyMinute,
-      groupId: groupId ?? this.groupId,
+      groupId: groupId == _sentinel ? this.groupId : groupId as String?,
       reminders: reminders ?? this.reminders,
     );
   }

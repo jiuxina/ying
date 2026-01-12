@@ -180,7 +180,7 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       color: isSelected
                           ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurface.withOpacity(0.5),
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                     child: Text(index.toString().padLeft(2, '0')),
                   ),

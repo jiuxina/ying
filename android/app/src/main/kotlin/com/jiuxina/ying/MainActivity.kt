@@ -1,5 +1,7 @@
 package com.jiuxina.ying
 
+import android.app.Activity
+import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -28,14 +30,27 @@ class MainActivity : FlutterActivity() {
                 }
                 "getAppWidgetId" -> {
                     val appWidgetId = intent?.extras?.getInt(
-                        android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID,
-                        android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID
-                    ) ?: android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID
+                        AppWidgetManager.EXTRA_APPWIDGET_ID,
+                        AppWidgetManager.INVALID_APPWIDGET_ID
+                    ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
                     
-                    if (appWidgetId != android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID) {
+                    if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
                         result.success(appWidgetId)
                     } else {
                         result.success(null)
+                    }
+                }
+                "finishConfigure" -> {
+                    val widgetId = call.argument<Int>("widgetId")
+                    if (widgetId != null && widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                        // 正确完成 widget 配置：设置 RESULT_OK 并返回 widget ID
+                        val resultValue = Intent()
+                        resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+                        setResult(Activity.RESULT_OK, resultValue)
+                        finish()
+                        result.success(true)
+                    } else {
+                        result.error("INVALID_WIDGET_ID", "Widget ID is invalid", null)
                     }
                 }
                 else -> result.notImplemented()

@@ -4,7 +4,18 @@ import '../models/countdown_event.dart';
 import '../models/event_group.dart';
 
 /// 数据库服务 - 管理事件的本地存储
+/// 
+/// 使用单例模式确保整个应用只有一个数据库连接实例
 class DatabaseService {
+  // 单例实例
+  static final DatabaseService _instance = DatabaseService._internal();
+  
+  /// 工厂构造函数，始终返回同一实例
+  factory DatabaseService() => _instance;
+  
+  /// 私有构造函数
+  DatabaseService._internal();
+
   static Database? _database;
   static const String _tableName = 'countdown_events';
   static const String _categoriesTable = 'event_categories';
@@ -370,6 +381,20 @@ class DatabaseService {
       where: 'eventId = ?',
       whereArgs: [eventId],
     );
+  }
+
+  /// 批量获取所有提醒（按事件ID分组）
+  /// 解决 N+1 查询问题
+  Future<Map<String, List<Map<String, dynamic>>>> getAllRemindersGrouped() async {
+    final db = await database;
+    final results = await db.query(_remindersTable, orderBy: 'daysBefore DESC, hour ASC');
+    
+    final grouped = <String, List<Map<String, dynamic>>>{};
+    for (final row in results) {
+      final eventId = row['eventId'] as String;
+      grouped.putIfAbsent(eventId, () => []).add(row);
+    }
+    return grouped;
   }
 
   // Backup & Restore

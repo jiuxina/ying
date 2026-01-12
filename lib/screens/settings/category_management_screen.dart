@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/services.dart';
+// import 'package:flutter/services.dart';
 
 import '../../models/category_model.dart';
 import '../../providers/events_provider.dart';
@@ -172,7 +172,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.grey.withOpacity(0.1),
+                          color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.grey.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                           border: isSelected ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
                         ),
@@ -194,7 +194,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
                     final color = _colorOptions[index];
-                    final isSelected = selectedColor.value == color.value;
+                    final isSelected = selectedColor.toARGB32() == color.toARGB32();
                     return GestureDetector(
                       onTap: () => setState(() => selectedColor = color),
                       child: Container(
@@ -205,7 +205,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                           shape: BoxShape.circle,
                           border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
                           boxShadow: isSelected ? [
-                            BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))
+                            BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))
                           ] : null,
                         ),
                         child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
@@ -225,14 +225,14 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                       id: DateTime.now().millisecondsSinceEpoch.toString(),
                       name: nameController.text.trim(),
                       icon: selectedIcon,
-                      color: selectedColor.value,
+                      color: selectedColor.toARGB32(),
                     );
                     provider.addCategory(newCategory);
                   } else {
                     provider.updateCategory(category.copyWith(
                       name: nameController.text.trim(),
                       icon: selectedIcon,
-                      color: selectedColor.value,
+                      color: selectedColor.toARGB32(),
                     ));
                   }
                   Navigator.pop(context);

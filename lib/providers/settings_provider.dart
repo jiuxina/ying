@@ -461,9 +461,9 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> setProgressColor(Color color) async {
-    _progressColorValue = color.value;
+    _progressColorValue = color.toARGB32();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('progress_color', color.value);
+    await prefs.setInt('progress_color', color.toARGB32());
     notifyListeners();
   }
 
@@ -534,7 +534,7 @@ class SettingsProvider extends ChangeNotifier {
   // setWidgetDisplayMode 已废弃 - 简化版不再支持多事件模式
 
   Future<void> setWidgetBackgroundColor(Color color) async {
-    final config = currentWidgetConfig.copyWith(backgroundColor: color.value);
+    final config = currentWidgetConfig.copyWith(backgroundColor: color.toARGB32());
     await updateCurrentWidgetConfig(config);
   }
 

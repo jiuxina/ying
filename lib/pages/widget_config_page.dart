@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:home_widget/home_widget.dart';
+// import 'package:home_widget/home_widget.dart';
 import 'package:provider/provider.dart';
 import '../providers/events_provider.dart';
 import '../models/countdown_event.dart';
@@ -41,12 +41,16 @@ class _WidgetConfigPageState extends State<WidgetConfigPage> {
     if (_widgetId != null) {
       await WidgetService.saveConfiguredWidget(_widgetId!, event);
       
-      // 完成配置，返回
-      // SystemNavigator.pop() 可能会直接退出 App，但在 Android Widget 配置流程中是合理的
-      // 或者可以使用 MethodChannel 通知 Android 侧 finishConfigure
-      // HomeWidget 目前没有直接暴露 finishConfigure，但通常 updateWidget 后 Android 会处理
-      // 这里我们尝试直接退出，模拟配置完成
-      await SystemNavigator.pop(); 
+      // 通过 MethodChannel 通知原生端完成配置
+      // 这会设置 RESULT_OK 并正确返回 widget ID，让系统知道配置成功
+      try {
+        const channel = MethodChannel('com.jiuxina.ying/install');
+        await channel.invokeMethod('finishConfigure', {'widgetId': _widgetId});
+      } catch (e) {
+        debugPrint("Error finishing configure: $e");
+        // 降级处理：如果 finishConfigure 失败，尝试直接退出
+        await SystemNavigator.pop();
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('未获取到 Widget ID，无法保存配置')),

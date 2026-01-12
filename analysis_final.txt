@@ -1,0 +1,16 @@
+Analyzing ying...                                               
+
+   info - The private field _isAllDay could be 'final' - lib\screens\add_edit_event_screen.dart:42:8 - prefer_final_fields
+warning - The value of the field '_isAllDay' isn't used - lib\screens\add_edit_event_screen.dart:42:8 - unused_field
+warning - The value of the field '_notifyHour' isn't used - lib\screens\add_edit_event_screen.dart:43:7 - unused_field
+warning - The value of the field '_notifyMinute' isn't used - lib\screens\add_edit_event_screen.dart:44:7 - unused_field
+  error - Undefined name '_notifyDaysBefore' - lib\screens\add_edit_event_screen.dart:71:7 - undefined_identifier
+warning - The value of the local variable 'isPast' isn't used - lib\screens\event_detail_screen.dart:215:11 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps - lib\screens\settings\cloud_sync_screen.dart:134:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\settings\data_backup_screen.dart:69:32 - use_build_context_synchronously
+  error - The method 'AppBackground' isn't defined for the type 'WidgetSettingsScreen' - lib\screens\settings\widget_settings_screen.dart:13:13 - undefined_method
+warning - Unnecessary cast - lib\widgets\settings\appearance_card.dart:369:42 - unnecessary_cast
+warning - Unused import: 'package:share_plus/share_plus.dart' - lib\widgets\share_card_dialog.dart:3:8 - unused_import
+warning - Unused import: 'package:gal/gal.dart' - lib\widgets\share_card_dialog.dart:4:8 - unused_import
+warning - Unused import: 'package:path_provider/path_provider.dart' - lib\widgets\share_card_dialog.dart:5:8 - unused_import
+

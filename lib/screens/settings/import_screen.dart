@@ -8,7 +8,7 @@ import '../../providers/events_provider.dart';
 import '../../services/ical_service.dart';
 import '../../widgets/common/app_background.dart';
 import '../../widgets/common/ui_helpers.dart';
-import '../../widgets/common/empty_state.dart';
+// import '../../widgets/common/empty_state.dart';
 
 class ImportScreen extends StatefulWidget {
   const ImportScreen({super.key});
@@ -158,7 +158,7 @@ class _ImportScreenState extends State<ImportScreen> {
                             final event = _importedEvents[index];
                             return Card(
                               elevation: 0,
-                              color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
                               child: ListTile(
                                 title: Text(event.title),
                                 subtitle: Text(DateFormat('yyyy-MM-dd').format(event.targetDate)),
@@ -195,7 +195,7 @@ class _ImportScreenState extends State<ImportScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(

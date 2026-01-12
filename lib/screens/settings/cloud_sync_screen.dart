@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
 import '../../providers/settings_provider.dart';
 import '../../services/webdav_service.dart';
 import '../../services/cloud_sync_service.dart';
-import '../../utils/constants.dart';
 
 class CloudSyncScreen extends StatefulWidget {
   const CloudSyncScreen({super.key});
@@ -22,6 +21,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   bool _isTesting = false;
   bool _isSyncing = false;
   String? _testResult;
+  bool _isOffline = false;
 
   late WebDAVService _webdavService;
   late CloudSyncService _cloudSyncService;
@@ -31,6 +31,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     super.initState();
     _webdavService = WebDAVService();
     _cloudSyncService = CloudSyncService(webdavService: _webdavService);
+    _checkConnectivity();
     
     // 加载已保存的配置
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -48,6 +49,19 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
         ));
       }
     });
+  }
+  
+  Future<void> _checkConnectivity() async {
+    try {
+      final result = await InternetAddress.lookup('example.com');
+      if (mounted) {
+        setState(() => _isOffline = result.isEmpty || result.first.rawAddress.isEmpty);
+      }
+    } on SocketException catch (_) {
+      if (mounted) {
+        setState(() => _isOffline = true);
+      }
+    }
   }
 
   @override
@@ -132,6 +146,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     if (result.success) {
       final settings = Provider.of<SettingsProvider>(context, listen: false);
       await settings.updateLastSyncTime();
+      if (!mounted) return;
       
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('备份成功')),
@@ -155,16 +170,20 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('确认恢复'),
-        content: const Text('恢复将覆盖本地数据，是否继续？'),
+        title: const Text('⚠️ 警告'),
+        content: const Text(
+          '恢复操作将覆盖本地所有数据，且无法撤销！\n\n建议在恢复前先执行备份操作。',
+          style: TextStyle(color: Colors.red),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('取消'),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('恢复'),
+            child: const Text('确认覆盖恢复'),
           ),
         ],
       ),
@@ -216,6 +235,44 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // 离线提示
+              if (_isOffline)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.wifi_off, color: Colors.orange),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '当前无网络连接',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '同步功能需要网络连接才能使用',
+                              style: TextStyle(fontSize: 12, color: Colors.orange.withValues(alpha: 0.8)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh, color: Colors.orange),
+                        onPressed: _checkConnectivity,
+                        tooltip: '重新检测',
+                      ),
+                    ],
+                  ),
+                ),
               // 连接配置
               Card(
                 child: Padding(
@@ -228,7 +285,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(Icons.cloud, color: Theme.of(context).colorScheme.primary),
@@ -310,7 +367,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
+                              color: Colors.green.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(Icons.sync, color: Colors.green),

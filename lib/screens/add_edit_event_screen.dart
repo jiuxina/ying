@@ -3,9 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/countdown_event.dart';
-import '../models/event_category.dart';
 import '../providers/events_provider.dart';
-import '../theme/app_theme.dart';
 import '../utils/constants.dart';
 import '../utils/lunar_utils.dart';
 import '../widgets/common/app_background.dart';
@@ -41,9 +39,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   bool _isCountUp = false;
   bool _isRepeating = false;
   bool _enableNotification = true;
-  int _notifyDaysBefore = 1;
-  int _notifyHour = 9;
-  int _notifyMinute = 0;
+
   String? _backgroundImage;
   
   // 精确时间（时分秒）
@@ -56,6 +52,19 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   List<Reminder> _reminders = [];
 
   bool get _isEditing => widget.event != null;
+  
+  // 追踪初始值用于判断是否有未保存的更改
+  String _initialTitle = '';
+  String _initialNote = '';
+  String _initialCategoryId = '';
+  DateTime? _initialTargetDate;
+  bool _initialIsLunar = false;
+  bool _initialIsCountUp = false;
+  bool _initialIsRepeating = false;
+  bool _initialEnableNotification = true;
+  String? _initialBackgroundImage;
+  String? _initialGroupId;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -70,9 +79,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
       _isCountUp = e.isCountUp;
       _isRepeating = e.isRepeating;
       _enableNotification = e.enableNotification;
-      _notifyDaysBefore = e.notifyDaysBefore;
-      _notifyHour = e.notifyHour;
-      _notifyMinute = e.notifyMinute;
+
       _backgroundImage = e.backgroundImage;
 
       _groupId = e.groupId;
@@ -88,22 +95,81 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
     _targetMinute = _targetDate.minute;
     _targetSecond = _targetDate.second;
     _useExactTime = _targetHour != 0 || _targetMinute != 0 || _targetSecond != 0;
+    
+    // 保存初始值用于追踪更改
+    _initialTitle = _titleController.text;
+    _initialNote = _noteController.text;
+    _initialCategoryId = _categoryId;
+    _initialTargetDate = _targetDate;
+    _initialIsLunar = _isLunar;
+    _initialIsCountUp = _isCountUp;
+    _initialIsRepeating = _isRepeating;
+    _initialEnableNotification = _enableNotification;
+    _initialBackgroundImage = _backgroundImage;
+    _initialGroupId = _groupId;
+  }
+  
+  /// 检查是否有未保存的更改
+  bool _hasUnsavedChanges() {
+    return _titleController.text != _initialTitle ||
+           _noteController.text != _initialNote ||
+           _categoryId != _initialCategoryId ||
+           _targetDate != _initialTargetDate ||
+           _isLunar != _initialIsLunar ||
+           _isCountUp != _initialIsCountUp ||
+           _isRepeating != _initialIsRepeating ||
+           _enableNotification != _initialEnableNotification ||
+           _backgroundImage != _initialBackgroundImage ||
+           _groupId != _initialGroupId;
+  }
+  
+  /// 显示放弃更改确认对话框
+  Future<bool> _confirmDiscard() async {
+    if (!_hasUnsavedChanges()) return true;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('放弃更改？'),
+        content: const Text('您有未保存的更改，确定要离开吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('继续编辑'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('放弃'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
   }
   
   // ... (dispose)
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      body: AppBackground(
-        backgroundImage: _backgroundImage,
-        enableBlur: true,
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(context),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldPop = await _confirmDiscard();
+        if (shouldPop && mounted) {
+          Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
+        body: AppBackground(
+          backgroundImage: _backgroundImage,
+          enableBlur: true,
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(context),
               Expanded(
                 child: Form(
                   key: _formKey,
@@ -121,7 +187,8 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                               label: '事件名称',
                               hint: '请输入事件名称',
                               icon: Icons.title,
-                              validator: (v) => v?.isEmpty == true ? '请输入事件名称' : null,
+                              validator: (v) => (v == null || v.trim().isEmpty) ? '请输入事件名称' : null,
+                              key: const Key('event_title_input'),
                             ),
                             const Divider(height: 1),
                             // 分组选择
@@ -332,6 +399,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -342,7 +410,12 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
         children: [
           GlassIconButton(
             icon: Icons.close,
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              final shouldPop = await _confirmDiscard();
+              if (shouldPop && mounted) {
+                Navigator.pop(context);
+              }
+            },
           ),
           const SizedBox(width: 8),
           Text(
@@ -363,6 +436,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
     required IconData icon,
     String? Function(String?)? validator,
     int maxLines = 1,
+    Key? key,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -373,6 +447,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
           const SizedBox(width: 16),
           Expanded(
             child: TextFormField(
+              key: key,
               controller: controller,
               maxLines: maxLines,
               decoration: InputDecoration(
@@ -408,13 +483,13 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                 duration: AppConstants.animationFast,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? color : Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                  color: isSelected ? color : Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? color : Theme.of(context).dividerColor.withOpacity(0.5),
+                    color: isSelected ? color : Theme.of(context).dividerColor.withValues(alpha: 0.5),
                   ),
                   boxShadow: isSelected
-                      ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 8)]
+                      ? [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 8)]
                       : null,
                 ),
                 child: Row(
@@ -451,7 +526,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -460,27 +535,48 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          key: const Key('save_event_button'),
           borderRadius: BorderRadius.circular(16),
-          onTap: _save,
+          onTap: _isSaving ? null : _save,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  _isEditing ? Icons.check : Icons.add,
-                  color: Colors.white,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _isEditing ? '保存修改' : '添加事件',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
+              children: _isSaving
+                  ? [
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        '保存中...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ]
+                  : [
+                      Icon(
+                        _isEditing ? Icons.check : Icons.add,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _isEditing ? '保存修改' : '添加事件',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
             ),
           ),
         ),
@@ -529,12 +625,12 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                        const Text('提前天数: '),
                        IconButton(
                          icon: const Icon(Icons.remove_circle_outline),
-                         onPressed: () => setDialogState(() => days--), // Allow negative for "past"? No, usually >= 0. But maybe allowed.
+                         onPressed: days > 0 ? () => setDialogState(() => days--) : null,
                        ),
                        Text(days == 0 ? '当天' : '提前 $days 天'),
                        IconButton(
                          icon: const Icon(Icons.add_circle_outline),
-                         onPressed: () => setDialogState(() => days++),
+                         onPressed: days < 365 ? () => setDialogState(() => days++) : null,
                        ),
                      ],
                    ),
@@ -579,21 +675,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
     );
   }
 
-  Future<void> _selectTime() async {
-    HapticFeedback.selectionClick();
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: _notifyHour, minute: _notifyMinute),
-      initialEntryMode: TimePickerEntryMode.input,
-    );
-    if (picked != null) {
-      setState(() {
-        _notifyHour = picked.hour;
-        _notifyMinute = picked.minute;
-      });
-    }
-  }
-
+  // Removed unused _selectTime method
   Future<void> _selectTargetTime() async {
     HapticFeedback.selectionClick();
     final picked = await showTimePickerSheet(
@@ -623,9 +705,11 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
 
+    setState(() => _isSaving = true);
     HapticFeedback.mediumImpact();
 
     // 构建包含精确时间的目标日期
@@ -685,29 +769,37 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
     );
 
     final provider = context.read<EventsProvider>();
-    if (_isEditing) {
-      provider.updateEvent(event);
-    } else {
-      provider.addEvent( // Use addEvent which I updated to accept reminders, OR insertEvent which takes event object with reminders
-        title: event.title,
-        note: event.note,
-        targetDate: event.targetDate,
-        isLunar: event.isLunar,
-        lunarDateStr: event.lunarDateStr,
-        categoryId: event.categoryId,
-        isCountUp: event.isCountUp,
-        isRepeating: event.isRepeating,
-        backgroundImage: event.backgroundImage,
-        enableBlur: event.enableBlur,
-        enableNotification: event.enableNotification,
-        notifyDaysBefore: event.notifyDaysBefore,
-        notifyHour: event.notifyHour,
-        notifyMinute: event.notifyMinute,
-        groupId: event.groupId,
-        reminders: event.reminders,
-      );
+    try {
+      if (_isEditing) {
+        await provider.updateEvent(event);
+      } else {
+        await provider.addEvent(
+          title: event.title,
+          note: event.note,
+          targetDate: event.targetDate,
+          isLunar: event.isLunar,
+          lunarDateStr: event.lunarDateStr,
+          categoryId: event.categoryId,
+          isCountUp: event.isCountUp,
+          isRepeating: event.isRepeating,
+          backgroundImage: event.backgroundImage,
+          enableBlur: event.enableBlur,
+          enableNotification: event.enableNotification,
+          notifyDaysBefore: event.notifyDaysBefore,
+          notifyHour: event.notifyHour,
+          notifyMinute: event.notifyMinute,
+          groupId: event.groupId,
+          reminders: event.reminders,
+        );
+      }
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('保存失败: $e')),
+        );
+      }
     }
-
-    Navigator.pop(context);
   }
 }

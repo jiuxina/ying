@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:intl/intl.dart';
+// import 'package:intl/intl.dart';
 
 import '../models/countdown_event.dart';
 import '../providers/events_provider.dart';
@@ -72,7 +72,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -110,7 +110,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           outsideDaysVisible: false,
           weekendTextStyle: TextStyle(color: Theme.of(context).colorScheme.error),
           todayDecoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
             shape: BoxShape.circle,
           ),
           selectedDecoration: BoxDecoration(
@@ -167,7 +167,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             Icon(
               Icons.event_busy,
               size: 48,
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(

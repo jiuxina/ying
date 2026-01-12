@@ -66,6 +66,7 @@ class _DataBackupScreenState extends State<DataBackupScreen> {
         if (mounted) {
           // Refresh provider
           await context.read<EventsProvider>().refresh();
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Data restored successfully')),
           );

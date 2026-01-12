@@ -73,6 +73,7 @@ dependencies:
   quick_actions: ^1.0.0
   app_links: ^6.3.2
   confetti: ^0.7.0
+  image_cropper: ^11.0.0
 
 dev_dependencies:
   flutter_test:

@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/countdown_event.dart';
@@ -31,6 +29,7 @@ class ShareCardTemplates {
     required ShareTemplate template,
     required ShareContentOptions options,
     Color? categoryColor,
+    bool hasCustomBackground = false,
   }) {
     switch (template.style) {
       case ShareTemplateStyle.minimal:
@@ -39,6 +38,7 @@ class ShareCardTemplates {
           template: template,
           options: options,
           categoryColor: categoryColor,
+          hasCustomBackground: hasCustomBackground,
         );
       case ShareTemplateStyle.gradient:
         return _GradientTemplate(
@@ -46,6 +46,7 @@ class ShareCardTemplates {
           template: template,
           options: options,
           categoryColor: categoryColor,
+          hasCustomBackground: hasCustomBackground,
         );
       case ShareTemplateStyle.card:
         return _CardTemplate(
@@ -53,6 +54,7 @@ class ShareCardTemplates {
           template: template,
           options: options,
           categoryColor: categoryColor,
+          hasCustomBackground: hasCustomBackground,
         );
       case ShareTemplateStyle.festive:
         return _FestiveTemplate(
@@ -60,6 +62,7 @@ class ShareCardTemplates {
           template: template,
           options: options,
           categoryColor: categoryColor,
+          hasCustomBackground: hasCustomBackground,
         );
       case ShareTemplateStyle.poster:
         return _PosterTemplate(
@@ -67,6 +70,7 @@ class ShareCardTemplates {
           template: template,
           options: options,
           categoryColor: categoryColor,
+          hasCustomBackground: hasCustomBackground,
         );
     }
   }
@@ -91,90 +95,125 @@ abstract class _BaseTemplate extends StatelessWidget {
   final ShareTemplate template;
   final ShareContentOptions options;
   final Color? categoryColor;
+  final bool hasCustomBackground;
 
   const _BaseTemplate({
     required this.event,
     required this.template,
     required this.options,
     this.categoryColor,
+    this.hasCustomBackground = false,
   });
 
-  bool get isDark => template.theme == ShareTemplateTheme.dark;
-  Color get accentColor => categoryColor ?? const Color(0xFF6B4EFF); // Default primary
+  bool get isDark => template.theme == ShareTemplateTheme.dark || hasCustomBackground;
+  Color get accentColor => categoryColor ?? const Color(0xFF6B4EFF);
 
-  /// 构建天数显示部件
+  /// 根据文本长度计算自适应字体大小
+  double _adaptiveFontSize(String text, double baseSize, {int threshold = 10}) {
+    if (text.length <= threshold) return baseSize;
+    if (text.length <= threshold * 2) return baseSize * 0.85;
+    if (text.length <= threshold * 3) return baseSize * 0.7;
+    return baseSize * 0.6;
+  }
+
+  /// 构建天数显示部件 - 自适应版本
   Widget buildDaysDisplay(Color color, {double fontSize = 72, FontWeight fontWeight = FontWeight.w300}) {
     if (!options.showDays) return const SizedBox.shrink();
     
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: [
-        Text(
-          event.isCountUp ? '已经' : (event.daysRemaining >= 0 ? '还有' : '已过'),
-          style: TextStyle(fontSize: fontSize * 0.22, color: color.withOpacity(0.6)),
-        ),
-        SizedBox(width: fontSize * 0.1),
-        Text(
-          '${event.daysRemaining.abs()}',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: fontWeight,
-            color: accentColor,
-            height: 1.0,
+    final daysStr = '${event.daysRemaining.abs()}';
+    // 大数字时缩小字体
+    final adaptedFontSize = daysStr.length > 3 ? fontSize * 0.7 : (daysStr.length > 2 ? fontSize * 0.85 : fontSize);
+    
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Text(
+            event.isCountUp ? '已经' : (event.daysRemaining >= 0 ? '还有' : '已过'),
+            style: TextStyle(fontSize: adaptedFontSize * 0.22, color: color.withValues(alpha: 0.6)),
           ),
-        ),
-        SizedBox(width: fontSize * 0.1),
-        Text(
-          '天',
-          style: TextStyle(fontSize: fontSize * 0.22, color: color.withOpacity(0.6)),
-        ),
-      ],
+          SizedBox(width: adaptedFontSize * 0.08),
+          Text(
+            daysStr,
+            style: TextStyle(
+              fontSize: adaptedFontSize,
+              fontWeight: fontWeight,
+              color: accentColor,
+              height: 1.0,
+            ),
+          ),
+          SizedBox(width: adaptedFontSize * 0.08),
+          Text(
+            '天',
+            style: TextStyle(fontSize: adaptedFontSize * 0.22, color: color.withValues(alpha: 0.6)),
+          ),
+        ],
+      ),
     );
   }
 
-  /// 构建标题部件
-  Widget buildTitle(Color color, {double fontSize = 24}) {
+  /// 构建标题部件 - 自适应版本
+  Widget buildTitle(Color color, {double fontSize = 24, double? maxWidth}) {
     if (!options.showTitle) return const SizedBox.shrink();
     
-    return Text(
-      event.title,
-      style: TextStyle(
-        fontSize: fontSize,
-        fontWeight: FontWeight.bold,
-        color: color,
+    final title = event.title;
+    final adaptedFontSize = _adaptiveFontSize(title, fontSize, threshold: 8);
+    
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth ?? double.infinity),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: adaptedFontSize,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
-      textAlign: TextAlign.center,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
     );
   }
 
-  /// 构建备注部件
-  Widget buildNote(Color color, {double fontSize = 14}) {
+  /// 构建备注部件 - 自适应版本
+  Widget buildNote(Color color, {double fontSize = 14, double? maxHeight}) {
     if (!options.showNote || event.note == null || event.note!.isEmpty) {
       return const SizedBox.shrink();
     }
     
-    return Container(
+    final note = event.note!;
+    // 根据备注长度调整显示行数
+    final maxLines = note.length > 100 ? 2 : (note.length > 50 ? 3 : 4);
+    final adaptedFontSize = note.length > 80 ? fontSize * 0.9 : fontSize;
+    
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight ?? 80),
+      child: Container(
         margin: const EdgeInsets.only(top: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          event.note!,
+          note,
           style: TextStyle(
-            fontSize: fontSize,
-            color: color.withOpacity(0.8),
+            fontSize: adaptedFontSize,
+            color: color.withValues(alpha: 0.8),
             fontStyle: FontStyle.italic,
+            height: 1.3,
           ),
           textAlign: TextAlign.center,
-          maxLines: 3,
+          maxLines: maxLines,
           overflow: TextOverflow.ellipsis,
         ),
+      ),
     );
   }
 
@@ -205,14 +244,15 @@ abstract class _BaseTemplate extends StatelessWidget {
     
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.event_note, size: 14, color: color.withOpacity(0.5)),
+        Icon(Icons.event_note, size: 14, color: color.withValues(alpha: 0.5)),
         const SizedBox(width: 6),
         Text(
           AppConstants.appName,
           style: TextStyle(
             fontSize: 12,
-            color: color.withOpacity(0.5),
+            color: color.withValues(alpha: 0.5),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -223,11 +263,11 @@ abstract class _BaseTemplate extends StatelessWidget {
 
 /// 1. 极简模板 - 响应式重构
 class _MinimalTemplate extends _BaseTemplate {
-  const _MinimalTemplate({required super.event, required super.template, required super.options, super.categoryColor});
+  const _MinimalTemplate({required super.event, required super.template, required super.options, super.categoryColor, super.hasCustomBackground});
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isDark ? const Color(0xFF1A1A2E) : Colors.white;
+    final bgColor = hasCustomBackground ? Colors.transparent : (isDark ? const Color(0xFF1A1A2E) : Colors.white);
     final textColor = isDark ? Colors.white : Colors.black87;
 
     return Container(
@@ -236,6 +276,7 @@ class _MinimalTemplate extends _BaseTemplate {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isLandscape = constraints.maxWidth > constraints.maxHeight;
+          final maxContentWidth = constraints.maxWidth - 48; // 减去 padding
           
           if (isLandscape) {
             // 横版布局：左侧大数字，右侧信息
@@ -243,7 +284,7 @@ class _MinimalTemplate extends _BaseTemplate {
               children: [
                 Expanded(
                   flex: 4,
-                  child: Center(child: FittedBox(child: buildDaysDisplay(textColor, fontSize: 100))),
+                  child: Center(child: buildDaysDisplay(textColor, fontSize: 80)),
                 ),
                 const SizedBox(width: 24),
                 Expanded(
@@ -253,10 +294,11 @@ class _MinimalTemplate extends _BaseTemplate {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (options.showTitle)
-                        FittedBox(fit: BoxFit.scaleDown, child: buildTitle(textColor, fontSize: 28)),
-                      if (options.showNote) buildNote(textColor),
-                      const Spacer(),
-                      if (options.showDate) buildDate(accentColor, accentColor.withOpacity(0.1)),
+                        Flexible(child: buildTitle(textColor, fontSize: 28, maxWidth: maxContentWidth * 0.5)),
+                      if (options.showNote) 
+                        Flexible(child: buildNote(textColor, maxHeight: 60)),
+                      const SizedBox(height: 16),
+                      if (options.showDate) buildDate(accentColor, accentColor.withValues(alpha: 0.1)),
                       const SizedBox(height: 8),
                       if (options.showFooter) buildBrandFooter(textColor),
                     ],
@@ -267,17 +309,30 @@ class _MinimalTemplate extends _BaseTemplate {
           } else {
             // 竖版布局
             return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                const Spacer(),
-                FittedBox(fit: BoxFit.scaleDown, child: buildTitle(textColor)),
-                if (options.showNote) buildNote(textColor),
-                const Spacer(),
-                FittedBox(child: buildDaysDisplay(textColor)),
-                const Spacer(flex: 2),
-                if (options.showDate) buildDate(accentColor, accentColor.withOpacity(0.1)),
-                const SizedBox(height: 24),
-                if (options.showFooter) buildBrandFooter(textColor),
+                // 标题区域
+                Flexible(
+                  flex: 2,
+                  child: Center(child: buildTitle(textColor, maxWidth: maxContentWidth)),
+                ),
+                // 备注
+                if (options.showNote) 
+                  Flexible(child: buildNote(textColor, maxHeight: 60)),
+                // 天数区域
+                Flexible(
+                  flex: 3,
+                  child: Center(child: buildDaysDisplay(textColor)),
+                ),
+                // 底部区域
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (options.showDate) buildDate(accentColor, accentColor.withValues(alpha: 0.1)),
+                    const SizedBox(height: 16),
+                    if (options.showFooter) buildBrandFooter(textColor),
+                  ],
+                ),
               ],
             );
           }
@@ -289,7 +344,7 @@ class _MinimalTemplate extends _BaseTemplate {
 
 /// 2. 渐变模板 - 响应式重构
 class _GradientTemplate extends _BaseTemplate {
-  const _GradientTemplate({required super.event, required super.template, required super.options, super.categoryColor});
+  const _GradientTemplate({required super.event, required super.template, required super.options, super.categoryColor, super.hasCustomBackground});
 
   @override
   Widget build(BuildContext context) {
@@ -299,7 +354,7 @@ class _GradientTemplate extends _BaseTemplate {
     ];
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: hasCustomBackground ? null : BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -310,13 +365,15 @@ class _GradientTemplate extends _BaseTemplate {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isLandscape = constraints.maxWidth > constraints.maxHeight;
+          final maxContentWidth = constraints.maxWidth - 64;
 
           // 大圆圈数字部件
           Widget circleNumber = Container(
+            constraints: BoxConstraints(maxWidth: isLandscape ? 120 : 160, maxHeight: isLandscape ? 120 : 160),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
             ),
             child: FittedBox(
               child: Text(
@@ -326,10 +383,14 @@ class _GradientTemplate extends _BaseTemplate {
             ),
           );
 
+          // 自适应标题
+          final titleFontSize = _adaptiveFontSize(event.title, isLandscape ? 26 : 28, threshold: 10);
+
           if (isLandscape) {
             return Row(
               children: [
-                if (options.showDays) Expanded(flex: 1, child: AspectRatio(aspectRatio: 1, child: circleNumber)),
+                if (options.showDays) 
+                  Flexible(flex: 1, child: Center(child: circleNumber)),
                 if (options.showDays) const SizedBox(width: 32),
                 Expanded(
                   flex: 2,
@@ -338,13 +399,27 @@ class _GradientTemplate extends _BaseTemplate {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (options.showTitle) 
-                        Text(event.title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white), maxLines: 2),
-                      if (options.showNote)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(event.note ?? '', style: TextStyle(color: Colors.white.withOpacity(0.9)), maxLines: 2),
+                        Flexible(
+                          child: Text(
+                            event.title, 
+                            style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold, color: Colors.white), 
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      const Spacer(),
+                      if (options.showNote && event.note != null)
+                        Flexible(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              event.note!, 
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13), 
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           if (options.showDate) 
@@ -361,17 +436,28 @@ class _GradientTemplate extends _BaseTemplate {
             );
           } else {
             return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 if (options.showDays) 
-                  Expanded(flex: 3, child: AspectRatio(aspectRatio: 1, child: circleNumber)),
-                const SizedBox(height: 24),
-                const Text('天', style: TextStyle(fontSize: 24, color: Colors.white70)),
-                const SizedBox(height: 16),
+                  Flexible(flex: 3, child: Center(child: circleNumber)),
+                const Text('天', style: TextStyle(fontSize: 20, color: Colors.white70)),
+                const SizedBox(height: 8),
                 if (options.showTitle)
-                  Text(event.title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white), textAlign: TextAlign.center, maxLines: 2),
-                if (options.showNote) buildNote(Colors.white),
-                const Spacer(),
+                  Flexible(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: maxContentWidth * 0.05),
+                      child: Text(
+                        event.title, 
+                        style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold, color: Colors.white), 
+                        textAlign: TextAlign.center, 
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                if (options.showNote) 
+                  Flexible(child: buildNote(Colors.white, maxHeight: 50)),
+                const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -392,12 +478,12 @@ class _GradientTemplate extends _BaseTemplate {
 
 /// 3. 卡片模板 - 响应式重构
 class _CardTemplate extends _BaseTemplate {
-  const _CardTemplate({required super.event, required super.template, required super.options, super.categoryColor});
+  const _CardTemplate({required super.event, required super.template, required super.options, super.categoryColor, super.hasCustomBackground});
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5);
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final bgColor = hasCustomBackground ? Colors.transparent : (isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5));
+    final cardColor = isDark ? const Color(0xFF1E1E1E).withValues(alpha: hasCustomBackground ? 0.8 : 1.0) : Colors.white.withValues(alpha: hasCustomBackground ? 0.9 : 1.0);
     final textColor = isDark ? Colors.white : Colors.black87;
 
     return Container(
@@ -406,6 +492,7 @@ class _CardTemplate extends _BaseTemplate {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isLandscape = constraints.maxWidth > constraints.maxHeight;
+          final titleFontSize = _adaptiveFontSize(event.title, isLandscape ? 24 : 22, threshold: 10);
 
           return Column(
             children: [
@@ -417,7 +504,7 @@ class _CardTemplate extends _BaseTemplate {
                     color: cardColor,
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(isDark ? 0.3 : 0.1), blurRadius: 20, offset: const Offset(0, 10)),
+                      BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1), blurRadius: 20, offset: const Offset(0, 10)),
                     ],
                   ),
                   child: isLandscape
@@ -430,7 +517,7 @@ class _CardTemplate extends _BaseTemplate {
                                   child: FittedBox(
                                     child: Text(
                                       '${event.daysRemaining.abs()}',
-                                      style: TextStyle(fontSize: 120, fontWeight: FontWeight.bold, color: accentColor, height: 1),
+                                      style: TextStyle(fontSize: 100, fontWeight: FontWeight.bold, color: accentColor, height: 1),
                                     ),
                                   ),
                                 ),
@@ -443,41 +530,59 @@ class _CardTemplate extends _BaseTemplate {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (options.showTitle)
-                                    Text(event.title, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor), maxLines: 2),
-                                  if (options.showNote) buildNote(textColor),
-                                  const Spacer(),
+                                    Flexible(
+                                      child: Text(
+                                        event.title, 
+                                        style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold, color: textColor), 
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  if (options.showNote) 
+                                    Flexible(child: buildNote(textColor, maxHeight: 50)),
+                                  const SizedBox(height: 16),
                                   if (options.showDate)
-                                    Row(children: [Icon(Icons.calendar_today, size: 16, color: textColor.withOpacity(0.5)), const SizedBox(width: 8), Text(DateFormat('yyyy年MM月dd日').format(event.targetDate), style: TextStyle(color: textColor.withOpacity(0.6))) ]),
+                                    Row(children: [Icon(Icons.calendar_today, size: 16, color: textColor.withValues(alpha: 0.5)), const SizedBox(width: 8), Text(DateFormat('yyyy年MM月dd日').format(event.targetDate), style: TextStyle(color: textColor.withValues(alpha: 0.6))) ]),
                                 ],
                               ),
                             ),
                           ],
                         )
                       : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             if (options.showTitle)
-                              Text(event.title, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColor), textAlign: TextAlign.center, maxLines: 2),
-                           if (options.showNote) buildNote(textColor),
-                            const Spacer(),
+                              Flexible(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(
+                                    event.title, 
+                                    style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold, color: textColor), 
+                                    textAlign: TextAlign.center, 
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            if (options.showNote) 
+                              Flexible(child: buildNote(textColor, maxHeight: 50)),
                             if (options.showDays)
-                              Expanded(
+                              Flexible(
                                 flex: 2,
                                 child: Center(
                                   child: FittedBox(
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text('${event.daysRemaining.abs()}', style: TextStyle(fontSize: 80, fontWeight: FontWeight.bold, color: accentColor, height: 1)),
-                                        Text('天', style: TextStyle(fontSize: 20, color: textColor.withOpacity(0.6))),
+                                        Text('${event.daysRemaining.abs()}', style: TextStyle(fontSize: 70, fontWeight: FontWeight.bold, color: accentColor, height: 1)),
+                                        Text('天', style: TextStyle(fontSize: 18, color: textColor.withValues(alpha: 0.6))),
                                       ],
                                     ),
                                   ),
                                 ),
                               ),
-                            const Spacer(),
                             if (options.showDate)
-                              Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.calendar_today, size: 16, color: textColor.withOpacity(0.5)), const SizedBox(width: 8), Text(DateFormat('yyyy年MM月dd日').format(event.targetDate), style: TextStyle(fontSize: 14, color: textColor.withOpacity(0.6)))]),
+                              Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.calendar_today, size: 16, color: textColor.withValues(alpha: 0.5)), const SizedBox(width: 8), Text(DateFormat('yyyy年MM月dd日').format(event.targetDate), style: TextStyle(fontSize: 14, color: textColor.withValues(alpha: 0.6)))]),
                           ],
                         ),
                 ),
@@ -493,97 +598,147 @@ class _CardTemplate extends _BaseTemplate {
 
 /// 4. 节日模板 - 响应式重构
 class _FestiveTemplate extends _BaseTemplate {
-  const _FestiveTemplate({required super.event, required super.template, required super.options, super.categoryColor});
+  const _FestiveTemplate({required super.event, required super.template, required super.options, super.categoryColor, super.hasCustomBackground});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: hasCustomBackground ? null : BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [accentColor.withOpacity(0.8), accentColor],
+          colors: [accentColor.withValues(alpha: 0.8), accentColor],
         ),
       ),
       child: Stack(
         fit: StackFit.expand,
         children: [
-           // 装饰元素 (保持不变)
-          Positioned(top: -20, left: -20, child: Container(width: 100, height: 100, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.1)))),
-          Positioned(bottom: -30, right: -30, child: Container(width: 150, height: 150, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.1)))),
+           // 装饰元素
+          Positioned(top: -20, left: -20, child: Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.1)))),
+          Positioned(bottom: -30, right: -30, child: Container(width: 120, height: 120, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.1)))),
           
           LayoutBuilder(builder: (context, constraints) {
              final isLandscape = constraints.maxWidth > constraints.maxHeight;
+             final isVeryTight = constraints.maxHeight < 200; // 16:9 比例
+             final titleFontSize = _adaptiveFontSize(event.title, isLandscape ? 24 : 26, threshold: 10);
+             final daysFontSize = isVeryTight ? 36 : (isLandscape ? 50 : 42);
+             final padding = isVeryTight ? 16.0 : 24.0;
+             
              return Padding(
-               padding: const EdgeInsets.all(32),
+               padding: EdgeInsets.all(padding),
                child: isLandscape 
                  ? Row(
                      children: [
                        if (options.showDays)
-                         Expanded(
+                         Flexible(
                            child: Center(
                              child: Container(
-                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                               decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
-                               child: Column(
-                                 mainAxisSize: MainAxisSize.min,
-                                 children: [
-                                   Text('${event.daysRemaining.abs()}', style: const TextStyle(fontSize: 60, fontWeight: FontWeight.bold, color: Colors.white)),
-                                   const Text('天', style: TextStyle(fontSize: 18, color: Colors.white70)),
-                                 ],
+                               padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding * 0.6),
+                               decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
+                               child: FittedBox(
+                                 fit: BoxFit.scaleDown,
+                                 child: Column(
+                                   mainAxisSize: MainAxisSize.min,
+                                   children: [
+                                     Text('${event.daysRemaining.abs()}', style: TextStyle(fontSize: daysFontSize.toDouble(), fontWeight: FontWeight.bold, color: Colors.white)),
+                                     Text('天', style: TextStyle(fontSize: isVeryTight ? 14 : 18, color: Colors.white70)),
+                                   ],
+                                 ),
                                ),
                              ),
                            ),
                          ),
-                       const SizedBox(width: 24),
+                       SizedBox(width: padding),
                        Expanded(
+                         flex: 2,
                          child: Column(
                            mainAxisAlignment: MainAxisAlignment.center,
                            crossAxisAlignment: CrossAxisAlignment.start,
                            children: [
-                             const Text('🎉', style: TextStyle(fontSize: 36)),
-                             const SizedBox(height: 16),
+                             if (!isVeryTight) const Text('🎉', style: TextStyle(fontSize: 28)),
+                             if (!isVeryTight) const SizedBox(height: 8),
                              if (options.showTitle)
-                               Text(event.title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white), maxLines: 2),
-                             if (options.showNote)
-                               Padding(padding: const EdgeInsets.only(top: 8), child: Text(event.note ?? '', style: TextStyle(color: Colors.white.withOpacity(0.9)), maxLines: 2)),
-                             const Spacer(),
-                             if (options.showDate)
-                               Text(DateFormat('yyyy年MM月dd日').format(event.targetDate), style: TextStyle(color: Colors.white.withOpacity(0.8))),
+                               Flexible(
+                                 child: Text(
+                                   event.title, 
+                                   style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold, color: Colors.white), 
+                                   maxLines: isVeryTight ? 1 : 2,
+                                   overflow: TextOverflow.ellipsis,
+                                 ),
+                               ),
+                             if (options.showNote && event.note != null && !isVeryTight)
+                               Flexible(
+                                 child: Padding(
+                                   padding: const EdgeInsets.only(top: 4), 
+                                   child: Text(
+                                     event.note!, 
+                                     style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12), 
+                                     maxLines: 1,
+                                     overflow: TextOverflow.ellipsis,
+                                   ),
+                                 ),
+                               ),
                              const SizedBox(height: 8),
-                             if (options.showFooter)
+                             if (options.showDate)
+                               Text(DateFormat('yyyy.MM.dd').format(event.targetDate), style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: isVeryTight ? 11 : 13)),
+                             if (options.showFooter && !isVeryTight) ...[
+                               const SizedBox(height: 4),
                                buildBrandFooter(Colors.white),
+                             ],
                            ],
                          ),
                        ),
                      ],
                    )
                  : Column(
-                     mainAxisAlignment: MainAxisAlignment.center,
+                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                      children: [
-                       Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.2)), child: const Center(child: Text('🎉', style: TextStyle(fontSize: 36)))),
-                       const SizedBox(height: 24),
+                       Container(
+                         width: 60, height: 60, 
+                         decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.2)), 
+                         child: const Center(child: Text('🎉', style: TextStyle(fontSize: 28))),
+                       ),
                        if (options.showTitle)
-                         Text(event.title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white), textAlign: TextAlign.center, maxLines: 2),
-                       if (options.showNote) buildNote(Colors.white),
-                       const SizedBox(height: 32),
-                       if (options.showDays)
-                         Container(
-                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                           decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
-                           child: Row(
-                             mainAxisSize: MainAxisSize.min,
-                             children: [
-                               Text('${event.daysRemaining.abs()}', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.white)),
-                               const Text(' 天', style: TextStyle(fontSize: 18, color: Colors.white70)),
-                             ],
+                         Flexible(
+                           child: Padding(
+                             padding: const EdgeInsets.symmetric(horizontal: 8),
+                             child: Text(
+                               event.title, 
+                               style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold, color: Colors.white), 
+                               textAlign: TextAlign.center, 
+                               maxLines: 2,
+                               overflow: TextOverflow.ellipsis,
+                             ),
                            ),
                          ),
-                       const Spacer(),
-                       if (options.showDate)
-                         Text(DateFormat('yyyy年MM月dd日').format(event.targetDate), style: TextStyle(color: Colors.white.withOpacity(0.8))),
-                       const SizedBox(height: 8),
-                       if (options.showFooter) buildBrandFooter(Colors.white),
+                       if (options.showNote) 
+                         Flexible(child: buildNote(Colors.white, maxHeight: 50)),
+                       if (options.showDays)
+                         Container(
+                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
+                           child: FittedBox(
+                             fit: BoxFit.scaleDown,
+                             child: Row(
+                               mainAxisSize: MainAxisSize.min,
+                               children: [
+                                 Text('${event.daysRemaining.abs()}', style: const TextStyle(fontSize: 42, fontWeight: FontWeight.bold, color: Colors.white)),
+                                 const Text(' 天', style: TextStyle(fontSize: 16, color: Colors.white70)),
+                               ],
+                             ),
+                           ),
+                         ),
+                       Column(
+                         mainAxisSize: MainAxisSize.min,
+                         children: [
+                           if (options.showDate)
+                             Text(DateFormat('yyyy.MM.dd').format(event.targetDate), style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+                           if (options.showFooter) ...[
+                             const SizedBox(height: 4),
+                             buildBrandFooter(Colors.white),
+                           ],
+                         ],
+                       ),
                      ],
                    ),
              );
@@ -596,87 +751,168 @@ class _FestiveTemplate extends _BaseTemplate {
 
 /// 5. 海报模板 - 响应式重构
 class _PosterTemplate extends _BaseTemplate {
-  const _PosterTemplate({required super.event, required super.template, required super.options, super.categoryColor});
+  const _PosterTemplate({required super.event, required super.template, required super.options, super.categoryColor, super.hasCustomBackground});
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isDark ? const Color(0xFF0D0D0D) : Colors.white;
+    final bgColor = hasCustomBackground ? Colors.transparent : (isDark ? const Color(0xFF0D0D0D) : Colors.white);
     final textColor = isDark ? Colors.white : Colors.black87;
 
     return Container(
       color: bgColor,
-      child: Column(
-        children: [
-          Container(
-            height: 100,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [accentColor, accentColor.withOpacity(0.7)]),
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isLandscape = constraints.maxWidth > constraints.maxHeight;
-                  return isLandscape
-                    ? Row(
-                        children: [
-                          if (options.showDays)
-                            Expanded(
-                              flex: 1,
-                              child: Container(
-                                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: accentColor, width: 4)),
-                                child: Center(
-                                  child: FittedBox(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(20),
-                                      child: Column(children: [Text('${event.daysRemaining.abs()}', style: TextStyle(fontSize: 60, fontWeight: FontWeight.bold, color: accentColor)), Text('天', style: TextStyle(fontSize: 20, color: textColor.withOpacity(0.6)))]),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isVeryTight = constraints.maxHeight < 220;
+          final headerHeight = isVeryTight ? 40.0 : 80.0;
+          final padding = isVeryTight ? 16.0 : 24.0;
+          
+          return Column(
+            children: [
+              // 顶部渐变条
+              Container(
+                height: headerHeight,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [accentColor, accentColor.withValues(alpha: 0.7)]),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(padding),
+                  child: LayoutBuilder(
+                    builder: (context, innerConstraints) {
+                      final isLandscape = innerConstraints.maxWidth > innerConstraints.maxHeight;
+                      final titleFontSize = _adaptiveFontSize(event.title, isLandscape ? 24 : 22, threshold: 10);
+                      final circleSize = isVeryTight ? 60.0 : (isLandscape ? 80.0 : 100.0);
+                      final daysFontSize = isVeryTight ? 28.0 : (isLandscape ? 40.0 : 36.0);
+                      
+                      return isLandscape
+                        ? Row(
+                            children: [
+                              if (options.showDays)
+                                Flexible(
+                                  child: Container(
+                                    width: circleSize,
+                                    height: circleSize,
+                                    decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: accentColor, width: 3)),
+                                    child: Center(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(8),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text('${event.daysRemaining.abs()}', style: TextStyle(fontSize: daysFontSize, fontWeight: FontWeight.bold, color: accentColor, height: 1)),
+                                              Text('天', style: TextStyle(fontSize: isVeryTight ? 12 : 14, color: textColor.withValues(alpha: 0.6))),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
+                              SizedBox(width: padding),
+                              Expanded(
+                                flex: 2,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (options.showTitle)
+                                      Flexible(
+                                        child: Text(
+                                          event.title, 
+                                          style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold, color: textColor), 
+                                          maxLines: isVeryTight ? 1 : 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    if (options.showNote && !isVeryTight)
+                                      Flexible(child: buildNote(textColor, maxHeight: 40)),
+                                    const SizedBox(height: 8),
+                                    if (options.showDate)
+                                      Container(
+                                        padding: EdgeInsets.symmetric(horizontal: padding * 0.6, vertical: padding * 0.4), 
+                                        decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), 
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min, 
+                                          children: [
+                                            Icon(Icons.calendar_today, size: isVeryTight ? 12 : 14, color: accentColor), 
+                                            const SizedBox(width: 4), 
+                                            Text(DateFormat('yyyy.MM.dd').format(event.targetDate), style: TextStyle(fontSize: isVeryTight ? 11 : 13, color: accentColor, fontWeight: FontWeight.w500)),
+                                          ],
+                                        ),
+                                      ),
+                                    if (options.showFooter && !isVeryTight) ...[const SizedBox(height: 8), buildBrandFooter(textColor)],
+                                  ],
+                                ),
                               ),
-                            ),
-                          const SizedBox(width: 32),
-                          Expanded(
-                            flex: 2,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (options.showTitle)
-                                  Text(event.title, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: textColor), maxLines: 2),
-                                if (options.showNote)
-                                  buildNote(textColor),
-                                const Spacer(),
-                                if (options.showDate)
-                                  Container(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), decoration: BoxDecoration(color: accentColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.calendar_today, size: 18, color: accentColor), const SizedBox(width: 8), Text(DateFormat('yyyy年MM月dd日').format(event.targetDate), style: TextStyle(fontSize: 16, color: accentColor, fontWeight: FontWeight.w500))])),
-                                if (options.showFooter) ...[const SizedBox(height: 16), buildBrandFooter(textColor)],
-                              ],
-                            ),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        children: [
-                          if (options.showDays)
-                            Container(width: 140, height: 140, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: accentColor, width: 4)), child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text('${event.daysRemaining.abs()}', style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: accentColor, height: 1)), Text('天', style: TextStyle(fontSize: 16, color: textColor.withOpacity(0.6))) ]))),
-                          const SizedBox(height: 32),
-                          if (options.showTitle)
-                            Text(event.title, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: textColor), textAlign: TextAlign.center, maxLines: 3),
-                          if (options.showNote) buildNote(textColor),
-                          const Spacer(),
-                          if (options.showDate)
-                            Container(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), decoration: BoxDecoration(color: accentColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.calendar_today, size: 18, color: accentColor), const SizedBox(width: 8), Text(DateFormat('yyyy年MM月dd日').format(event.targetDate), style: TextStyle(fontSize: 16, color: accentColor, fontWeight: FontWeight.w500))])),
-                          const SizedBox(height: 24),
-                          if (options.showFooter) buildBrandFooter(textColor),
-                        ],
-                      );
-                },
+                            ],
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              if (options.showDays)
+                                Container(
+                                  width: circleSize, 
+                                  height: circleSize, 
+                                  decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: accentColor, width: 3)), 
+                                  child: Center(
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center, 
+                                        children: [
+                                          Text('${event.daysRemaining.abs()}', style: TextStyle(fontSize: daysFontSize, fontWeight: FontWeight.bold, color: accentColor, height: 1)), 
+                                          Text('天', style: TextStyle(fontSize: 14, color: textColor.withValues(alpha: 0.6))),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              if (options.showTitle)
+                                Flexible(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    child: Text(
+                                      event.title, 
+                                      style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold, color: textColor), 
+                                      textAlign: TextAlign.center, 
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              if (options.showNote) 
+                                Flexible(child: buildNote(textColor, maxHeight: 40)),
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (options.showDate)
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding * 0.5), 
+                                      decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)), 
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min, 
+                                        children: [
+                                          Icon(Icons.calendar_today, size: 14, color: accentColor), 
+                                          const SizedBox(width: 6), 
+                                          Text(DateFormat('yyyy.MM.dd').format(event.targetDate), style: TextStyle(fontSize: 13, color: accentColor, fontWeight: FontWeight.w500)),
+                                        ],
+                                      ),
+                                    ),
+                                  if (options.showFooter) ...[const SizedBox(height: 8), buildBrandFooter(textColor)],
+                                ],
+                              ),
+                            ],
+                          );
+                    },
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }

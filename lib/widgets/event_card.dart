@@ -4,10 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/countdown_event.dart';
-import '../models/category_model.dart';
 import '../providers/events_provider.dart';
 import '../providers/settings_provider.dart';
-import '../theme/app_theme.dart';
 
 /// 事件卡片组件
 class EventCard extends StatefulWidget {
@@ -91,33 +89,53 @@ class _EventCardState extends State<EventCard>
         onTapCancel: _handleTapCancel,
         onTap: widget.onTap,
         onLongPress: widget.onLongPress,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: categoryColor.withAlpha(30),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+        child: Hero(
+          tag: 'event_card_${event.id}',
+          flightShuttleBuilder: (
+            BuildContext flightContext,
+            Animation<double> animation,
+            HeroFlightDirection flightDirection,
+            BuildContext fromHeroContext,
+            BuildContext toHeroContext,
+          ) {
+            return Material(
+              color: Colors.transparent,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: categoryColor.withAlpha(180),
+                ),
               ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Stack(
-              children: [
-                // 背景
-                _buildBackground(categoryColor, settings),
-                // 背景进度条（可选）
-                if (settings.progressStyle == 'background' && !event.isCountUp)
-                  _buildBackgroundProgress(settings, categoryColor),
-                // 内容
-                widget.compact
-                    ? _buildCompactContent(theme, categoryColor, category)
-                    : _buildContent(theme, categoryColor, category),
-                // 置顶标记
-                if (event.isPinned) _buildPinnedBadge(categoryColor),
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: categoryColor.withAlpha(30),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
               ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Stack(
+                children: [
+                  // 背景
+                  _buildBackground(categoryColor, settings),
+                  // 背景进度条（可选）
+                  if (settings.progressStyle == 'background' && !event.isCountUp)
+                    _buildBackgroundProgress(settings, categoryColor),
+                  // 内容
+                  widget.compact
+                      ? _buildCompactContent(theme, categoryColor, category)
+                      : _buildContent(theme, categoryColor, category),
+                  // 置顶标记
+                  if (event.isPinned) _buildPinnedBadge(categoryColor),
+                ],
+              ),
             ),
           ),
         ),

@@ -1,14 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:io' as java;
-import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
+
 import 'package:provider/provider.dart';
 import '../models/countdown_event.dart';
 import '../models/share_template_model.dart';
 import '../services/share_card_service.dart';
 import '../services/share_link_service.dart';
 import '../providers/events_provider.dart';
-import '../theme/app_theme.dart';
 import 'share_card_templates.dart';
 
 /// 分享卡片对话框
@@ -36,7 +37,11 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
   bool _showDate = true;
   bool _showNote = true;
   bool _showFooter = true;
-  bool _showDays = true;  // 默认显示核心天数，一般不建议隐藏，但提供选项
+  final bool _showDays = true;  // 默认显示核心天数，一般不建议隐藏，但提供选项
+  
+  // 自定义背景图片
+  String? _customBackgroundPath;
+  bool _isPickingImage = false;
 
   List<ShareTemplate> get _templates => ShareTemplate.presets;
 
@@ -64,6 +69,10 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
 
             // 尺寸选择器
             _buildRatioSelector(),
+            const SizedBox(height: 16),
+            
+            // 自定义背景按钮
+            _buildBackgroundSelector(),
             const SizedBox(height: 16),
             
             // 内容选项开关
@@ -113,7 +122,7 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -121,17 +130,36 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: ShareCardTemplates.buildCard(
-            event: widget.event,
-            template: effectiveTemplate,
-            options: ShareContentOptions(
-              showTitle: _showTitle,
-              showDays: _showDays,
-              showDate: _showDate,
-              showNote: _showNote,
-              showFooter: _showFooter,
-            ),
-            categoryColor: categoryColor,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 自定义背景图片层
+              if (_customBackgroundPath != null)
+                Image.file(
+                  File(_customBackgroundPath!),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox(),
+                ),
+              // 如果有自定义背景，添加半透明遮罩
+              if (_customBackgroundPath != null)
+                Container(
+                  color: Colors.black.withValues(alpha: 0.3),
+                ),
+              // 模板内容
+              ShareCardTemplates.buildCard(
+                event: widget.event,
+                template: effectiveTemplate,
+                options: ShareContentOptions(
+                  showTitle: _showTitle,
+                  showDays: _showDays,
+                  showDate: _showDate,
+                  showNote: _showNote,
+                  showFooter: _showFooter,
+                ),
+                categoryColor: categoryColor,
+                hasCustomBackground: _customBackgroundPath != null,
+              ),
+            ],
           ),
         ),
       ),
@@ -180,6 +208,121 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
         },
       ),
     );
+  }
+
+  Widget _buildBackgroundSelector() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // 选择/更换背景按钮
+        OutlinedButton.icon(
+          onPressed: _isPickingImage ? null : _pickAndCropImage,
+          icon: _isPickingImage 
+              ? const SizedBox(
+                  width: 16, 
+                  height: 16, 
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.image, size: 18),
+          label: Text(_customBackgroundPath != null ? '更换背景' : '自定义背景'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: _customBackgroundPath != null 
+                ? Theme.of(context).colorScheme.primary 
+                : Colors.white70,
+            side: BorderSide(
+              color: _customBackgroundPath != null 
+                  ? Theme.of(context).colorScheme.primary 
+                  : Colors.white38,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          ),
+        ),
+        // 清除背景按钮
+        if (_customBackgroundPath != null) ...[
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: () {
+              setState(() => _customBackgroundPath = null);
+            },
+            icon: const Icon(Icons.close, size: 20),
+            style: IconButton.styleFrom(
+              foregroundColor: Colors.white70,
+            ),
+            tooltip: '移除背景',
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _pickAndCropImage() async {
+    // 保存主题色（避免异步上下文问题）
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    
+    setState(() => _isPickingImage = true);
+    
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+      
+      if (pickedFile == null) {
+        setState(() => _isPickingImage = false);
+        return;
+      }
+      
+      // 根据当前选择的比例计算裁剪比例
+      CropAspectRatio cropRatio;
+      switch (_selectedRatio) {
+        case ShareTemplateAspectRatio.square:
+          cropRatio = const CropAspectRatio(ratioX: 1, ratioY: 1);
+          break;
+        case ShareTemplateAspectRatio.portrait:
+          cropRatio = const CropAspectRatio(ratioX: 3, ratioY: 4);
+          break;
+        case ShareTemplateAspectRatio.landscape:
+          cropRatio = const CropAspectRatio(ratioX: 16, ratioY: 9);
+          break;
+      }
+      
+      // 调用裁剪器
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+        aspectRatio: cropRatio,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: '裁剪背景图片',
+            toolbarColor: primaryColor,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: true,
+            hideBottomControls: false,
+            activeControlsWidgetColor: primaryColor,
+          ),
+          IOSUiSettings(
+            title: '裁剪背景图片',
+            aspectRatioLockEnabled: true,
+            resetAspectRatioEnabled: false,
+            aspectRatioPickerButtonHidden: true,
+          ),
+        ],
+      );
+      
+      if (croppedFile != null && mounted) {
+        setState(() {
+          _customBackgroundPath = croppedFile.path;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('选择图片失败: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPickingImage = false);
+      }
+    }
   }
 
   Widget _buildContentOptions(ThemeData theme) {
@@ -245,14 +388,29 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
           child: GestureDetector(
             onTap: () {
               HapticFeedback.selectionClick();
-              setState(() => _selectedRatio = ratio);
+              setState(() {
+                _selectedRatio = ratio;
+                // 如果已有背景图，提示用户需要重新裁剪
+                if (_customBackgroundPath != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('比例已变更，建议重新选择背景图片以适配新尺寸'),
+                      action: SnackBarAction(
+                        label: '选择图片',
+                        onPressed: _pickAndCropImage,
+                      ),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+              });
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: isSelected
                     ? Theme.of(context).colorScheme.primaryContainer
-                    : Colors.white.withOpacity(0.8),
+                    : Colors.white.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isSelected

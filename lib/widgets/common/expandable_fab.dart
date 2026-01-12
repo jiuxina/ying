@@ -139,7 +139,7 @@ class _ExpandableFabState extends State<ExpandableFab>
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -155,13 +155,17 @@ class _ExpandableFabState extends State<ExpandableFab>
                 ),
               const SizedBox(width: 8),
               // 按钮
-              _ExpandableFabButton(
-                icon: item.icon,
-                color: item.color ?? Theme.of(context).colorScheme.secondary,
-                onPressed: () {
-                  _close();
-                  item.onPressed?.call();
-                },
+              Semantics(
+                label: item.label ?? '菜单项',
+                button: true,
+                child: _ExpandableFabButton(
+                  icon: item.icon,
+                  color: item.color ?? Theme.of(context).colorScheme.secondary,
+                  onPressed: () {
+                    _close();
+                    item.onPressed?.call();
+                  },
+                ),
               ),
             ],
           ),
@@ -184,31 +188,35 @@ class _ExpandableFabState extends State<ExpandableFab>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: _toggle,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: AnimatedBuilder(
-              animation: _expandAnimation,
-              builder: (context, child) {
-                return Transform.rotate(
-                  angle: _expandAnimation.value.clamp(0.0, 1.0) * math.pi / 4,
-                  child: Icon(
-                    _isOpen ? widget.closeIcon : widget.mainIcon,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                );
-              },
+      child: Semantics(
+        label: _isOpen ? '关闭菜单' : '打开菜单',
+        button: true,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: _toggle,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: AnimatedBuilder(
+                animation: _expandAnimation,
+                builder: (context, child) {
+                  return Transform.rotate(
+                    angle: _expandAnimation.value.clamp(0.0, 1.0) * math.pi / 4,
+                    child: Icon(
+                      _isOpen ? widget.closeIcon : widget.mainIcon,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -236,7 +244,7 @@ class _ExpandableFabButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

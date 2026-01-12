@@ -47,6 +47,8 @@ class MockDatabaseService implements DatabaseService {
   @override Future<void> deleteReminder(String id) async {}
   @override Future<void> deleteEventReminders(String eventId) async {}
 
+  @override Future<Map<String, List<Map<String, dynamic>>>> getAllRemindersGrouped() async => {};
+
   // Backup
   @override Future<Map<String, dynamic>> exportAllData() async => {};
   @override Future<void> importAllData(Map<String, dynamic> data) async {}
@@ -146,7 +148,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byType(EventCard));
+    await tester.tap(find.byType(EventCard), warnIfMissed: false);
     await tester.pumpAndSettle(); 
     
     expect(tapped, true);

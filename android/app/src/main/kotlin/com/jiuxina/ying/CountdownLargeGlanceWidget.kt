@@ -70,7 +70,7 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
                     -1
                 }
                 
-                val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                val prefs = context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)
 
                 // 1. 读取主事件 (ID-Based)
                 val titleKey = "title_$widgetId"
@@ -87,7 +87,12 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
                         modifier = GlanceModifier
                             .fillMaxSize()
                             .background(ColorProvider(Color(0xFF1E1E1E)))
-                            .clickable(actionStartActivity(Intent(context, MainActivity::class.java)))
+                            .clickable(actionStartActivity(
+                                Intent(context, MainActivity::class.java).apply {
+                                    action = AppWidgetManager.ACTION_APPWIDGET_CONFIGURE
+                                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+                                }
+                            ))
                             .padding(16.dp),
                         contentAlignment = Alignment.Center
                     ) {

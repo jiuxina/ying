@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../providers/settings_provider.dart';
-import '../../theme/app_theme.dart';
 import '../../widgets/common/app_background.dart';
 import '../../widgets/common/ui_helpers.dart';
 import '../../widgets/settings/appearance_card.dart';

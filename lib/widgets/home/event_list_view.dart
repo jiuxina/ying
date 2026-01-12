@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/countdown_event.dart';
-import '../../models/event_category.dart';
 import '../../providers/events_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../screens/add_edit_event_screen.dart';
 import '../../screens/event_detail_screen.dart';
 import '../../utils/constants.dart';
+import '../animations/staggered_animation.dart';
 import '../category_selector.dart';
 import '../common/ui_helpers.dart';
 import '../event_card.dart';
@@ -47,7 +47,12 @@ class EventListView extends StatelessWidget {
         if (pinnedEvents.isNotEmpty) ...[
           const SectionHeader(title: '置顶', icon: Icons.push_pin),
           const SizedBox(height: 12),
-          ...pinnedEvents.map((e) => _buildEventCard(context, e)),
+          ...pinnedEvents.asMap().entries.map((entry) => 
+            StaggeredListItem(
+              index: entry.key,
+              child: _buildEventCard(context, entry.value),
+            ),
+          ),
           const SizedBox(height: 24),
         ],
 
@@ -65,11 +70,19 @@ class EventListView extends StatelessWidget {
   }
 
   Widget _buildStandardList(BuildContext context) {
+    // 计算动画起始偏移（置顶事件数量）
+    final animationOffset = pinnedEvents.length;
+    
     return Column(
       children: [
         _EventListHeader(title: '全部事件', icon: Icons.event, isCustomSort: false),
         const SizedBox(height: 12),
-        ...unpinnedEvents.map((e) => _buildEventCard(context, e)),
+        ...unpinnedEvents.asMap().entries.map((entry) => 
+          StaggeredListItem(
+            index: entry.key + animationOffset,
+            child: _buildEventCard(context, entry.value),
+          ),
+        ),
       ],
     );
   }
@@ -275,7 +288,7 @@ class _EventListHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -302,10 +315,10 @@ class _EventListHeader extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Theme.of(context).dividerColor.withOpacity(0.5),
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
               ),
             ),
             child: Row(
@@ -336,10 +349,10 @@ class _EventListHeader extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Theme.of(context).dividerColor.withOpacity(0.5),
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
               ),
             ),
             child: Row(

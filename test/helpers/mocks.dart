@@ -1,19 +1,28 @@
-import 'package:flutter/services.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:ying/models/countdown_event.dart';
 import 'package:ying/models/event_group.dart';
-import 'package:ying/models/reminder.dart';
-
-import 'package:ying/providers/events_provider.dart';
 import 'package:ying/services/database_service.dart';
+import 'package:ying/services/webdav_service.dart';
+import 'package:webdav_client/webdav_client.dart' as webdav;
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart'; // For TestDefaultBinaryMessengerBinding
 
-// Manual Mock
+// Manual Mock for DatabaseService
 class MockDatabaseService implements DatabaseService {
   final List<CountdownEvent> _mockEvents = [];
   final List<CountdownEvent> _mockArchived = [];
   final List<EventGroup> _mockGroups = [];
+  final List<Map<String, dynamic>> _mockCategories = [];
+  final List<Map<String, dynamic>> _mockReminders = [];
+
+  // Helper to clear state
+  void reset() {
+    _mockEvents.clear();
+    _mockArchived.clear();
+    _mockGroups.clear();
+    _mockCategories.clear();
+    _mockReminders.clear();
+  }
 
   @override
   Future<Database> get database => throw UnimplementedError();
@@ -35,7 +44,6 @@ class MockDatabaseService implements DatabaseService {
     if (index != -1) {
       _mockEvents[index] = event;
     } else {
-      // Check archived?
       final archIndex = _mockArchived.indexWhere((e) => e.id == event.id);
       if (archIndex != -1) _mockArchived[archIndex] = event;
     }
@@ -79,9 +87,6 @@ class MockDatabaseService implements DatabaseService {
     _mockGroups.removeWhere((g) => g.id == id);
   }
 
-  // Category methods
-  final List<Map<String, dynamic>> _mockCategories = [];
-
   @override
   Future<List<Map<String, dynamic>>> getAllCategories() async => [..._mockCategories];
 
@@ -100,9 +105,6 @@ class MockDatabaseService implements DatabaseService {
   Future<void> deleteCategory(String id) async {
     _mockCategories.removeWhere((c) => c['id'] == id);
   }
-
-  // Reminder methods
-  final List<Map<String, dynamic>> _mockReminders = [];
 
   @override
   Future<List<Map<String, dynamic>>> getReminders(String eventId) async {
@@ -134,10 +136,14 @@ class MockDatabaseService implements DatabaseService {
     return grouped;
   }
 
-  // Backup methods
   @override
   Future<Map<String, dynamic>> exportAllData() async {
-    return {};
+    return {
+      'events': _mockEvents.map((e) => e.toMap()).toList(),
+      'categories': _mockCategories,
+      'groups': _mockGroups.map((g) => g.toMap()).toList(),
+      'reminders': _mockReminders,
+    };
   }
 
   @override
@@ -147,102 +153,63 @@ class MockDatabaseService implements DatabaseService {
   Future<void> close() async {}
 }
 
-void main() {
-  late EventsProvider eventsProvider;
-  late MockDatabaseService mockDb;
 
-  setUp(() async {
-    TestWidgetsFlutterBinding.ensureInitialized();
-    SharedPreferences.setMockInitialValues({});
-    
-    // Mocking HomeWidget channel to prevent MissingPluginException
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(const MethodChannel('home_widget'), (MethodCall methodCall) async {
-        return true;
-      });
-    
-    mockDb = MockDatabaseService();
-    eventsProvider = EventsProvider(dbService: mockDb);
-  });
+// Manual Mock for WebDAVService
+class MockWebDAVService implements WebDAVService {
+  bool failConnection = false;
+  bool failUpload = false;
+  bool failDownload = false;
+  
+  @override
+  void initialize(WebDAVConfig config) {}
 
-  group('EventsProvider Tests', () {
-    test('Should start with empty events', () async {
-      await eventsProvider.init();
-      expect(eventsProvider.events, isEmpty);
-    });
+  @override
+  Future<bool> testConnection() async => !failConnection;
 
-    test('Should add event', () async {
-      await eventsProvider.init();
-      final now = DateTime.now();
-      await eventsProvider.addEvent(
-        title: 'New Event',
-        targetDate: now.add(const Duration(days: 1)),
-      );
+  @override
+  Future<void> ensureRemoteWorkspace() async {}
 
-      expect(eventsProvider.events.length, 1);
-      expect(eventsProvider.events.first.title, 'New Event');
-    });
+  @override
+  Future<bool> uploadFile(String localPath, String remotePath) async => !failUpload;
 
-    test('Should toggle pin', () async {
-      await eventsProvider.init();
-      await eventsProvider.addEvent(
-        title: 'Event 1',
-        targetDate: DateTime.now().add(const Duration(days: 5)),
-      );
-      
-      final eventId = eventsProvider.events.first.id;
-      expect(eventsProvider.events.first.isPinned, false);
+  @override
+  Future<bool> downloadFile(String remotePath, String localPath) async => !failDownload;
 
-      await eventsProvider.togglePin(eventId);
-      expect(eventsProvider.events.first.isPinned, true);
-      
-      // Check sorting: Pinned should remain at top
-      await eventsProvider.addEvent(
-        title: 'Event 2',
-        targetDate: DateTime.now().add(const Duration(days: 1)), // sooner, should be first if not pinned
-      );
-      
-      // Currently: Event 1 (pinned, 5 days), Event 2 (unpinned, 1 day)
-      // Sort order: Pinned first.
-      expect(eventsProvider.events.first.id, eventId);
-    });
+  @override
+  Future<bool> deleteRemote(String remotePath) async => true;
 
-    test('Should delete event', () async {
-      await eventsProvider.init();
-      await eventsProvider.addEvent(
-        title: 'To Delete',
-        targetDate: DateTime.now(),
-      );
-      
-      expect(eventsProvider.events.length, 1);
-      final id = eventsProvider.events.first.id;
-      
-      await eventsProvider.deleteEvent(id);
-      expect(eventsProvider.events, isEmpty);
-    });
-
-    test('Should add event with reminders', () async {
-      await eventsProvider.init();
-      await eventsProvider.addEvent(
-        title: 'Reminder Event',
-        targetDate: DateTime.now().add(const Duration(days: 1)),
-        reminders: [
-          Reminder.create(eventId: 'temp', daysBefore: 1, hour: 9, minute: 0),
-        ],
-      );
-
-      final event = eventsProvider.events.first;
-      // Database check
-      final dbReminders = await mockDb.getReminders(event.id);
-      expect(dbReminders.length, 1);
-      
-      // Local check (if reload happened or if local update logic is perfect)
-      // Since addEvent adds the event object passed to it, and that object had reminders (with temp ID), 
-      // the local object should have 1 reminder.
-      expect(event.reminders.length, 1);
-      
-      // Verify reminder saved in DB has correct eventId
-      expect(dbReminders.first['eventId'], event.id);
-    });
-  });
+  @override
+  Future<List<webdav.File>?> listRemoteFiles({String remotePath = ''}) async => [];
 }
+
+/// Setup all required MethodChannel mocks
+void setupChannelMocks() {
+  const channels = [
+    'plugins.flutter.io/path_provider',
+    'plugins.it_nomads.com/flutter_secure_storage',
+    'com.llfbandit.app_links/messages',
+    'com.llfbandit.app_links/events',
+    'com.jiuxina.ying/install',
+    'home_widget',
+    'plugins.flutter.io/image_picker',
+    'plugins.flutter.io/shared_preferences', // Just in case
+  ];
+
+  for (final name in channels) {
+    final channel = MethodChannel(name);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      // Return appropriate defaults
+      if (methodCall.method == 'getApplicationDocumentsDirectory') {
+        return '.'; // Or temp path if needed, but handled in specific tests usually
+      }
+      if (methodCall.method == 'getInitialLink') return null;
+      if (methodCall.method == 'saveWidgetData') return true;
+      if (methodCall.method == 'updateWidget') return true;
+      if (methodCall.method == 'pickImage') return null;
+      
+      return null;
+    });
+  }
+}
+

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../theme/app_theme.dart';
+// import '../theme/app_theme.dart';
 import '../utils/constants.dart';
 import '../widgets/common/app_background.dart';
 import '../widgets/common/ui_helpers.dart';
@@ -237,7 +237,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -272,7 +272,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Icon(
               Icons.chevron_right,
               size: 20,
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
             ),
           ],
         ),

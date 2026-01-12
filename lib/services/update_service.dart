@@ -48,7 +48,7 @@ class UpdateInfo {
 /// 更新检查服务
 class UpdateService {
   /// GitHub API 地址
-  static const String _apiUrl = 'https://api.github.com/repos/jiuxina/ying/releases/latest';
+  static const String _apiUrl = AppConstants.githubApiUrl;
   
   /// 检查更新
   /// 
@@ -157,7 +157,7 @@ class UpdateService {
     AppInstaller? installer,
   }) async {
     // 优先使用镜像加速
-    final proxyUrl = 'https://gh-proxy.org/$url';
+    final proxyUrl = '${AppConstants.proxyUrl}/$url';
     
     // 尝试下载 (优先镜像，失败回退)
     File? apkFile;

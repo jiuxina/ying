@@ -8,7 +8,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:icalendar_parser/icalendar_parser.dart';
 import '../models/countdown_event.dart';
-import '../models/event_category.dart';
+// import '../models/event_category.dart';
 import 'package:uuid/uuid.dart';
 
 class ICalService {

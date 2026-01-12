@@ -279,5 +279,12 @@ class AppConstants {
     'yyyy/MM/dd',
     'MM月dd日',
   ];
+  // ==================== 更新服务 ====================
+  
+  /// GitHub Releases API
+  static const String githubApiUrl = 'https://api.github.com/repos/jiuxina/ying/releases/latest';
+  
+  /// GitHub 代理地址
+  static const String proxyUrl = 'https://gh-proxy.org';
 }
 

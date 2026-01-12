@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:confetti/confetti.dart';
 import '../models/countdown_event.dart';
 import '../providers/events_provider.dart';
-import '../theme/app_theme.dart';
+import '../widgets/animations/counting_animation.dart';
 import '../widgets/common/app_background.dart';
 import '../widgets/common/ui_helpers.dart';
 
@@ -102,7 +102,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     context.watch<EventsProvider>();
     _refreshEvent();
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // final isDark = Theme.of(context).brightness == Brightness.dark;
     
     // 获取分类
     final provider = context.watch<EventsProvider>();
@@ -212,7 +212,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     
     // Calculate precise time difference
     final diff = _event.targetDate.difference(_now);
-    final isPast = diff.isNegative;
     final absDiff = diff.abs();
     final hours = absDiff.inHours % 24;
     final minutes = absDiff.inMinutes % 60;
@@ -227,13 +226,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           end: Alignment.bottomRight,
           colors: [
             categoryColor,
-            categoryColor.withOpacity(0.7),
+            categoryColor.withValues(alpha: 0.7),
           ],
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: categoryColor.withOpacity(0.3),
+            color: categoryColor.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -257,7 +256,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -292,7 +291,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               Text(
                 isCountUp ? '已经' : (days >= 0 ? '还有' : '已过'),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 16,
                 ),
               ),
@@ -308,19 +307,20 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   ),
                 ),
               ] else ...[
-                 Text(
-                  '$days',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 72,
-                    fontWeight: FontWeight.bold,
-                    height: 1,
-                  ),
-                ),
+                 AnimatedNumber(
+                   value: days,
+                   style: const TextStyle(
+                     color: Colors.white,
+                     fontSize: 72,
+                     fontWeight: FontWeight.bold,
+                     height: 1,
+                   ),
+                   duration: const Duration(milliseconds: 800),
+                 ),
                 Text(
                   '天',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 20,
                   ),
                 ),
@@ -330,7 +330,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -350,16 +350,16 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: _event.progressPercentage,
-                    backgroundColor: Colors.white.withOpacity(0.3),
+                    backgroundColor: Colors.white.withValues(alpha: 0.3),
                     valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                     minHeight: 8,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${(_event.progressPercentage * 100).toInt()}% 已过',
+                  '${(_event.progressPercentage * 100).toInt()}% 剩余',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 14,
                   ),
                 ),
@@ -487,9 +487,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withOpacity(0.3)),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
           child: Column(
             children: [

@@ -302,7 +302,7 @@ class _AppearanceCardState extends State<AppearanceCard> {
                   spacing: 12,
                   runSpacing: 12,
                   children: AppConstants.themeColors.map((color) {
-                    final isSelected = settings.themeColor.value == color.value;
+                    final isSelected = settings.themeColor.toARGB32() == color.toARGB32();
                     return GestureDetector(
                       onTap: () {
                         HapticFeedback.selectionClick();
@@ -324,7 +324,7 @@ class _AppearanceCardState extends State<AppearanceCard> {
                             width: 3,
                           ),
                           boxShadow: isSelected
-                              ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 12)]
+                              ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 12)]
                               : null,
                         ),
                         child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
@@ -366,7 +366,7 @@ class _AppearanceCardState extends State<AppearanceCard> {
                     ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                     : null,
                 onTap: () {
-                  settings.setFontFamily(font['name'] as String?);
+                  settings.setFontFamily(font['name']);
                   Navigator.pop(context);
                 },
               )),

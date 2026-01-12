@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/countdown_event.dart';
-import '../models/event_category.dart';
+// import '../models/event_category.dart';
 import '../models/event_group.dart';
 import '../models/category_model.dart';
 import '../models/reminder.dart';
@@ -89,20 +89,20 @@ class EventsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadEvents() async { // Added
+  Future<void> _loadEvents() async {
     _events = await _dbService.getActiveEvents();
     
-    // Load reminders for active events
+    // 批量加载 Reminders（解决 N+1 查询问题）
+    final allReminders = await _dbService.getAllRemindersGrouped();
     for (var i = 0; i < _events.length; i++) {
-        final remindersData = await _dbService.getReminders(_events[i].id);
-        final reminders = remindersData.map((m) => Reminder.fromMap(m)).toList();
-        _events[i] = _events[i].copyWith(reminders: reminders);
+      final eventReminders = allReminders[_events[i].id] ?? [];
+      final reminders = eventReminders.map((m) => Reminder.fromMap(m)).toList();
+      _events[i] = _events[i].copyWith(reminders: reminders);
     }
 
     _archivedEvents = await _dbService.getArchivedEvents();
-    // Optionally load reminders for archived events if needed, usually less critical
     
-    await _updateWidget(); // Moved from init()
+    await _updateWidget();
   }
 
   Future<void> _loadGroups() async { // Added

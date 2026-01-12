@@ -12,8 +12,8 @@ class WidgetService {
 
   /// Provider名称映射
   static const Map<WidgetType, String> _providerNames = {
-    WidgetType.standard: 'glance.CountdownWidgetReceiver',
-    WidgetType.large: 'CountdownLargeWidgetReceiver', // 保留原有的大组件逻辑，如果需要统一再改
+    WidgetType.standard: 'CountdownWidgetReceiver',
+    WidgetType.large: 'CountdownLargeWidgetReceiver',
   };
 
   /// 更新所有小部件数据
@@ -26,8 +26,7 @@ class WidgetService {
 
     // 触发更新
     await _triggerWidgetUpdate(WidgetType.standard);
-    // TODO: 如果大组件也迁移到了Glance，这里也要触发
-    // await _triggerWidgetUpdate(WidgetType.large);
+    await _triggerWidgetUpdate(WidgetType.large);
   }
 
   /// 更新指定类型的小部件
@@ -78,8 +77,8 @@ class WidgetService {
       await HomeWidget.saveWidgetData<String>('date_str_$widgetId', DateFormat('yyyy-MM-dd').format(event.targetDate));
       
       await HomeWidget.updateWidget(
-        androidName: 'glance.CountdownWidgetReceiver',
-        qualifiedAndroidName: '$_packageName.glance.CountdownWidgetReceiver',
+        androidName: 'CountdownWidgetReceiver',
+        qualifiedAndroidName: '$_packageName.CountdownWidgetReceiver',
       );
       // Trigger Large Widget update as well
       await HomeWidget.updateWidget(
@@ -95,8 +94,8 @@ class WidgetService {
      await HomeWidget.saveWidgetData<String>('date_str', DateFormat('yyyy-MM-dd').format(targetDate));
      
      await HomeWidget.updateWidget(
-        androidName: 'glance.CountdownWidgetReceiver',
-        qualifiedAndroidName: '$_packageName.glance.CountdownWidgetReceiver',
+        androidName: 'CountdownWidgetReceiver',
+        qualifiedAndroidName: '$_packageName.CountdownWidgetReceiver',
       );
   }
 

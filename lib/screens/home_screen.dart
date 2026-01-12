@@ -3,13 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:app_links/app_links.dart';
-import 'package:home_widget/home_widget.dart';
 
 import '../models/countdown_event.dart';
-import '../models/event_category.dart';
 import '../providers/events_provider.dart';
 import '../providers/settings_provider.dart';
-import '../utils/constants.dart';
 import '../widgets/common/app_background.dart';
 import '../widgets/common/empty_state.dart';
 import '../widgets/common/expandable_fab.dart';
@@ -261,13 +258,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     if (events.isEmpty) {
       if (_isSearching || _selectedCategoryId != null) {
-        return const EmptyState(
-          icon: Icons.search_off,
-          title: '未找到相关事件',
-          description: '尝试其他搜索词或清除分类筛选',
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: const EmptyState(
+            key: Key('search_empty'),
+            icon: Icons.search_off,
+            title: '未找到相关事件',
+            description: '尝试其他搜索词或清除分类筛选',
+          ),
         );
       }
-      return const EmptyState();
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: const EmptyState(key: Key('default_empty')),
+      );
     }
 
     // 分离置顶和普通事件

@@ -256,11 +256,11 @@ class _WidgetSettingsCardState extends State<WidgetSettingsCard> {
                   spacing: 12,
                   runSpacing: 12,
                   children: AppConstants.themeColors.map((color) {
-                    final isSelected = settings.currentWidgetConfig.backgroundColor == color.value;
+                    final isSelected = settings.currentWidgetConfig.backgroundColor == color.toARGB32();
                     return GestureDetector(
                       onTap: () {
                         HapticFeedback.selectionClick();
-                        final config = settings.currentWidgetConfig.copyWith(backgroundColor: color.value);
+                        final config = settings.currentWidgetConfig.copyWith(backgroundColor: color.toARGB32());
                         settings.updateCurrentWidgetConfig(config);
                         Navigator.pop(context);
                       },
@@ -276,7 +276,7 @@ class _WidgetSettingsCardState extends State<WidgetSettingsCard> {
                             width: 3,
                           ),
                           boxShadow: isSelected
-                              ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 12)]
+                              ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 12)]
                               : null,
                         ),
                         child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
