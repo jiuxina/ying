@@ -36,7 +36,7 @@ class UpdateInfo {
   final String changelog;
   final bool hasUpdate;
   
-  UpdateInfo({
+  const UpdateInfo({
     required this.latestVersion,
     required this.currentVersion,
     required this.downloadUrl,

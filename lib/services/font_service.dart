@@ -157,5 +157,5 @@ class CustomFontInfo {
   final String name;
   final String path;
   
-  CustomFontInfo({required this.name, required this.path});
+  const CustomFontInfo({required this.name, required this.path});
 }
