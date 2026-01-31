@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-// import 'package:home_widget/home_widget.dart';
 import 'package:provider/provider.dart';
 import '../providers/events_provider.dart';
 import '../models/countdown_event.dart';
