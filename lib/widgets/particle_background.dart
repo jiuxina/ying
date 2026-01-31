@@ -251,20 +251,20 @@ class _ParticleBackgroundState extends State<ParticleBackground>
 /// 负责将粒子列表绘制到画布上
 class ParticlePainter extends CustomPainter {
   final List<Particle> particles;
-  
-  /// 缓存 Paint 对象以减少对象创建开销
-  final Paint _paint = Paint()..style = PaintingStyle.fill;
 
   ParticlePainter({required this.particles});
 
   @override
   void paint(Canvas canvas, Size size) {
+    // 在每次绘制时创建 Paint 对象，避免潜在的并发问题
+    final paint = Paint()..style = PaintingStyle.fill;
+    
     for (final particle in particles) {
-      _paint.color = particle.color.withAlpha((particle.opacity * 255).toInt());
+      paint.color = particle.color.withAlpha((particle.opacity * 255).toInt());
       canvas.drawCircle(
         Offset(particle.x, particle.y),
         particle.size,
-        _paint,
+        paint,
       );
     }
   }
