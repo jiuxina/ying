@@ -1,5 +1,6 @@
-// import 'package:flutter/material.dart';
-
+/// 分类模型
+/// 
+/// 用于定义事件的分类，包含图标和颜色
 class Category {
   final String id;
   final String name;
