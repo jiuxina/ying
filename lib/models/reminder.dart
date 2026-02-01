@@ -1,5 +1,8 @@
 import 'package:uuid/uuid.dart';
 
+/// 提醒模型
+/// 
+/// 用于设置倒数日事件的提醒时间
 class Reminder {
   final String id;
   final String eventId;
@@ -7,7 +10,7 @@ class Reminder {
   final int hour; // 24h format
   final int minute;
 
-  Reminder({
+  const Reminder({
     required this.id,
     required this.eventId,
     required this.daysBefore,
@@ -65,4 +68,14 @@ class Reminder {
       minute: minute ?? this.minute,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Reminder &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

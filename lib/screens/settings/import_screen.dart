@@ -8,7 +8,6 @@ import '../../providers/events_provider.dart';
 import '../../services/ical_service.dart';
 import '../../widgets/common/app_background.dart';
 import '../../widgets/common/ui_helpers.dart';
-// import '../../widgets/common/empty_state.dart';
 
 class ImportScreen extends StatefulWidget {
   const ImportScreen({super.key});

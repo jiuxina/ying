@@ -6,10 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-// import '../models/countdown_event.dart';
-// import '../widgets/event_card.dart';
-// import '../theme/app_theme.dart';
-
 /// 分享卡片服务
 class ShareCardService {
   /// 生成分享图片并分享

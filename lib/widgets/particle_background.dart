@@ -102,10 +102,14 @@ class _ParticleBackgroundState extends State<ParticleBackground>
             return Stack(
               children: [
                 widget.child,
+                // 使用 RepaintBoundary 隔离粒子动画的重绘区域，
+                // 避免粒子动画导致整个 Widget 树重绘
                 Positioned.fill(
-                  child: IgnorePointer(
-                    child: CustomPaint(
-                      painter: ParticlePainter(particles: _particles),
+                  child: RepaintBoundary(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: ParticlePainter(particles: _particles),
+                      ),
                     ),
                   ),
                 ),
@@ -243,6 +247,8 @@ class _ParticleBackgroundState extends State<ParticleBackground>
 }
 
 /// 粒子绘制器
+/// 
+/// 负责将粒子列表绘制到画布上
 class ParticlePainter extends CustomPainter {
   final List<Particle> particles;
 
@@ -250,11 +256,11 @@ class ParticlePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (var particle in particles) {
-      final paint = Paint()
-        ..color = particle.color.withAlpha((particle.opacity * 255).toInt())
-        ..style = PaintingStyle.fill;
-
+    // 在每次绘制时创建 Paint 对象，避免潜在的并发问题
+    final paint = Paint()..style = PaintingStyle.fill;
+    
+    for (final particle in particles) {
+      paint.color = particle.color.withAlpha((particle.opacity * 255).toInt());
       canvas.drawCircle(
         Offset(particle.x, particle.y),
         particle.size,
@@ -264,5 +270,8 @@ class ParticlePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant ParticlePainter oldDelegate) => true;
+  bool shouldRepaint(covariant ParticlePainter oldDelegate) {
+    // 粒子动画需要持续重绘
+    return true;
+  }
 }

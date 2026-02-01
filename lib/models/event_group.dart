@@ -1,4 +1,6 @@
 /// 事件分组模型
+/// 
+/// 用于将倒数日事件分组管理
 class EventGroup {
   final String id;
   final String name;
@@ -7,7 +9,7 @@ class EventGroup {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  EventGroup({
+  const EventGroup({
     required this.id,
     required this.name,
     this.color,
@@ -58,4 +60,14 @@ class EventGroup {
       updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] as int),
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EventGroup &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

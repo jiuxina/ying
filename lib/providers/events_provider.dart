@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/countdown_event.dart';
-// import '../models/event_category.dart';
 import '../models/event_group.dart';
 import '../models/category_model.dart';
 import '../models/reminder.dart';
