@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../utils/responsive_utils.dart';
 
 /// Glassmorphism Card Widget
 class GlassCard extends StatelessWidget {
@@ -16,12 +17,13 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = ResponsiveBorderRadius.base(context);
     return Container(
       margin: margin,
       padding: padding,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
           color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
         ),
@@ -34,7 +36,7 @@ class GlassCard extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(borderRadius),
         child: child,
       ),
     );
@@ -58,15 +60,17 @@ class IconBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scaledSize = ResponsiveUtils.scaledSize(context, size);
+    final scaledIconSize = ResponsiveUtils.scaledSize(context, iconSize);
     return Container(
-      width: size,
-      height: size,
+      width: scaledSize,
+      height: scaledSize,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(ResponsiveBorderRadius.sm(context)),
       ),
-      child: Icon(icon, color: color, size: iconSize),
+      child: Icon(icon, color: color, size: scaledIconSize),
     );
   }
 }
@@ -84,9 +88,10 @@ class ColorPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scaledSize = ResponsiveUtils.scaledSize(context, size);
     return Container(
-      width: size,
-      height: size,
+      width: scaledSize,
+      height: scaledSize,
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
@@ -119,17 +124,28 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4),
+      padding: EdgeInsets.only(
+        bottom: ResponsiveSpacing.md(context),
+        left: ResponsiveSpacing.xs(context),
+      ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
+          Icon(
+            icon,
+            size: ResponsiveIconSize.sm(context),
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          SizedBox(width: ResponsiveSpacing.sm(context)),
+          Flexible(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: ResponsiveFontSize.lg(context),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],
@@ -155,24 +171,32 @@ class GlassIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = ResponsiveBorderRadius.md(context);
+    final scaledSize = ResponsiveUtils.scaledSize(context, size);
+    final scaledPadding = ResponsiveSpacing.sm(context);
+    
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(borderRadius),
         onTap: () {
           HapticFeedback.lightImpact();
           onPressed();
         },
         child: Container(
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(scaledPadding),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
               color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
             ),
           ),
-          child: Icon(icon, size: size, color: color ?? Theme.of(context).colorScheme.onSurface),
+          child: Icon(
+            icon,
+            size: scaledSize,
+            color: color ?? Theme.of(context).colorScheme.onSurface,
+          ),
         ),
       ),
     );

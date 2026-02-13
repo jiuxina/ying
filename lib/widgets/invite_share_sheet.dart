@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/countdown_event.dart';
 import '../services/share_link_service.dart';
+import '../utils/responsive_utils.dart';
 
 /// 事件邀请分享对话框
 /// 允许用户分享事件链接邀请他人共同关注
@@ -22,9 +23,11 @@ class InviteShareBottomSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(ResponsiveBorderRadius.lg(context)),
+        ),
       ),
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(ResponsiveSpacing.xl(context)),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -32,62 +35,73 @@ class InviteShareBottomSheet extends StatelessWidget {
           // 把手
           Center(
             child: Container(
-              width: 40,
-              height: 4,
+              width: ResponsiveUtils.scaledSize(context, 40),
+              height: ResponsiveUtils.scaledSize(context, 4),
               decoration: BoxDecoration(
                 color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(
+                  ResponsiveBorderRadius.xs(context),
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: ResponsiveSpacing.lg(context)),
 
           // 标题
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(ResponsiveSpacing.sm(context)),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveBorderRadius.md(context),
+                  ),
                 ),
                 child: Icon(
                   Icons.person_add,
                   color: theme.colorScheme.primary,
+                  size: ResponsiveIconSize.base(context),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: ResponsiveSpacing.md(context)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       '邀请共同关注',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: ResponsiveFontSize.xl(context),
                         fontWeight: FontWeight.bold,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     Text(
                       '分享链接，与好友一起倒数',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: ResponsiveFontSize.md(context),
                         color: Colors.grey.shade600,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: ResponsiveSpacing.xl(context)),
 
           // 事件信息卡片
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(ResponsiveSpacing.base(context)),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(
+                ResponsiveBorderRadius.md(context),
+              ),
               border: Border.all(
                 color: theme.colorScheme.outline.withValues(alpha: 0.2),
               ),
@@ -97,36 +111,46 @@ class InviteShareBottomSheet extends StatelessWidget {
               children: [
                 Text(
                   event.title,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: ResponsiveFontSize.lg(context),
                     fontWeight: FontWeight.w600,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
                 ),
-                const SizedBox(height: 8),
-                Row(
+                SizedBox(height: ResponsiveSpacing.sm(context)),
+                Wrap(
+                  spacing: ResponsiveSpacing.base(context),
+                  runSpacing: ResponsiveSpacing.sm(context),
                   children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 14,
-                      color: Colors.grey.shade600,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: ResponsiveIconSize.xs(context),
+                          color: Colors.grey.shade600,
+                        ),
+                        SizedBox(width: ResponsiveSpacing.xs(context)),
+                        Text(
+                          '${event.targetDate.year}-${event.targetDate.month.toString().padLeft(2, '0')}-${event.targetDate.day.toString().padLeft(2, '0')}',
+                          style: TextStyle(
+                            fontSize: ResponsiveFontSize.md(context),
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${event.targetDate.year}-${event.targetDate.month.toString().padLeft(2, '0')}-${event.targetDate.day.toString().padLeft(2, '0')}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ResponsiveSpacing.sm(context),
+                        vertical: ResponsiveSpacing.xs(context) / 2,
                       ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveBorderRadius.sm(context),
+                        ),
                       ),
                       child: Text(
                         event.isCountUp
@@ -135,7 +159,7 @@ class InviteShareBottomSheet extends StatelessWidget {
                                 ? '还有 ${event.daysRemaining} 天'
                                 : '已过 ${event.daysRemaining.abs()} 天'),
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: ResponsiveFontSize.sm(context),
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
@@ -146,14 +170,19 @@ class InviteShareBottomSheet extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: ResponsiveSpacing.lg(context)),
 
           // 分享链接区域
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: EdgeInsets.symmetric(
+              horizontal: ResponsiveSpacing.md(context),
+              vertical: ResponsiveSpacing.sm(context),
+            ),
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(
+                ResponsiveBorderRadius.sm(context),
+              ),
             ),
             child: Row(
               children: [
@@ -161,7 +190,7 @@ class InviteShareBottomSheet extends StatelessWidget {
                   child: Text(
                     shareLink,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: ResponsiveFontSize.sm(context),
                       color: Colors.grey.shade700,
                       fontFamily: 'monospace',
                     ),
@@ -169,10 +198,13 @@ class InviteShareBottomSheet extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: ResponsiveSpacing.sm(context)),
                 IconButton(
                   onPressed: () => _copyLink(context, shareLink),
-                  icon: const Icon(Icons.copy, size: 20),
+                  icon: Icon(
+                    Icons.copy,
+                    size: ResponsiveIconSize.md(context),
+                  ),
                   tooltip: '复制链接',
                   style: IconButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
@@ -182,18 +214,18 @@ class InviteShareBottomSheet extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: ResponsiveSpacing.xl(context)),
 
           // 分享方式
           Text(
             '选择分享方式',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: ResponsiveFontSize.base(context),
               fontWeight: FontWeight.w600,
               color: Colors.grey.shade700,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: ResponsiveSpacing.md(context)),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -227,36 +259,43 @@ class InviteShareBottomSheet extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: ResponsiveSpacing.xl(context)),
 
           // 提示信息
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(ResponsiveSpacing.md(context)),
             decoration: BoxDecoration(
               color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(
+                ResponsiveBorderRadius.sm(context),
+              ),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.info_outline,
-                  size: 18,
+                  size: ResponsiveIconSize.sm(context),
                   color: Colors.blue.shade700,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: ResponsiveSpacing.sm(context)),
                 Expanded(
                   child: Text(
                     '对方需要安装"萤·倒数日"App才能打开链接并导入事件',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: ResponsiveFontSize.sm(context),
                       color: Colors.blue.shade700,
                     ),
+                    softWrap: true,
+                    overflow: TextOverflow.visible,
                   ),
                 ),
               ],
             ),
           ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
+          SizedBox(
+            height: MediaQuery.of(context).padding.bottom +
+                ResponsiveSpacing.sm(context),
+          ),
         ],
       ),
     );
@@ -269,27 +308,36 @@ class InviteShareBottomSheet extends StatelessWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final size = ResponsiveUtils.scaledSize(context, 52);
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: size,
+            height: size,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(
+                ResponsiveBorderRadius.md(context),
+              ),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(
+              icon,
+              color: color,
+              size: ResponsiveIconSize.base(context),
+            ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: ResponsiveSpacing.xs(context)),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: ResponsiveFontSize.sm(context),
               color: Colors.grey.shade700,
             ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ],
       ),

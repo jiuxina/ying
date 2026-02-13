@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import '../models/countdown_event.dart';
+import '../utils/responsive_utils.dart';
 
 /// 庆祝动效覆盖层
 /// 在事件到期日显示庆祝效果
@@ -132,16 +133,16 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
                 );
               },
               child: Container(
-                margin: const EdgeInsets.all(32),
-                padding: const EdgeInsets.all(32),
+                margin: EdgeInsets.all(ResponsiveSpacing.xxl(context)),
+                padding: EdgeInsets.all(ResponsiveSpacing.xxl(context)),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 30,
-                      spreadRadius: 5,
+                      blurRadius: ResponsiveUtils.scaledSize(context, 30),
+                      spreadRadius: ResponsiveUtils.scaledSize(context, 5),
                     ),
                   ],
                 ),
@@ -150,8 +151,8 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
                   children: [
                     // 庆祝图标
                     Container(
-                      width: 80,
-                      height: 80,
+                      width: ResponsiveUtils.scaledSize(context, 80),
+                      height: ResponsiveUtils.scaledSize(context, 80),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
@@ -163,32 +164,34 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
                           ],
                         ),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           '🎉',
-                          style: TextStyle(fontSize: 40),
+                          style: TextStyle(fontSize: ResponsiveIconSize.xxl(context)),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: ResponsiveSpacing.xl(context)),
 
                     // 标题
                     Text(
                       _getCelebrationTitle(),
-                      style: const TextStyle(
-                        fontSize: 28,
+                      style: TextStyle(
+                        fontSize: ResponsiveFontSize.heading(context),
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                       textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: ResponsiveSpacing.md(context)),
 
                     // 事件名称
                     Text(
                       widget.event.title,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: ResponsiveFontSize.xxl(context),
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
@@ -196,18 +199,20 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: ResponsiveSpacing.sm(context)),
 
                     // 副标题
                     Text(
                       _getSubtitle(),
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: ResponsiveFontSize.base(context),
                         color: Colors.grey.shade600,
                       ),
                       textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: ResponsiveSpacing.xxl(context)),
 
                     // 行动按钮
                     Row(
@@ -218,10 +223,13 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
                               widget.onDismiss?.call();
                               Navigator.of(context).pop();
                             },
-                            child: const Text('稍后'),
+                            child: Text(
+                              '稍后',
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: ResponsiveSpacing.md(context)),
                         Expanded(
                           flex: 2,
                           child: FilledButton.icon(
@@ -230,7 +238,10 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
                               Navigator.of(context).pop();
                             },
                             icon: const Icon(Icons.share),
-                            label: const Text('分享喜悦'),
+                            label: Text(
+                              '分享喜悦',
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ],
@@ -243,14 +254,18 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
 
           // 关闭按钮
           Positioned(
-            top: 48,
-            right: 16,
+            top: ResponsiveUtils.scaledSize(context, 48),
+            right: ResponsiveSpacing.base(context),
             child: IconButton(
               onPressed: () {
                 widget.onDismiss?.call();
                 Navigator.of(context).pop();
               },
-              icon: const Icon(Icons.close, color: Colors.white, size: 28),
+              icon: Icon(
+                Icons.close,
+                color: Colors.white,
+                size: ResponsiveIconSize.lg(context),
+              ),
             ),
           ),
         ],

@@ -10,6 +10,7 @@ import '../providers/events_provider.dart';
 import '../widgets/animations/counting_animation.dart';
 import '../widgets/common/app_background.dart';
 import '../widgets/common/ui_helpers.dart';
+import '../utils/responsive_utils.dart';
 
 import 'add_edit_event_screen.dart';
 import '../widgets/share_card_dialog.dart';
@@ -119,13 +120,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   _buildHeader(context),
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(ResponsiveSpacing.lg(context)),
                       child: Column(
                         children: [
                           _buildCountdownCard(context, categoryColor),
-                          const SizedBox(height: 20),
+                          SizedBox(height: ResponsiveSpacing.lg(context)),
                           _buildInfoCard(context),
-                          const SizedBox(height: 20),
+                          SizedBox(height: ResponsiveSpacing.lg(context)),
                           _buildActions(context),
                         ],
                       ),
@@ -151,14 +152,19 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+      padding: EdgeInsets.fromLTRB(
+        ResponsiveSpacing.sm(context),
+        ResponsiveSpacing.sm(context),
+        ResponsiveSpacing.base(context),
+        ResponsiveSpacing.sm(context),
+      ),
       child: Row(
         children: [
           GlassIconButton(
             icon: Icons.arrow_back,
             onPressed: () => Navigator.pop(context),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: ResponsiveSpacing.sm(context)),
           const Spacer(),
           // 邀请按钮
           GlassIconButton(
@@ -167,7 +173,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               showInviteShareSheet(context, _event);
             },
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: ResponsiveSpacing.sm(context)),
           GlassIconButton(
             icon: Icons.share,
             onPressed: () {
@@ -177,13 +183,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               );
             },
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: ResponsiveSpacing.sm(context)),
           if (_event.daysRemaining == 0) ...[
              GlassIconButton(
               icon: Icons.celebration,
               onPressed: () => _showCelebration(),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: ResponsiveSpacing.sm(context)),
           ],
           GlassIconButton(
             icon: Icons.edit,
@@ -219,7 +225,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(ResponsiveSpacing.xxl(context)),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -229,12 +235,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             categoryColor.withValues(alpha: 0.7),
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
         boxShadow: [
           BoxShadow(
             color: categoryColor.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            blurRadius: ResponsiveSpacing.lg(context),
+            offset: Offset(0, ResponsiveSpacing.sm(context)),
           ),
         ],
       ),
@@ -243,7 +249,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           if (_event.backgroundImage != null)
             Positioned.fill(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
                 child: Image.file(
                   File(_event.backgroundImage!),
                   fit: BoxFit.cover,
@@ -254,64 +260,80 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           Column(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveSpacing.base(context),
+                  vertical: ResponsiveSpacing.sm(context),
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       category.icon,
-                      style: const TextStyle(fontSize: 18),
+                      style: TextStyle(fontSize: ResponsiveFontSize.xl(context)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      category.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                    SizedBox(width: ResponsiveSpacing.sm(context)),
+                    Flexible(
+                      child: Text(
+                        category.name,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: ResponsiveFontSize.base(context),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: ResponsiveSpacing.xl(context)),
               Text(
                 _event.title,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 28,
+                  fontSize: ResponsiveFontSize.heading(context),
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: ResponsiveSpacing.xxl(context)),
               Text(
                 isCountUp ? '已经' : (days >= 0 ? '还有' : '已过'),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 16,
+                  fontSize: ResponsiveFontSize.lg(context),
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: ResponsiveSpacing.sm(context)),
               if (_event.daysRemaining == 0) ...[
-                const Text(
+                Text(
                   '今天',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 72,
+                    fontSize: ResponsiveUtils.scaledFontSize(context, 72.0),
                     fontWeight: FontWeight.bold,
                     height: 1,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ] else ...[
                  AnimatedNumber(
                    value: days,
-                   style: const TextStyle(
+                   style: TextStyle(
                      color: Colors.white,
-                     fontSize: 72,
+                     fontSize: ResponsiveUtils.scaledFontSize(context, 72.0),
                      fontWeight: FontWeight.bold,
                      height: 1,
                    ),
@@ -321,47 +343,56 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   '天',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 20,
+                    fontSize: ResponsiveFontSize.xxl(context),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
               // Real-time HH:MM:SS display
                Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveSpacing.md(context),
+                  vertical: ResponsiveSpacing.xs(context) * 1.5,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
                 ),
                 child: Text(
                   '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'monospace',
-                    fontSize: 16,
+                    fontSize: ResponsiveFontSize.lg(context),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
 
               if (!isCountUp && _event.daysRemaining > 0) ...[
-                const SizedBox(height: 32),
+                SizedBox(height: ResponsiveSpacing.xxl(context)),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xs(context)),
                   child: LinearProgressIndicator(
                     value: _event.progressPercentage,
                     backgroundColor: Colors.white.withValues(alpha: 0.3),
                     valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                    minHeight: 8,
+                    minHeight: ResponsiveSpacing.sm(context),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: ResponsiveSpacing.sm(context)),
                 Text(
                   '${(_event.progressPercentage * 100).toInt()}% 剩余',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 14,
+                    fontSize: ResponsiveFontSize.base(context),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ],
@@ -382,23 +413,53 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         children: [
           ListTile(
             leading: const IconBox(icon: Icons.calendar_today, color: Colors.blue),
-            title: const Text('目标日期'),
-            subtitle: Text(dateFormat.format(_event.targetDate)),
+            title: Text(
+              '目标日期',
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              dateFormat.format(_event.targetDate),
+              style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           if (_event.isLunar && _event.lunarDateStr != null) ...[
             const Divider(height: 1),
             ListTile(
               leading: const IconBox(icon: Icons.auto_awesome, color: Colors.purple),
-              title: const Text('农历日期'),
-              subtitle: Text(_event.lunarDateStr!),
+              title: Text(
+                '农历日期',
+                style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                _event.lunarDateStr!,
+                style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
           if (_event.isRepeating) ...[
             const Divider(height: 1),
             ListTile(
               leading: const IconBox(icon: Icons.repeat, color: Colors.green),
-              title: const Text('重复'),
-              subtitle: const Text('每年重复'),
+              title: Text(
+                '重复',
+                style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                '每年重复',
+                style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
           const Divider(height: 1),
@@ -407,19 +468,37 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               icon: _event.enableNotification ? Icons.notifications_active : Icons.notifications_off,
               color: _event.enableNotification ? Colors.orange : Colors.grey,
             ),
-            title: const Text('通知提醒'),
+            title: Text(
+              '通知提醒',
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             subtitle: Text(
               _event.enableNotification
                   ? '提前 ${_event.notifyDaysBefore} 天，${_event.notifyHour.toString().padLeft(2, '0')}:${_event.notifyMinute.toString().padLeft(2, '0')} 提醒'
                   : '已关闭',
+              style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           if (_event.note != null && _event.note!.isNotEmpty) ...[
             const Divider(height: 1),
             ListTile(
               leading: const IconBox(icon: Icons.notes, color: Colors.teal),
-              title: const Text('备注'),
-              subtitle: Text(_event.note!),
+              title: Text(
+                '备注',
+                style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                _event.note!,
+                style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ],
@@ -444,7 +523,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             },
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: ResponsiveSpacing.md(context)),
         Expanded(
           child: _buildActionButton(
             context,
@@ -458,7 +537,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             },
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: ResponsiveSpacing.md(context)),
         Expanded(
           child: _buildActionButton(
             context,
@@ -482,26 +561,32 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ResponsiveBorderRadius.base(context)),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: EdgeInsets.symmetric(vertical: ResponsiveSpacing.base(context)),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(ResponsiveBorderRadius.base(context)),
             border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
           child: Column(
             children: [
-              Icon(icon, color: color),
-              const SizedBox(height: 4),
+              Icon(
+                icon,
+                color: color,
+                size: ResponsiveIconSize.base(context),
+              ),
+              SizedBox(height: ResponsiveSpacing.xs(context)),
               Text(
                 label,
                 style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontSize: ResponsiveFontSize.sm(context),
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -515,13 +600,30 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('确认删除'),
-        content: Text('确定要删除"${_event.title}"吗？'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
+        ),
+        title: Text(
+          '确认删除',
+          style: TextStyle(fontSize: ResponsiveFontSize.lg(context)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        content: Text(
+          '确定要删除"${_event.title}"吗？',
+          style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text(
+              '取消',
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           FilledButton(
             onPressed: () {
@@ -530,7 +632,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               Navigator.pop(context);
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('删除'),
+            child: Text(
+              '删除',
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

@@ -10,6 +10,7 @@ import '../models/share_template_model.dart';
 import '../services/share_card_service.dart';
 import '../services/share_link_service.dart';
 import '../providers/events_provider.dart';
+import '../utils/responsive_utils.dart';
 import 'share_card_templates.dart';
 
 /// 分享卡片对话框
@@ -54,40 +55,40 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(16),
+      insetPadding: EdgeInsets.all(ResponsiveSpacing.base(context)),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // 预览区域
-            _buildPreview(categoryColor),
-            const SizedBox(height: 20),
+            _buildPreview(context, categoryColor),
+            SizedBox(height: ResponsiveSpacing.lg(context)),
 
             // 模板选择器
-            _buildTemplateSelector(),
-            const SizedBox(height: 16),
+            _buildTemplateSelector(context),
+            SizedBox(height: ResponsiveSpacing.base(context)),
 
             // 尺寸选择器
-            _buildRatioSelector(),
-            const SizedBox(height: 16),
+            _buildRatioSelector(context),
+            SizedBox(height: ResponsiveSpacing.base(context)),
             
             // 自定义背景按钮
-            _buildBackgroundSelector(),
-            const SizedBox(height: 16),
+            _buildBackgroundSelector(context),
+            SizedBox(height: ResponsiveSpacing.base(context)),
             
             // 内容选项开关
-            _buildContentOptions(theme),
-            const SizedBox(height: 20),
+            _buildContentOptions(context, theme),
+            SizedBox(height: ResponsiveSpacing.lg(context)),
 
             // 操作按钮
-            _buildActionButtons(theme),
+            _buildActionButtons(context, theme),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPreview(Color categoryColor) {
+  Widget _buildPreview(BuildContext context, Color categoryColor) {
     final template = _templates[_selectedTemplateIndex];
     final effectiveTemplate = ShareTemplate(
       id: template.id,
@@ -97,18 +98,20 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
       theme: template.theme,
     );
 
-    // 计算预览尺寸
-    double previewWidth = 300;
+    // 计算预览尺寸 (响应式，基于屏幕宽度)
+    final screenWidth = MediaQuery.of(context).size.width;
+    // 4倍间距 = Dialog insetPadding(左右各1倍) + 内部边距(左右各1倍)
+    double previewWidth = (screenWidth - ResponsiveSpacing.base(context) * 4).clamp(280.0, 350.0);
     double previewHeight;
     switch (_selectedRatio) {
       case ShareTemplateAspectRatio.square:
-        previewHeight = 300;
+        previewHeight = previewWidth;
         break;
       case ShareTemplateAspectRatio.portrait:
-        previewHeight = 400;
+        previewHeight = previewWidth * 4 / 3;
         break;
       case ShareTemplateAspectRatio.landscape:
-        previewHeight = 169;
+        previewHeight = previewWidth * 9 / 16;
         break;
     }
 
@@ -119,17 +122,17 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
         height: previewHeight,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(ResponsiveBorderRadius.base(context)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+              blurRadius: ResponsiveUtils.scaledSize(context, 20),
+              offset: Offset(0, ResponsiveUtils.scaledSize(context, 10)),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(ResponsiveBorderRadius.base(context)),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -166,14 +169,14 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
     );
   }
 
-  Widget _buildTemplateSelector() {
+  Widget _buildTemplateSelector(BuildContext context) {
     return SizedBox(
-      height: 40,
+      height: ResponsiveUtils.scaledSize(context, 40),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         shrinkWrap: true,
         itemCount: _templates.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => SizedBox(width: ResponsiveSpacing.sm(context)),
         itemBuilder: (context, index) {
           final template = _templates[index];
           final isSelected = _selectedTemplateIndex == index;
@@ -183,12 +186,15 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
               setState(() => _selectedTemplateIndex = index);
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveSpacing.base(context), 
+                vertical: ResponsiveSpacing.sm(context)
+              ),
               decoration: BoxDecoration(
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary
                     : Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
                 border: Border.all(
                   color: isSelected
                       ? Colors.transparent
@@ -200,8 +206,10 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
                 style: TextStyle(
                   color: isSelected ? Colors.white : Colors.black87,
                   fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                  fontSize: ResponsiveFontSize.md(context),
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           );
@@ -210,41 +218,50 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
     );
   }
 
-  Widget _buildBackgroundSelector() {
+  Widget _buildBackgroundSelector(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // 选择/更换背景按钮
-        OutlinedButton.icon(
-          onPressed: _isPickingImage ? null : _pickAndCropImage,
-          icon: _isPickingImage 
-              ? const SizedBox(
-                  width: 16, 
-                  height: 16, 
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.image, size: 18),
-          label: Text(_customBackgroundPath != null ? '更换背景' : '自定义背景'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: _customBackgroundPath != null 
-                ? Theme.of(context).colorScheme.primary 
-                : Colors.white70,
-            side: BorderSide(
-              color: _customBackgroundPath != null 
-                  ? Theme.of(context).colorScheme.primary 
-                  : Colors.white38,
+        Flexible(
+          child: OutlinedButton.icon(
+            onPressed: _isPickingImage ? null : _pickAndCropImage,
+            icon: _isPickingImage 
+                ? SizedBox(
+                    width: ResponsiveIconSize.sm(context), 
+                    height: ResponsiveIconSize.sm(context), 
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(Icons.image, size: ResponsiveIconSize.sm(context)),
+            label: Text(
+              _customBackgroundPath != null ? '更换背景' : '自定义背景',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _customBackgroundPath != null 
+                  ? Theme.of(context).colorScheme.primary 
+                  : Colors.white70,
+              side: BorderSide(
+                color: _customBackgroundPath != null 
+                    ? Theme.of(context).colorScheme.primary 
+                    : Colors.white38,
+              ),
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveSpacing.base(context), 
+                vertical: ResponsiveSpacing.sm(context)
+              ),
+            ),
           ),
         ),
         // 清除背景按钮
         if (_customBackgroundPath != null) ...[
-          const SizedBox(width: 8),
+          SizedBox(width: ResponsiveSpacing.sm(context)),
           IconButton(
             onPressed: () {
               setState(() => _customBackgroundPath = null);
             },
-            icon: const Icon(Icons.close, size: 20),
+            icon: Icon(Icons.close, size: ResponsiveIconSize.md(context)),
             style: IconButton.styleFrom(
               foregroundColor: Colors.white70,
             ),
@@ -315,7 +332,7 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('选择图片失败: $e')),
+          SnackBar(content: Text('选择图片失败: $e', maxLines: 2, overflow: TextOverflow.ellipsis)),
         );
       }
     } finally {
@@ -325,34 +342,34 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
     }
   }
 
-  Widget _buildContentOptions(ThemeData theme) {
+  Widget _buildContentOptions(BuildContext context, ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: EdgeInsets.symmetric(horizontal: ResponsiveSpacing.sm(context)),
       child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+        spacing: ResponsiveSpacing.sm(context),
+        runSpacing: ResponsiveSpacing.sm(context),
         alignment: WrapAlignment.center,
         children: [
           FilterChip(
-            label: const Text('标题', style: TextStyle(fontSize: 12)),
+            label: Text('标题', style: TextStyle(fontSize: ResponsiveFontSize.sm(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
             selected: _showTitle,
             onSelected: (bool value) => setState(() => _showTitle = value),
             visualDensity: VisualDensity.compact,
           ),
           FilterChip(
-            label: const Text('备注', style: TextStyle(fontSize: 12)),
+            label: Text('备注', style: TextStyle(fontSize: ResponsiveFontSize.sm(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
             selected: _showNote,
             onSelected: (bool value) => setState(() => _showNote = value),
             visualDensity: VisualDensity.compact,
           ),
           FilterChip(
-            label: const Text('日期', style: TextStyle(fontSize: 12)),
+            label: Text('日期', style: TextStyle(fontSize: ResponsiveFontSize.sm(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
             selected: _showDate,
             onSelected: (bool value) => setState(() => _showDate = value),
             visualDensity: VisualDensity.compact,
           ),
           FilterChip(
-            label: const Text('水印', style: TextStyle(fontSize: 12)),
+            label: Text('水印', style: TextStyle(fontSize: ResponsiveFontSize.sm(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
             selected: _showFooter,
             onSelected: (bool value) => setState(() => _showFooter = value),
             visualDensity: VisualDensity.compact,
@@ -362,7 +379,7 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
     );
   }
 
-  Widget _buildRatioSelector() {
+  Widget _buildRatioSelector(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: ShareTemplateAspectRatio.values.map((ratio) {
@@ -383,63 +400,76 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
             usage = '微博';
             break;
         }
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              setState(() {
-                _selectedRatio = ratio;
-                // 如果已有背景图，提示用户需要重新裁剪
-                if (_customBackgroundPath != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('比例已变更，建议重新选择背景图片以适配新尺寸'),
-                      action: SnackBarAction(
-                        label: '选择图片',
-                        onPressed: _pickAndCropImage,
+        return Flexible(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: ResponsiveSpacing.xs(context)),
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _selectedRatio = ratio;
+                  // 如果已有背景图，提示用户需要重新裁剪
+                  if (_customBackgroundPath != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text(
+                          '比例已变更，建议重新选择背景图片以适配新尺寸',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        action: SnackBarAction(
+                          label: '选择图片',
+                          onPressed: _pickAndCropImage,
+                        ),
+                        duration: const Duration(seconds: 3),
                       ),
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                }
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primaryContainer
-                    : Colors.white.withValues(alpha: 0.8),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.grey.shade300,
-                  width: isSelected ? 2 : 1,
+                    );
+                  }
+                });
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveSpacing.md(context), 
+                  vertical: ResponsiveSpacing.xs(context) * 1.5
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.black87,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Colors.white.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
+                  border: Border.all(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.grey.shade300,
+                    width: isSelected ? 2 : 1,
                   ),
-                  Text(
-                    usage,
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 10,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.black87,
+                        fontWeight: FontWeight.bold,
+                        fontSize: ResponsiveFontSize.sm(context),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                    Text(
+                      usage,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: ResponsiveFontSize.xs(context),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -448,41 +478,41 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
     );
   }
 
-  Widget _buildActionButtons(ThemeData theme) {
+  Widget _buildActionButtons(BuildContext context, ThemeData theme) {
     return Row(
       children: [
         // 复制链接按钮
         Expanded(
           child: OutlinedButton.icon(
             onPressed: _copyLink,
-            icon: const Icon(Icons.link, size: 18),
-            label: const Text('复制链接'),
+            icon: Icon(Icons.link, size: ResponsiveIconSize.sm(context)),
+            label: const Text('复制链接', maxLines: 1, overflow: TextOverflow.ellipsis),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.white,
               side: const BorderSide(color: Colors.white54),
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.symmetric(vertical: ResponsiveSpacing.md(context)),
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: ResponsiveSpacing.md(context)),
         // 分享按钮
         Expanded(
           flex: 2,
           child: FilledButton.icon(
             onPressed: _isSharing ? null : _share,
             icon: _isSharing
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
+                ? SizedBox(
+                    width: ResponsiveIconSize.sm(context),
+                    height: ResponsiveIconSize.sm(context),
+                    child: const CircularProgressIndicator(
                       strokeWidth: 2,
                       color: Colors.white,
                     ),
                   )
-                : const Icon(Icons.share, size: 18),
-            label: const Text('分享图片'),
+                : Icon(Icons.share, size: ResponsiveIconSize.sm(context)),
+            label: const Text('分享图片', maxLines: 1, overflow: TextOverflow.ellipsis),
             style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.symmetric(vertical: ResponsiveSpacing.md(context)),
             ),
           ),
         ),
@@ -496,7 +526,7 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
     HapticFeedback.mediumImpact();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('链接已复制到剪贴板'),
+        content: Text('链接已复制到剪贴板', maxLines: 1, overflow: TextOverflow.ellipsis),
         duration: Duration(seconds: 2),
       ),
     );
