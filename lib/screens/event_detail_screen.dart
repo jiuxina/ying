@@ -357,6 +357,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ),
               SizedBox(height: ResponsiveSpacing.sm(context)),
               if (_event.daysRemaining == 0) ...[
+                // Show only time for D-Day
                 Text(
                   '今天',
                   style: TextStyle(
@@ -368,50 +369,90 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ] else ...[
-                 AnimatedNumber(
-                   value: days,
-                   style: TextStyle(
-                     color: Colors.white,
-                     fontSize: ResponsiveUtils.scaledFontSize(context, 72.0),
-                     fontWeight: FontWeight.bold,
-                     height: 1,
-                   ),
-                   duration: const Duration(milliseconds: 800),
-                 ),
-                Text(
-                  '天',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: ResponsiveFontSize.xxl(context),
+                SizedBox(height: ResponsiveSpacing.base(context)),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveSpacing.md(context),
+                    vertical: ResponsiveSpacing.xs(context) * 1.5,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
+                  ),
+                  child: Text(
+                    '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace',
+                      fontSize: ResponsiveFontSize.lg(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ] else ...[
+                // Show square container with days number
+                AspectRatio(
+                  aspectRatio: 1.0,
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: ResponsiveUtils.scaledSize(context, 150),
+                      maxHeight: ResponsiveUtils.scaledSize(context, 150),
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AnimatedNumber(
+                          value: days,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: ResponsiveUtils.scaledFontSize(context, 48.0),
+                            fontWeight: FontWeight.bold,
+                            height: 1,
+                          ),
+                          duration: const Duration(milliseconds: 800),
+                        ),
+                        Text(
+                          '天',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: ResponsiveFontSize.lg(context),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: ResponsiveSpacing.base(context)),
+                // Show combined detailed time
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveSpacing.md(context),
+                    vertical: ResponsiveSpacing.xs(context) * 1.5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
+                  ),
+                  child: Text(
+                    '$days天 ${hours.toString().padLeft(2, '0')}时 ${minutes.toString().padLeft(2, '0')}分 ${seconds.toString().padLeft(2, '0')}秒',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: ResponsiveFontSize.base(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
-              SizedBox(height: ResponsiveSpacing.base(context)),
-              // Real-time HH:MM:SS display
-               Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveSpacing.md(context),
-                  vertical: ResponsiveSpacing.xs(context) * 1.5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
-                ),
-                child: Text(
-                  '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                    fontSize: ResponsiveFontSize.lg(context),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
 
               if (!isCountUp && _event.daysRemaining > 0) ...[
                 SizedBox(height: ResponsiveSpacing.xxl(context)),

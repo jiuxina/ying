@@ -304,12 +304,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final query = _searchController.text.toLowerCase();
     final hasSearch = query.isNotEmpty;
 
-    // Single-pass filtering
-    final events = provider.events.where((e) {
-      // Skip archived events
-      if (e.isArchived) return false;
+    // First, separate pinned and unpinned events
+    final allNonArchivedEvents = provider.events.where((e) => !e.isArchived).toList();
+    final pinnedEvents = allNonArchivedEvents.where((e) => e.isPinned).toList();
+    final unpinnedEvents = allNonArchivedEvents.where((e) => !e.isPinned).toList();
 
-      // Category filter
+    // Filter unpinned events (pinned events bypass filters)
+    final filteredUnpinnedEvents = unpinnedEvents.where((e) {
+      // Category filter (only for unpinned events)
       if (_selectedCategoryId != null && e.categoryId != _selectedCategoryId) {
         return false;
       }
@@ -324,11 +326,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return true;
     }).toList();
 
-    // Sorting: pinned first, then by user's sort preference
-    events.sort((a, b) {
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
+    // Apply search filter to pinned events if searching
+    final filteredPinnedEvents = hasSearch 
+        ? pinnedEvents.where((e) {
+            final matchesTitle = e.title.toLowerCase().contains(query);
+            final matchesNote = e.note?.toLowerCase().contains(query) ?? false;
+            return matchesTitle || matchesNote;
+          }).toList()
+        : pinnedEvents;
 
+    // Sort pinned events by creation time (FIFO - first pinned appears first)
+    filteredPinnedEvents.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    // Sort unpinned events by user's sort preference
+    filteredUnpinnedEvents.sort((a, b) {
       switch (settings.sortOrder) {
         case 'custom':
           final customOrder = settings.customSortOrder;
@@ -351,7 +362,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     });
 
-    return events;
+    // Combine: pinned first, then unpinned
+    return [...filteredPinnedEvents, ...filteredUnpinnedEvents];
   }
 
   Widget _buildExpandableFAB() {
