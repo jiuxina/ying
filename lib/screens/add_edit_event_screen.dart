@@ -770,6 +770,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                   fontSize: ResponsiveFontSize.base(context),
                 ),
                 border: InputBorder.none,
+                filled: false,
               ),
               validator: validator,
             ),

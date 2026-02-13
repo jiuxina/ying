@@ -79,6 +79,22 @@ class NotificationService {
       if (androidImplementation != null) {
         // Android 13+ 需要请求通知权限
         final granted = await androidImplementation.requestNotificationsPermission();
+        
+        // Android 12+ (API 31+) 需要检查精确闹钟权限
+        // 使用 USE_EXACT_ALARM 权限（manifest中声明），不需要运行时请求
+        // 但需要检查是否已授予
+        try {
+          final canScheduleExact = await androidImplementation.canScheduleExactNotifications();
+          if (canScheduleExact != null && !canScheduleExact) {
+            debugPrint('警告：精确闹钟权限未授予。通知可能不准时。');
+            // 注意：在 Android 12+ 上，如果使用 USE_EXACT_ALARM 权限（已在 manifest 中声明），
+            // 应用会自动获得该权限。如果使用 SCHEDULE_EXACT_ALARM，则需要用户手动在设置中授予。
+            // 对于倒数日应用，建议使用 USE_EXACT_ALARM，因为精确通知是核心功能。
+          }
+        } catch (e) {
+          debugPrint('检查精确闹钟权限时出错: $e');
+        }
+        
         return granted ?? false;
       }
     } else if (defaultTargetPlatform == TargetPlatform.iOS) {
