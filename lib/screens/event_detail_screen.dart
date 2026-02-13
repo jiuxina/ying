@@ -78,6 +78,21 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
+  /// 格式化时间组件为两位数字
+  String _formatTimeComponent(int value) {
+    return value.toString().padLeft(2, '0');
+  }
+
+  /// 格式化完整时间字符串 HH:MM:SS
+  String _formatTimeHMS(int hours, int minutes, int seconds) {
+    return '${_formatTimeComponent(hours)}:${_formatTimeComponent(minutes)}:${_formatTimeComponent(seconds)}';
+  }
+
+  /// 格式化详细时间字符串 X天 YY时 ZZ分 SS秒
+  String _formatDetailedTime(int days, int hours, int minutes, int seconds) {
+    return '$days天 ${_formatTimeComponent(hours)}时 ${_formatTimeComponent(minutes)}分 ${_formatTimeComponent(seconds)}秒';
+  }
+
   void _showCelebration() {
     if (_hasShownCelebration) return;
     setState(() => _hasShownCelebration = true);
@@ -380,7 +395,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
                   ),
                   child: Text(
-                    '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+                    _formatTimeHMS(hours, minutes, seconds),
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -442,7 +457,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
                   ),
                   child: Text(
-                    '$days天 ${hours.toString().padLeft(2, '0')}时 ${minutes.toString().padLeft(2, '0')}分 ${seconds.toString().padLeft(2, '0')}秒',
+                    _formatDetailedTime(days, hours, minutes, seconds),
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

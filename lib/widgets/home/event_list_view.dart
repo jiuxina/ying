@@ -303,13 +303,13 @@ class EventListView extends StatelessWidget {
     );
   }
 
-  Widget _buildStandardList(BuildContext context) {
-    // Merge pinned events at the top, followed by unpinned events
-    final allEvents = [...pinnedEvents, ...unpinnedEvents];
+  /// Merge pinned events at the top, followed by unpinned events
+  List<CountdownEvent> get _allEvents => [...pinnedEvents, ...unpinnedEvents];
 
+  Widget _buildStandardList(BuildContext context) {
     return Column(
       children: [
-        ...allEvents.asMap().entries.map(
+        ..._allEvents.asMap().entries.map(
           (entry) => StaggeredListItem(
             index: entry.key,
             child: _buildEventCard(context, entry.value),
@@ -320,13 +320,10 @@ class EventListView extends StatelessWidget {
   }
 
   Widget _buildCustomSortList(BuildContext context) {
-    // Merge pinned events at the top, followed by unpinned events
-    final allEvents = [...pinnedEvents, ...unpinnedEvents];
-    
     return ReorderableListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: allEvents.length,
+      itemCount: _allEvents.length,
       onReorder: (oldIndex, newIndex) {
         // Don't allow reordering pinned events with unpinned events
         final pinnedCount = pinnedEvents.length;
@@ -355,7 +352,7 @@ class EventListView extends StatelessWidget {
         settings.setCustomSortOrder(newOrderIds);
       },
       itemBuilder: (context, index) {
-        final event = allEvents[index];
+        final event = _allEvents[index];
         final isPinned = index < pinnedEvents.length;
         
         return Padding(
