@@ -51,22 +51,25 @@ class FontOption {
 
 class AppConstants {
   // ==================== 应用信息 ====================
-  
+
   /// 应用名称
   static const String appName = '萤';
-  
+
+  /// 应用包名/App Group ID
+  static const String appGroupId = 'com.jiuxina.ying';
+
   /// 版本号
   static const String appVersion = '1.0.0';
-  
+
   /// 应用描述
   static const String appDescription = '用心记录每一个重要时刻';
-  
+
   /// 作者
   static const String author = 'jiuxina';
-  
+
   /// GitHub 仓库地址
   static const String githubUrl = 'https://github.com/jiuxina/ying';
-  
+
   /// 反馈邮箱
   static const String feedbackEmail = 'jiuxina@outlook.com';
 
@@ -280,11 +283,37 @@ class AppConstants {
     'MM月dd日',
   ];
   // ==================== 更新服务 ====================
-  
+
   /// GitHub Releases API
   static const String githubApiUrl = 'https://api.github.com/repos/jiuxina/ying/releases/latest';
-  
+
   /// GitHub 代理地址
   static const String proxyUrl = 'https://gh-proxy.org';
+
+  // ==================== 数据库表名 ====================
+
+  /// 事件表名
+  static const String eventsTable = 'events';
+
+  /// 分类表名
+  static const String categoriesTable = 'categories';
+
+  /// 提醒表名
+  static const String remindersTable = 'reminders';
+
+  /// 事件分组表名
+  static const String eventGroupsTable = 'event_groups';
+
+  /// 小部件配置表名
+  static const String widgetConfigsTable = 'widget_configs';
+
+  // ==================== 时间常量 ====================
+
+  /// 事件预览天数（30天）
+  static const int eventPreviewDays = 30;
+
+  /// 字体大小范围
+  static const double minFontSize = 12.0;
+  static const double maxFontSize = 24.0;
 }
 
