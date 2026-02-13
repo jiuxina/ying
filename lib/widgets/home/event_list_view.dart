@@ -329,7 +329,7 @@ class EventListView extends StatelessWidget {
         final pinnedCount = pinnedEvents.length;
         
         // If trying to move a pinned event or move into pinned section, ignore
-        if (oldIndex < pinnedCount || newIndex <= pinnedCount) {
+        if (oldIndex < pinnedCount || newIndex < pinnedCount) {
           return;
         }
         

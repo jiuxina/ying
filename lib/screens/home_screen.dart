@@ -299,41 +299,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  /// 检查事件是否匹配搜索查询
+  bool _matchesSearch(CountdownEvent event, String query) {
+    if (query.isEmpty) return true;
+    final matchesTitle = event.title.toLowerCase().contains(query);
+    final matchesNote = event.note?.toLowerCase().contains(query) ?? false;
+    return matchesTitle || matchesNote;
+  }
+
   List<CountdownEvent> _getFilteredEvents(EventsProvider provider) {
     final settings = context.read<SettingsProvider>();
     final query = _searchController.text.toLowerCase();
-    final hasSearch = query.isNotEmpty;
 
     // First, separate pinned and unpinned events
     final allNonArchivedEvents = provider.events.where((e) => !e.isArchived).toList();
     final pinnedEvents = allNonArchivedEvents.where((e) => e.isPinned).toList();
     final unpinnedEvents = allNonArchivedEvents.where((e) => !e.isPinned).toList();
 
-    // Filter unpinned events (pinned events bypass filters)
+    // Filter unpinned events (pinned events bypass category filter)
     final filteredUnpinnedEvents = unpinnedEvents.where((e) {
       // Category filter (only for unpinned events)
       if (_selectedCategoryId != null && e.categoryId != _selectedCategoryId) {
         return false;
       }
-
       // Search filter
-      if (hasSearch) {
-        final matchesTitle = e.title.toLowerCase().contains(query);
-        final matchesNote = e.note?.toLowerCase().contains(query) ?? false;
-        if (!matchesTitle && !matchesNote) return false;
-      }
-
-      return true;
+      return _matchesSearch(e, query);
     }).toList();
 
-    // Apply search filter to pinned events if searching
-    final filteredPinnedEvents = hasSearch 
-        ? pinnedEvents.where((e) {
-            final matchesTitle = e.title.toLowerCase().contains(query);
-            final matchesNote = e.note?.toLowerCase().contains(query) ?? false;
-            return matchesTitle || matchesNote;
-          }).toList()
-        : pinnedEvents;
+    // Apply search filter to pinned events (bypass category filter)
+    final filteredPinnedEvents = pinnedEvents.where((e) => _matchesSearch(e, query)).toList();
 
     // Sort pinned events by creation time (FIFO - first pinned appears first)
     filteredPinnedEvents.sort((a, b) => a.createdAt.compareTo(b.createdAt));
