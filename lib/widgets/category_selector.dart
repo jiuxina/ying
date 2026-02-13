@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/events_provider.dart';
 import '../models/category_model.dart';
+import '../utils/responsive_utils.dart';
 
 /// 分类筛选器组件
 class CategorySelector extends StatelessWidget {
@@ -22,10 +23,12 @@ class CategorySelector extends StatelessWidget {
     final categories = context.select<EventsProvider, List<Category>>((p) => p.categories);
 
     return SizedBox(
-      height: 40,
+      height: ResponsiveUtils.scaledSize(context, 40),
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: EdgeInsets.symmetric(
+          horizontal: ResponsiveSpacing.md(context),
+        ),
         children: [
           // "全部"选项
           _buildChip(
@@ -62,34 +65,53 @@ class CategorySelector extends StatelessWidget {
     required Color color,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveSpacing.xs(context),
+      ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(
+            ResponsiveBorderRadius.lg(context),
+          ),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: EdgeInsets.symmetric(
+              horizontal: ResponsiveSpacing.md(context) + 2,
+              vertical: ResponsiveSpacing.sm(context),
+            ),
             decoration: BoxDecoration(
               color: isSelected ? color : color.withAlpha(25),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(
+                ResponsiveBorderRadius.lg(context),
+              ),
               border: Border.all(
                 color: isSelected ? color : color.withAlpha(80),
-                width: 1.5,
+                width: ResponsiveUtils.scaledSize(context, 1.5),
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(emoji, style: const TextStyle(fontSize: 14)),
-                const SizedBox(width: 6),
                 Text(
-                  label,
+                  emoji,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : color,
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    fontSize: ResponsiveFontSize.base(context),
+                  ),
+                  overflow: TextOverflow.visible,
+                ),
+                SizedBox(width: ResponsiveSpacing.xs(context) + 2),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : color,
+                      fontSize: ResponsiveFontSize.md(context),
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
               ],
