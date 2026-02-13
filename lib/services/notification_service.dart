@@ -266,12 +266,12 @@ class NotificationService {
   /// 而管道符更不可能出现在 ID 中，从而减少碰撞风险。
   int _generateNotificationId(String eventId, String reminderId) {
     // 使用 Dart 内置 hashCode，确保结果在有效范围内
-    // 保持在 31 位有符号整数范围内，避免与测试通知 ID 冲突
+    // 保持在 31 位有符号整数范围内
     final hash = '$eventId|$reminderId'.hashCode & 0x7FFFFFFF;
     
-    // 确保不与测试通知 ID 范围冲突 (2000000000-2010000000)
-    // 如果冲突，则调整到安全范围
-    return hash < 2000000000 ? hash : hash % 2000000000;
+    // 将所有 ID 映射到 [0, 2000000000) 范围，避免与测试通知 ID 冲突
+    // 测试通知使用范围 [2000000000, 2010000000)
+    return hash % 2000000000;
   }
 
   /// 取消事件的所有通知
@@ -356,6 +356,11 @@ class NotificationService {
     debugPrint('✓ 已重新调度 ${activeEvents.length} 个事件的 $totalScheduled 个提醒');
   }
   
+  // 测试通知 ID 范围常量
+  // 提供 1000 万个唯一测试 ID，足够避免在合理使用场景下的冲突
+  static const int _testNotificationIdBase = 2000000000;
+  static const int _testNotificationIdRange = 10000000; // 10 million unique IDs
+  
   /// 发送测试通知
   /// 
   /// 立即显示一个测试通知，用于验证通知功能是否正常工作
@@ -370,8 +375,8 @@ class NotificationService {
     try {
       // 使用时间戳生成唯一的测试通知 ID，避免多次测试时相互覆盖
       // 测试通知 ID 范围: [2000000000, 2010000000)
-      // 使用较小的模数(10000000)减少与常规通知 ID 的碰撞风险
-      final testNotificationId = 2000000000 + (DateTime.now().millisecondsSinceEpoch % 10000000);
+      final testNotificationId = _testNotificationIdBase + 
+          (DateTime.now().millisecondsSinceEpoch % _testNotificationIdRange);
       
       final androidDetails = AndroidNotificationDetails(
         'event_reminders',
