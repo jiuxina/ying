@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/countdown_event.dart';
 import '../providers/events_provider.dart';
 import '../providers/settings_provider.dart';
+import '../utils/responsive_utils.dart';
 
 /// 事件卡片组件
 class EventCard extends StatefulWidget {
@@ -102,7 +103,7 @@ class _EventCardState extends State<EventCard>
               color: Colors.transparent,
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
                   color: categoryColor.withAlpha(180),
                 ),
               ),
@@ -110,17 +111,17 @@ class _EventCardState extends State<EventCard>
           },
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
               boxShadow: [
                 BoxShadow(
                   color: categoryColor.withAlpha(30),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+                  blurRadius: ResponsiveUtils.scaledSize(context, 20),
+                  offset: Offset(0, ResponsiveUtils.scaledSpacing(context, 8)),
                 ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
               child: Stack(
                 children: [
                   // 背景
@@ -248,30 +249,33 @@ class _EventCardState extends State<EventCard>
     final isCountUp = event.isCountUp;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveSpacing.base(context), 
+        vertical: ResponsiveSpacing.md(context),
+      ),
       child: Row(
         children: [
           // 分类图标
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(ResponsiveSpacing.sm(context)),
             decoration: BoxDecoration(
               color: Colors.white.withAlpha(40),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
             ),
             child: Text(
               category.icon,
-              style: const TextStyle(fontSize: 18),
+              style: TextStyle(fontSize: ResponsiveFontSize.xl(context)),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: ResponsiveSpacing.md(context)),
           
           // 标题
           Expanded(
             child: Text(
               event.title,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: ResponsiveFontSize.lg(context),
                 fontWeight: FontWeight.w600,
               ),
               maxLines: 1,
@@ -281,36 +285,45 @@ class _EventCardState extends State<EventCard>
           
           // 天数
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: EdgeInsets.symmetric(
+              horizontal: ResponsiveSpacing.md(context), 
+              vertical: ResponsiveSpacing.xs(context) + 2,
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withAlpha(30),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(ResponsiveBorderRadius.base(context)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   isCountUp ? '+' : (event.daysRemaining >= 0 ? '' : '-'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 14,
+                    fontSize: ResponsiveFontSize.base(context),
                     fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
                 ),
                 Text(
                   '$days',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: ResponsiveFontSize.xxl(context),
                     fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
                 ),
-                const Text(
+                Text(
                   ' 天',
                   style: TextStyle(
                     color: Colors.white70,
-                    fontSize: 12,
+                    fontSize: ResponsiveFontSize.sm(context),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
                 ),
               ],
             ),
@@ -329,7 +342,7 @@ class _EventCardState extends State<EventCard>
     final settings = context.watch<SettingsProvider>();
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(ResponsiveSpacing.base(context) - 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -337,26 +350,33 @@ class _EventCardState extends State<EventCard>
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveSpacing.sm(context) + 2, 
+                  vertical: ResponsiveSpacing.xs(context),
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withAlpha(40),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       category.icon,
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                      maxLines: 1,
+                      overflow: TextOverflow.visible,
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: ResponsiveSpacing.xs(context)),
                     Text(
                       category.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
+                        fontSize: ResponsiveFontSize.sm(context),
                         fontWeight: FontWeight.w500,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -368,25 +388,25 @@ class _EventCardState extends State<EventCard>
                   child: Icon(
                     event.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
                     color: Colors.white.withAlpha(180),
-                    size: 20,
+                    size: ResponsiveIconSize.md(context),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: ResponsiveSpacing.sm(context) + 2),
 
           // 标题
           Text(
             event.title,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 17,
+              fontSize: ResponsiveFontSize.lg(context) + 1,
               fontWeight: FontWeight.bold,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: ResponsiveSpacing.xs(context) + 2),
 
           // 天数/详细日期显示
           if (settings.cardDisplayFormat == 'detailed')
@@ -395,65 +415,84 @@ class _EventCardState extends State<EventCard>
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  isCountUp ? '已经' : (event.daysRemaining >= 0 ? '还有' : '已过'),
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(200),
-                    fontSize: 14,
+                Flexible(
+                  child: Text(
+                    isCountUp ? '已经' : (event.daysRemaining >= 0 ? '还有' : '已过'),
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(200),
+                      fontSize: ResponsiveFontSize.base(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '$days',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    height: 1,
+                SizedBox(width: ResponsiveSpacing.sm(context)),
+                Flexible(
+                  child: Text(
+                    '$days',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: ResponsiveFontSize.hero(context),
+                      fontWeight: FontWeight.bold,
+                      height: 1,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.visible,
                   ),
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: ResponsiveSpacing.xs(context)),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.only(bottom: ResponsiveSpacing.sm(context)),
                   child: Text(
                     '天',
                     style: TextStyle(
                       color: Colors.white.withAlpha(200),
-                      fontSize: 16,
+                      fontSize: ResponsiveFontSize.lg(context),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.visible,
                   ),
                 ),
               ],
             ),
-          const SizedBox(height: 12),
+          SizedBox(height: ResponsiveSpacing.md(context)),
 
           // 标准进度条（非背景模式时显示）
           if (!isCountUp && settings.progressStyle == 'standard') ...[
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xs(context)),
               child: LinearProgressIndicator(
                 value: _calculateProgress(event, settings),
                 backgroundColor: Colors.white.withAlpha(60),
                 valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                minHeight: 6,
+                minHeight: ResponsiveUtils.scaledSize(context, 6),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: ResponsiveSpacing.sm(context)),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '${(_calculateProgress(event, settings) * 100).toInt()}%',
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(180),
-                    fontSize: 12,
+                Flexible(
+                  child: Text(
+                    '${(_calculateProgress(event, settings) * 100).toInt()}%',
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(180),
+                      fontSize: ResponsiveFontSize.sm(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Text(
-                  dateFormat.format(event.targetDate),
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(180),
-                    fontSize: 12,
+                Flexible(
+                  child: Text(
+                    dateFormat.format(event.targetDate),
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(180),
+                      fontSize: ResponsiveFontSize.sm(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -463,25 +502,27 @@ class _EventCardState extends State<EventCard>
           // 农历日期
           if (event.isLunar && event.lunarDateStr != null)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: EdgeInsets.only(top: ResponsiveSpacing.xs(context)),
               child: Text(
                 '农历 ${event.lunarDateStr}',
                 style: TextStyle(
                   color: Colors.white.withAlpha(150),
-                  fontSize: 12,
+                  fontSize: ResponsiveFontSize.sm(context),
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
 
           // 备注
           if (event.note != null && event.note!.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: EdgeInsets.only(top: ResponsiveSpacing.sm(context)),
               child: Text(
                 event.note!,
                 style: TextStyle(
                   color: Colors.white.withAlpha(180),
-                  fontSize: 13,
+                  fontSize: ResponsiveFontSize.md(context),
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -548,17 +589,21 @@ class _EventCardState extends State<EventCard>
           isCountUp ? '已经' : (event.daysRemaining >= 0 ? '还有' : '已过'),
           style: TextStyle(
             color: Colors.white.withAlpha(200),
-            fontSize: 12,
+            fontSize: ResponsiveFontSize.sm(context),
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: ResponsiveSpacing.xs(context)),
         Text(
           parts.join(' '),
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
-            fontSize: 24,
+            fontSize: ResponsiveFontSize.title(context),
             fontWeight: FontWeight.bold,
           ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -567,23 +612,28 @@ class _EventCardState extends State<EventCard>
   Widget _buildPinnedBadge(Color color) {
     return Positioned(
       top: 0,
-      right: 20,
+      right: ResponsiveSpacing.lg(context),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: ResponsiveSpacing.sm(context), 
+          vertical: ResponsiveSpacing.xs(context),
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(ResponsiveBorderRadius.sm(context)),
+          ),
           boxShadow: [
             BoxShadow(
               color: color.withAlpha(50),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              blurRadius: ResponsiveUtils.scaledSize(context, 8),
+              offset: Offset(0, ResponsiveUtils.scaledSpacing(context, 2)),
             ),
           ],
         ),
         child: Icon(
           Icons.push_pin,
-          size: 14,
+          size: ResponsiveIconSize.xs(context) + 2,
           color: color,
         ),
       ),
