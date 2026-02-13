@@ -7,7 +7,7 @@ import '../../providers/events_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../screens/add_edit_event_screen.dart';
 import '../../screens/event_detail_screen.dart';
-import '../../utils/constants.dart';
+
 import '../../utils/responsive_utils.dart';
 import '../animations/staggered_animation.dart';
 import '../category_selector.dart';
@@ -48,8 +48,8 @@ class EventListView extends StatelessWidget {
         if (pinnedEvents.isNotEmpty) ...[
           const SectionHeader(title: '置顶', icon: Icons.push_pin),
           SizedBox(height: ResponsiveSpacing.md(context)),
-          ...pinnedEvents.asMap().entries.map((entry) => 
-            StaggeredListItem(
+          ...pinnedEvents.asMap().entries.map(
+            (entry) => StaggeredListItem(
               index: entry.key,
               child: _buildEventCard(context, entry.value),
             ),
@@ -73,13 +73,13 @@ class EventListView extends StatelessWidget {
   Widget _buildStandardList(BuildContext context) {
     // 计算动画起始偏移（置顶事件数量）
     final animationOffset = pinnedEvents.length;
-    
+
     return Column(
       children: [
         _EventListHeader(title: '全部事件', icon: Icons.event, isCustomSort: false),
         SizedBox(height: ResponsiveSpacing.md(context)),
-        ...unpinnedEvents.asMap().entries.map((entry) => 
-          StaggeredListItem(
+        ...unpinnedEvents.asMap().entries.map(
+          (entry) => StaggeredListItem(
             index: entry.key + animationOffset,
             child: _buildEventCard(context, entry.value),
           ),
@@ -91,7 +91,11 @@ class EventListView extends StatelessWidget {
   Widget _buildCustomSortList(BuildContext context) {
     return Column(
       children: [
-        _EventListHeader(title: '全部事件 (长按拖拽)', icon: Icons.drag_indicator, isCustomSort: true),
+        _EventListHeader(
+          title: '全部事件 (长按拖拽)',
+          icon: Icons.drag_indicator,
+          isCustomSort: true,
+        ),
         SizedBox(height: ResponsiveSpacing.md(context)),
         ReorderableListView.builder(
           shrinkWrap: true,
@@ -105,7 +109,7 @@ class EventListView extends StatelessWidget {
             final newOrderList = List<CountdownEvent>.from(unpinnedEvents);
             newOrderList.removeAt(oldIndex);
             newOrderList.insert(newIndex, item);
-            
+
             HapticFeedback.selectionClick();
             final settings = context.read<SettingsProvider>();
             final newOrderIds = newOrderList.map((e) => e.id).toList();
@@ -124,7 +128,11 @@ class EventListView extends StatelessWidget {
     );
   }
 
-  Widget _buildEventCard(BuildContext context, CountdownEvent event, {bool isReorderable = false}) {
+  Widget _buildEventCard(
+    BuildContext context,
+    CountdownEvent event, {
+    bool isReorderable = false,
+  }) {
     final settings = context.watch<SettingsProvider>();
 
     return Padding(
@@ -138,7 +146,9 @@ class EventListView extends StatelessWidget {
             builder: (context) => EventDetailScreen(event: event),
           ),
         ),
-        onLongPress: isReorderable ? null : () => _showEventOptions(context, event),
+        onLongPress: isReorderable
+            ? null
+            : () => _showEventOptions(context, event),
         onTogglePin: () {
           HapticFeedback.mediumImpact();
           context.read<EventsProvider>().togglePin(event.id);
@@ -172,7 +182,10 @@ class EventListView extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Text(
                 event.title,
-                style: const TextStyle(fontSize: ResponsiveFontSize.xl(context), fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: ResponsiveFontSize.xl(context),
+                  fontWeight: FontWeight.bold,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -283,7 +296,7 @@ class _EventListHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
-    
+
     return Row(
       children: [
         Container(
@@ -302,9 +315,9 @@ class _EventListHeader extends StatelessWidget {
         Text(
           title,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const Spacer(),
         GestureDetector(
@@ -316,7 +329,9 @@ class _EventListHeader extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+              color: Theme.of(
+                context,
+              ).colorScheme.surface.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
@@ -350,7 +365,9 @@ class _EventListHeader extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+              color: Theme.of(
+                context,
+              ).colorScheme.surface.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
@@ -360,7 +377,9 @@ class _EventListHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  settings.cardsExpanded ? Icons.unfold_less : Icons.unfold_more,
+                  settings.cardsExpanded
+                      ? Icons.unfold_less
+                      : Icons.unfold_more,
                   size: 16,
                   color: Theme.of(context).colorScheme.primary,
                 ),
@@ -382,15 +401,24 @@ class _EventListHeader extends StatelessWidget {
 
   String _getSortLabel(String sortOrder) {
     switch (sortOrder) {
-      case 'custom': return '自定义';
-      case 'daysAsc': return '天数↑';
-      case 'daysDesc': return '天数↓';
-      case 'dateAsc': return '日期↑';
-      case 'dateDesc': return '日期↓';
-      case 'titleAsc': return '名称↑';
-      case 'titleDesc': return '名称↓';
-      case 'createdDesc': return '创建↓';
-      default: return '排序';
+      case 'custom':
+        return '自定义';
+      case 'daysAsc':
+        return '天数↑';
+      case 'daysDesc':
+        return '天数↓';
+      case 'dateAsc':
+        return '日期↑';
+      case 'dateDesc':
+        return '日期↓';
+      case 'titleAsc':
+        return '名称↑';
+      case 'titleDesc':
+        return '名称↓';
+      case 'createdDesc':
+        return '创建↓';
+      default:
+        return '排序';
     }
   }
 
@@ -407,15 +435,63 @@ class _EventListHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 16),
-              const Text('排序方式', style: TextStyle(fontSize: ResponsiveFontSize.xl(context), fontWeight: FontWeight.bold)),
+              Text(
+                '排序方式',
+                style: TextStyle(
+                  fontSize: ResponsiveFontSize.xl(context),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 8),
-              _buildSortOption(context, settings, 'custom', '自定义排序 (拖拽)', Icons.drag_indicator),
-              _buildSortOption(context, settings, 'daysAsc', '按剩余天数（升序）', Icons.arrow_upward),
-              _buildSortOption(context, settings, 'daysDesc', '按剩余天数（降序）', Icons.arrow_downward),
-              _buildSortOption(context, settings, 'dateAsc', '按目标日期（升序）', Icons.calendar_today),
-              _buildSortOption(context, settings, 'dateDesc', '按目标日期（降序）', Icons.calendar_today),
-              _buildSortOption(context, settings, 'titleAsc', '按名称（A-Z）', Icons.sort_by_alpha),
-              _buildSortOption(context, settings, 'createdDesc', '按创建时间（最新）', Icons.access_time),
+              _buildSortOption(
+                context,
+                settings,
+                'custom',
+                '自定义排序 (拖拽)',
+                Icons.drag_indicator,
+              ),
+              _buildSortOption(
+                context,
+                settings,
+                'daysAsc',
+                '按剩余天数（升序）',
+                Icons.arrow_upward,
+              ),
+              _buildSortOption(
+                context,
+                settings,
+                'daysDesc',
+                '按剩余天数（降序）',
+                Icons.arrow_downward,
+              ),
+              _buildSortOption(
+                context,
+                settings,
+                'dateAsc',
+                '按目标日期（升序）',
+                Icons.calendar_today,
+              ),
+              _buildSortOption(
+                context,
+                settings,
+                'dateDesc',
+                '按目标日期（降序）',
+                Icons.calendar_today,
+              ),
+              _buildSortOption(
+                context,
+                settings,
+                'titleAsc',
+                '按名称（A-Z）',
+                Icons.sort_by_alpha,
+              ),
+              _buildSortOption(
+                context,
+                settings,
+                'createdDesc',
+                '按创建时间（最新）',
+                Icons.access_time,
+              ),
               const SizedBox(height: 16),
             ],
           ),
@@ -424,12 +500,23 @@ class _EventListHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildSortOption(BuildContext context, SettingsProvider settings, String order, String label, IconData icon) {
+  Widget _buildSortOption(
+    BuildContext context,
+    SettingsProvider settings,
+    String order,
+    String label,
+    IconData icon,
+  ) {
     final isSelected = settings.sortOrder == order;
     return ListTile(
-      leading: Icon(icon, color: isSelected ? Theme.of(context).colorScheme.primary : null),
+      leading: Icon(
+        icon,
+        color: isSelected ? Theme.of(context).colorScheme.primary : null,
+      ),
       title: Text(label),
-      trailing: isSelected ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary) : null,
+      trailing: isSelected
+          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+          : null,
       onTap: () {
         settings.setSortOrder(order);
         Navigator.pop(context);

@@ -20,7 +20,9 @@ void main() {
     await eventsProvider.init();
   });
 
-  testWidgets('AddEvent - Happy Path: Enter title and save', (WidgetTester tester) async {
+  testWidgets('AddEvent - Happy Path: Enter title and save', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -31,7 +33,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    
+
     // Find Title and Enter text
     final titleField = find.byKey(const Key('event_title_input'));
     expect(titleField, findsOneWidget);
@@ -39,14 +41,14 @@ void main() {
     await tester.pumpAndSettle();
 
     // Scroll to bottom
-    final listView = find.byType(ListView);
-    await tester.drag(listView, const Offset(0, -1000));
+    final scrollable = find.byType(SingleChildScrollView);
+    await tester.drag(scrollable, const Offset(0, -1000));
     await tester.pumpAndSettle();
 
     // Find Save Button
     final saveButton = find.byKey(const Key('save_event_button'));
     expect(saveButton, findsOneWidget);
-    
+
     // Tap
     await tester.tap(saveButton, warnIfMissed: false);
     await tester.pumpAndSettle();
@@ -57,8 +59,36 @@ void main() {
     expect(events.first.title, 'Automated Test Event');
   });
 
-  testWidgets('AddEvent - Validation: Empty title shows error', (WidgetTester tester) async {
-    // Skipping validation test as it's flaky in headless environment
-    // TODO: Fix validation test
-  }, skip: true);
+  testWidgets('AddEvent - Validation: Empty title shows error', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<EventsProvider>.value(value: eventsProvider),
+          ChangeNotifierProvider<SettingsProvider>.value(
+            value: settingsProvider,
+          ),
+        ],
+        child: const MaterialApp(home: AddEditEventScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Find Save Button and Tap
+    final saveButton = find.byKey(const Key('save_event_button'));
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton, warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    // Verify Error Message
+    final titleField = find.byKey(const Key('event_title_input'));
+    await tester.ensureVisible(titleField);
+    await tester.pumpAndSettle();
+    expect(find.text('请输入事件名称'), findsOneWidget);
+
+    // Verify DB is empty
+    final events = await mockDb.getActiveEvents();
+    expect(events.length, 0);
+  });
 }
