@@ -256,27 +256,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                          _searchController.text.isEmpty && 
                          _selectedCategoryId == null;
 
-    if (events.isEmpty) {
-      if (_isSearching || _selectedCategoryId != null) {
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: EmptyState(
-            key: const Key('search_empty'),
-            icon: Icons.search_off,
-            title: '未找到相关事件',
-            description: '尝试其他搜索词或清除分类筛选',
-            actionLabel: '清除筛选',
-            onAction: () {
-              setState(() {
-                _selectedCategoryId = null;
-                if (_isSearching) {
-                  _searchController.clear();
-                }
-              });
-            },
-          ),
-        );
-      }
+    if (events.isEmpty && !_isSearching && _selectedCategoryId == null) {
+      // Only show default empty state when there are truly no events at all
       return AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         child: const EmptyState(key: Key('default_empty')),

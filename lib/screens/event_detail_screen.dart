@@ -466,7 +466,40 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
     if (_event.daysRemaining == 0) {
       // D-Day: 只显示时分秒
-      return Container(
+      return Center(
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: ResponsiveUtils.scaledSize(context, 400),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveSpacing.lg(context),
+            vertical: ResponsiveSpacing.md(context),
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
+          ),
+          child: Text(
+            _formatTimeHMS(hours, minutes, seconds),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'monospace',
+              fontSize: ResponsiveFontSize.xl(context),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: ResponsiveUtils.scaledSize(context, 400),
+        ),
         padding: EdgeInsets.symmetric(
           horizontal: ResponsiveSpacing.lg(context),
           vertical: ResponsiveSpacing.md(context),
@@ -475,53 +508,31 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
         ),
-        child: Text(
-          _formatTimeHMS(hours, minutes, seconds),
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'monospace',
-            fontSize: ResponsiveFontSize.xl(context),
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        child: Column(
+          children: [
+            Text(
+              '精确倒计时',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                fontSize: ResponsiveFontSize.sm(context),
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: ResponsiveSpacing.xs(context)),
+            Text(
+              _formatDetailedTime(days, hours, minutes, seconds),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+                fontSize: ResponsiveFontSize.lg(context),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
-      );
-    }
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: ResponsiveSpacing.lg(context),
-        vertical: ResponsiveSpacing.md(context),
-      ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            '精确倒计时',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-              fontSize: ResponsiveFontSize.sm(context),
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          SizedBox(height: ResponsiveSpacing.xs(context)),
-          Text(
-            _formatDetailedTime(days, hours, minutes, seconds),
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontWeight: FontWeight.bold,
-              fontSize: ResponsiveFontSize.lg(context),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
       ),
     );
   }
@@ -537,52 +548,57 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return Consumer<SettingsProvider>(
       builder: (context, settings, child) {
         final progress = _calculateProgress(_event, settings);
-        return Container(
-          padding: EdgeInsets.all(ResponsiveSpacing.md(context)),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-            borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '进度',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                      fontSize: ResponsiveFontSize.sm(context),
-                      fontWeight: FontWeight.w500,
+        return Center(
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: ResponsiveUtils.scaledSize(context, 400),
+            ),
+            padding: EdgeInsets.all(ResponsiveSpacing.md(context)),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '进度',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        fontSize: ResponsiveFontSize.sm(context),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    '${(progress * 100).toInt()}% 剩余',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontSize: ResponsiveFontSize.sm(context),
-                      fontWeight: FontWeight.bold,
+                    Text(
+                      '${(progress * 100).toInt()}% 剩余',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontSize: ResponsiveFontSize.sm(context),
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-              SizedBox(height: ResponsiveSpacing.sm(context)),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xs(context)),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).colorScheme.primary,
-                  ),
-                  minHeight: ResponsiveSpacing.sm(context),
+                  ],
                 ),
-              ),
-            ],
+                SizedBox(height: ResponsiveSpacing.sm(context)),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xs(context)),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).colorScheme.primary,
+                    ),
+                    minHeight: ResponsiveSpacing.sm(context),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

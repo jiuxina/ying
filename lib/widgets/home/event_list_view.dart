@@ -71,7 +71,7 @@ class EventListView extends StatelessWidget {
           color: Theme.of(context).colorScheme.primary,
         ),
         SizedBox(width: ResponsiveSpacing.sm(context)),
-        Flexible(
+        Expanded(
           child: Text(
             '事件',
             style: TextStyle(
@@ -83,20 +83,22 @@ class EventListView extends StatelessWidget {
             maxLines: 1,
           ),
         ),
-        const Spacer(),
+        SizedBox(width: ResponsiveSpacing.sm(context)),
         GestureDetector(
           onTap: () {
             HapticFeedback.selectionClick();
             _showSortDialog(context, settings);
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            margin: const EdgeInsets.only(right: 8),
+            padding: EdgeInsets.symmetric(
+              horizontal: ResponsiveSpacing.sm(context),
+              vertical: ResponsiveSpacing.xs(context),
+            ),
             decoration: BoxDecoration(
               color: Theme.of(
                 context,
               ).colorScheme.surface.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
               border: Border.all(
                 color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
               ),
@@ -106,10 +108,10 @@ class EventListView extends StatelessWidget {
               children: [
                 Icon(
                   Icons.sort,
-                  size: 16,
+                  size: ResponsiveIconSize.sm(context),
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: ResponsiveSpacing.xs(context)),
                 Text(
                   _getSortLabel(settings.sortOrder),
                   style: TextStyle(
@@ -121,18 +123,22 @@ class EventListView extends StatelessWidget {
             ),
           ),
         ),
+        SizedBox(width: ResponsiveSpacing.sm(context)),
         GestureDetector(
           onTap: () {
             HapticFeedback.selectionClick();
             settings.toggleCardsExpanded();
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: EdgeInsets.symmetric(
+              horizontal: ResponsiveSpacing.sm(context),
+              vertical: ResponsiveSpacing.xs(context),
+            ),
             decoration: BoxDecoration(
               color: Theme.of(
                 context,
               ).colorScheme.surface.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
               border: Border.all(
                 color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
               ),
@@ -144,10 +150,10 @@ class EventListView extends StatelessWidget {
                   settings.cardsExpanded
                       ? Icons.unfold_less
                       : Icons.unfold_more,
-                  size: 16,
+                  size: ResponsiveIconSize.sm(context),
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: ResponsiveSpacing.xs(context)),
                 Text(
                   settings.cardsExpanded ? '收起' : '展开',
                   style: TextStyle(
