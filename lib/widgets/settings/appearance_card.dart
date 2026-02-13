@@ -9,6 +9,7 @@ import 'package:path/path.dart' as path;
 
 import '../../providers/settings_provider.dart';
 import '../../utils/constants.dart';
+import '../../utils/responsive_utils.dart';
 import '../common/ui_helpers.dart';
 
 class AppearanceCard extends StatefulWidget {
@@ -31,209 +32,221 @@ class _AppearanceCardState extends State<AppearanceCard> {
               return Column(
                 children: [
                   // Theme
-                  ListTile(
-                    leading: const IconBox(icon: Icons.dark_mode, color: Colors.purple),
-                    title: const Text('主题'),
-                    trailing: SegmentedButton<ThemeMode>(
-                      segments: const [
-                        ButtonSegment(
-                          value: ThemeMode.light,
-                          icon: Icon(Icons.light_mode, size: 18),
+                  Builder(
+                    builder: (context) => ListTile(
+                      leading: const IconBox(icon: Icons.dark_mode, color: Colors.purple),
+                      title: Text('主题', overflow: TextOverflow.ellipsis),
+                      trailing: SegmentedButton<ThemeMode>(
+                        segments: [
+                          ButtonSegment(
+                            value: ThemeMode.light,
+                            icon: Icon(Icons.light_mode, size: ResponsiveFontSize.xl(context)),
+                          ),
+                          ButtonSegment(
+                            value: ThemeMode.system,
+                            icon: Icon(Icons.settings_suggest, size: ResponsiveFontSize.xl(context)),
+                          ),
+                          ButtonSegment(
+                            value: ThemeMode.dark,
+                            icon: Icon(Icons.dark_mode, size: ResponsiveFontSize.xl(context)),
+                          ),
+                        ],
+                        selected: {settings.themeMode},
+                        onSelectionChanged: (modes) {
+                          HapticFeedback.selectionClick();
+                          settings.setThemeMode(modes.first);
+                        },
+                        style: const ButtonStyle(
+                          visualDensity: VisualDensity.compact,
                         ),
-                        ButtonSegment(
-                          value: ThemeMode.system,
-                          icon: Icon(Icons.settings_suggest, size: 18),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.dark,
-                          icon: Icon(Icons.dark_mode, size: 18),
-                        ),
-                      ],
-                      selected: {settings.themeMode},
-                      onSelectionChanged: (modes) {
-                        HapticFeedback.selectionClick();
-                        settings.setThemeMode(modes.first);
-                      },
-                      style: const ButtonStyle(
-                        visualDensity: VisualDensity.compact,
                       ),
                     ),
                   ),
                   // 浅色主题方案（仅在浅色模式下显示）
                   if (settings.themeMode == ThemeMode.light) ...[
-                    const Divider(height: 1),
+                    Divider(height: ResponsiveSpacing.xs(context) / 4),
                     ListTile(
                       leading: const IconBox(icon: Icons.light_mode, color: Colors.amber),
-                      title: const Text('浅色主题'),
-                      subtitle: Text(AppConstants.lightThemeSchemes[settings.lightThemeIndex].name),
+                      title: Text('浅色主题', overflow: TextOverflow.ellipsis),
+                      subtitle: Text(AppConstants.lightThemeSchemes[settings.lightThemeIndex].name, overflow: TextOverflow.ellipsis),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => _showLightThemeSelector(context, settings),
                     ),
                   ],
                   // 夜间主题方案（仅在深色模式下显示）
                   if (settings.themeMode == ThemeMode.dark) ...[
-                    const Divider(height: 1),
+                    Divider(height: ResponsiveSpacing.xs(context) / 4),
                     ListTile(
                       leading: const IconBox(icon: Icons.dark_mode, color: Colors.indigo),
-                      title: const Text('夜间主题'),
-                      subtitle: Text(AppConstants.darkThemeSchemes[settings.darkThemeIndex].name),
+                      title: Text('夜间主题', overflow: TextOverflow.ellipsis),
+                      subtitle: Text(AppConstants.darkThemeSchemes[settings.darkThemeIndex].name, overflow: TextOverflow.ellipsis),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => _showDarkThemeSelector(context, settings),
                     ),
                   ],
-                  const Divider(height: 1),
+                  Builder(builder: (context) => Divider(height: ResponsiveSpacing.xs(context) / 4)),
                   // Theme Color
                   ListTile(
                     leading: const IconBox(icon: Icons.color_lens, color: Colors.blue),
-                    title: const Text('主题色'),
+                    title: Text('主题色', overflow: TextOverflow.ellipsis),
                     trailing: ColorPreview(color: settings.themeColor),
                     onTap: () => _showColorPicker(context, settings),
                   ),
-                  const Divider(height: 1),
+                  Builder(builder: (context) => Divider(height: ResponsiveSpacing.xs(context) / 4)),
                   // Font Size
                   ListTile(
                     leading: const IconBox(icon: Icons.format_size, color: Colors.green),
-                    title: const Text('字体大小'),
-                    subtitle: Text('${settings.fontSizePx.toInt()}px'),
+                    title: Text('字体大小', overflow: TextOverflow.ellipsis),
+                    subtitle: Text('${settings.fontSizePx.toInt()}px', overflow: TextOverflow.ellipsis),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Slider(
-                      value: settings.fontSizePx,
-                      min: 12,
-                      max: 24,
-                      divisions: 12,
-                      label: '${settings.fontSizePx.toInt()}px',
-                      onChanged: (value) => settings.setFontSizePx(value),
+                  Builder(
+                    builder: (context) => Padding(
+                      padding: EdgeInsets.symmetric(horizontal: ResponsiveSpacing.base(context)),
+                      child: Slider(
+                        value: settings.fontSizePx,
+                        min: 12,
+                        max: 24,
+                        divisions: 12,
+                        label: '${settings.fontSizePx.toInt()}px',
+                        onChanged: (value) => settings.setFontSizePx(value),
+                      ),
                     ),
                   ),
-                  const Divider(height: 1),
+                  Builder(builder: (context) => Divider(height: ResponsiveSpacing.xs(context) / 4)),
                   // Font Family
                   ListTile(
                     leading: const IconBox(icon: Icons.font_download, color: Colors.indigo),
-                    title: const Text('字体'),
-                    subtitle: Text(settings.fontFamily ?? '系统默认'),
+                    title: Text('字体', overflow: TextOverflow.ellipsis),
+                    subtitle: Text(settings.fontFamily ?? '系统默认', overflow: TextOverflow.ellipsis),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _showFontDialog(context, settings),
                   ),
-                  const Divider(height: 1),
+                  Builder(builder: (context) => Divider(height: ResponsiveSpacing.xs(context) / 4)),
                   // Date Format
                   ListTile(
                     leading: const IconBox(icon: Icons.calendar_month, color: Colors.orange),
-                    title: const Text('日期格式'),
-                    subtitle: Text(settings.dateFormat),
+                    title: Text('日期格式', overflow: TextOverflow.ellipsis),
+                    subtitle: Text(settings.dateFormat, overflow: TextOverflow.ellipsis),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _showDateFormatDialog(context, settings),
                   ),
-                  const Divider(height: 1),
+                  Builder(builder: (context) => Divider(height: ResponsiveSpacing.xs(context) / 4)),
                   // Card Display Format
                   ListTile(
                     leading: const IconBox(icon: Icons.view_agenda, color: Colors.teal),
-                    title: const Text('卡片日期显示'),
-                    subtitle: Text(settings.cardDisplayFormat == 'days' ? '仅剩余天数' : '详细年月日'),
+                    title: Text('卡片日期显示', overflow: TextOverflow.ellipsis),
+                    subtitle: Text(settings.cardDisplayFormat == 'days' ? '仅剩余天数' : '详细年月日', overflow: TextOverflow.ellipsis),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _showCardDisplayFormatDialog(context, settings),
                   ),
-                  const Divider(height: 1),
+                  Builder(builder: (context) => Divider(height: ResponsiveSpacing.xs(context) / 4)),
                   // Background Image
-                  ListTile(
-                    leading: const IconBox(icon: Icons.image, color: Colors.pink),
-                    title: const Text('背景图片'),
-                    subtitle: Text(
-                      settings.backgroundImagePath != null ? '已设置' : '使用默认渐变',
+                  Builder(
+                    builder: (context) => ListTile(
+                      leading: const IconBox(icon: Icons.image, color: Colors.pink),
+                      title: Text('背景图片', overflow: TextOverflow.ellipsis),
+                      subtitle: Text(
+                        settings.backgroundImagePath != null ? '已设置' : '使用默认渐变',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: settings.backgroundImagePath != null
+                          ? IconButton(
+                              icon: Icon(Icons.close, size: ResponsiveIconSize.md(context)),
+                              onPressed: () => settings.setBackgroundImage(null),
+                            )
+                          : const Icon(Icons.chevron_right),
+                      onTap: () => _pickBackgroundImage(settings),
                     ),
-                    trailing: settings.backgroundImagePath != null
-                        ? IconButton(
-                            icon: const Icon(Icons.close, size: 20),
-                            onPressed: () => settings.setBackgroundImage(null),
-                          )
-                        : const Icon(Icons.chevron_right),
-                    onTap: () => _pickBackgroundImage(settings),
                   ),
                   if (settings.backgroundImagePath != null) ...[
-                    const Divider(height: 1),
+                    Builder(builder: (context) => Divider(height: ResponsiveSpacing.xs(context) / 4)),
                     SwitchListTile(
                       secondary: const IconBox(icon: Icons.blur_on, color: Colors.cyan),
-                      title: const Text('模糊效果'),
+                      title: Text('模糊效果', overflow: TextOverflow.ellipsis),
                       value: settings.backgroundEffect == 'blur',
                       onChanged: (v) => settings.setBackgroundEffect(v ? 'blur' : 'none'),
                     ),
                     if (settings.backgroundEffect == 'blur') ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Slider(
-                          value: settings.backgroundBlur,
-                          min: 0,
-                          max: 30,
-                          divisions: 30,
-                          label: '${settings.backgroundBlur.toInt()}',
-                          onChanged: (value) => settings.setBackgroundBlur(value),
+                      Builder(
+                        builder: (context) => Padding(
+                          padding: EdgeInsets.symmetric(horizontal: ResponsiveSpacing.base(context)),
+                          child: Slider(
+                            value: settings.backgroundBlur,
+                            min: 0,
+                            max: 30,
+                            divisions: 30,
+                            label: '${settings.backgroundBlur.toInt()}',
+                            onChanged: (value) => settings.setBackgroundBlur(value),
+                          ),
                         ),
                       ),
                     ],
                   ],
-                  const Divider(height: 1),
+                  Builder(builder: (context) => Divider(height: ResponsiveSpacing.xs(context) / 4)),
                   // Particles
                   ListTile(
                     leading: const IconBox(icon: Icons.auto_awesome, color: Colors.amber),
-                    title: const Text('粒子效果'),
-                    subtitle: Text(_getParticleTypeLabel(settings.particleType)),
+                    title: Text('粒子效果', overflow: TextOverflow.ellipsis),
+                    subtitle: Text(_getParticleTypeLabel(settings.particleType), overflow: TextOverflow.ellipsis),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _showParticleDialog(context, settings),
                   ),
                   if (settings.particleEnabled) ...[
-                    const Divider(height: 1),
+                    Builder(builder: (context) => Divider(height: ResponsiveSpacing.xs(context) / 4)),
                     ListTile(
                       leading: const IconBox(icon: Icons.speed, color: Colors.deepOrange),
-                      title: const Text('粒子速率'),
-                      subtitle: Text('${settings.particleSpeed.toStringAsFixed(1)}x'),
+                      title: Text('粒子速率', overflow: TextOverflow.ellipsis),
+                      subtitle: Text('${settings.particleSpeed.toStringAsFixed(1)}x', overflow: TextOverflow.ellipsis),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Slider(
-                        value: settings.particleSpeed,
-                        min: 0.1,
-                        max: 1.0,
-                        divisions: 9,
-                        label: '${settings.particleSpeed.toStringAsFixed(1)}x',
-                        onChanged: (value) => settings.setParticleSpeed(value),
+                    Builder(
+                      builder: (context) => Padding(
+                        padding: EdgeInsets.symmetric(horizontal: ResponsiveSpacing.base(context)),
+                        child: Slider(
+                          value: settings.particleSpeed,
+                          min: 0.1,
+                          max: 1.0,
+                          divisions: 9,
+                          label: '${settings.particleSpeed.toStringAsFixed(1)}x',
+                          onChanged: (value) => settings.setParticleSpeed(value),
+                        ),
                       ),
                     ),
-                    const Divider(height: 1),
+                    Builder(builder: (context) => Divider(height: ResponsiveSpacing.xs(context) / 4)),
                     SwitchListTile(
                       secondary: const IconBox(icon: Icons.visibility, color: Colors.teal),
-                      title: const Text('全局显示'),
-                      subtitle: const Text('包含编辑器区域'),
+                      title: Text('全局显示', overflow: TextOverflow.ellipsis),
+                      subtitle: Text('包含编辑器区域', overflow: TextOverflow.ellipsis),
                       value: settings.particleGlobal,
                       onChanged: (v) => settings.setParticleGlobal(v),
                     ),
                   ],
-                  const Divider(height: 1),
+                  Builder(builder: (context) => Divider(height: ResponsiveSpacing.xs(context) / 4)),
                   // Progress Style
                   ListTile(
                     leading: const IconBox(icon: Icons.linear_scale, color: Colors.deepPurple),
-                    title: const Text('进度条样式'),
+                    title: Text('进度条样式', overflow: TextOverflow.ellipsis),
                     subtitle: Text(
                       settings.progressStyle == 'background' ? '背景进度条' : '标准进度条',
+                      overflow: TextOverflow.ellipsis,
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _showProgressStyleDialog(context, settings),
                   ),
-                  const Divider(height: 1),
+                  Builder(builder: (context) => Divider(height: ResponsiveSpacing.xs(context) / 4)),
                   // Calculation
                   ListTile(
                     leading: const IconBox(icon: Icons.calculate, color: Colors.brown),
-                    title: const Text('进度计算方式'),
-                    subtitle: Text(_getProgressCalculationLabel(settings.progressCalculation)),
+                    title: Text('进度计算方式', overflow: TextOverflow.ellipsis),
+                    subtitle: Text(_getProgressCalculationLabel(settings.progressCalculation), overflow: TextOverflow.ellipsis),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _showProgressCalculationDialog(context, settings),
                   ),
                   if (settings.progressCalculation == 'fixed') ...[
-                    const Divider(height: 1),
+                    Builder(builder: (context) => Divider(height: ResponsiveSpacing.xs(context) / 4)),
                     ListTile(
                       leading: const IconBox(icon: Icons.timer, color: Colors.grey),
-                      title: const Text('固定天数'),
-                      subtitle: Text('${settings.progressFixedDays} 天'),
+                      title: Text('固定天数', overflow: TextOverflow.ellipsis),
+                      subtitle: Text('${settings.progressFixedDays} 天', overflow: TextOverflow.ellipsis),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => _showFixedDaysDialog(context, settings),
                     ),
@@ -284,23 +297,23 @@ class _AppearanceCardState extends State<AppearanceCard> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(ResponsiveBorderRadius.lg(context))),
       ),
       builder: (context) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('选择主题色', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Padding(
+                padding: EdgeInsets.all(ResponsiveSpacing.base(context)),
+                child: Text('选择主题色', style: TextStyle(fontSize: ResponsiveFontSize.xl(context), fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                padding: EdgeInsets.fromLTRB(ResponsiveSpacing.base(context), 0, ResponsiveSpacing.base(context), ResponsiveSpacing.xl(context)),
                 child: Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+                  spacing: ResponsiveSpacing.md(context),
+                  runSpacing: ResponsiveSpacing.md(context),
                   children: AppConstants.themeColors.map((color) {
                     final isSelected = settings.themeColor.toARGB32() == color.toARGB32();
                     return GestureDetector(
@@ -314,17 +327,17 @@ class _AppearanceCardState extends State<AppearanceCard> {
                       },
                       child: AnimatedContainer(
                         duration: AppConstants.animationDuration,
-                        width: 48,
-                        height: 48,
+                        width: ResponsiveUtils.scaledSize(context, 48),
+                        height: ResponsiveUtils.scaledSize(context, 48),
                         decoration: BoxDecoration(
                           color: color,
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: isSelected ? Colors.white : Colors.transparent,
-                            width: 3,
+                            width: ResponsiveUtils.scaledSize(context, 3),
                           ),
                           boxShadow: isSelected
-                              ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 12)]
+                              ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: ResponsiveSpacing.md(context))]
                               : null,
                         ),
                         child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
@@ -357,11 +370,11 @@ class _AppearanceCardState extends State<AppearanceCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 16),
-              const Text('选择字体', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
+              Text('选择字体', style: TextStyle(fontSize: ResponsiveFontSize.xl(context), fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+              SizedBox(height: ResponsiveSpacing.base(context)),
               ...fonts.map((font) => ListTile(
-                title: Text(font['label']!),
+                title: Text(font['label']!, overflow: TextOverflow.ellipsis),
                 trailing: settings.fontFamily == font['name']
                     ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                     : null,
@@ -373,13 +386,13 @@ class _AppearanceCardState extends State<AppearanceCard> {
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.upload_file),
-                title: const Text('导入本地字体 (.ttf/.otf)'),
+                title: Text('导入本地字体 (.ttf/.otf)', overflow: TextOverflow.ellipsis),
                 onTap: () {
                   Navigator.pop(context);
                   _importFont(context, settings);
                 },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
             ],
           ),
         );
@@ -432,12 +445,12 @@ class _AppearanceCardState extends State<AppearanceCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 16),
-              const Text('卡片日期显示', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
+              Text('卡片日期显示', style: TextStyle(fontSize: ResponsiveFontSize.xl(context), fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+              SizedBox(height: ResponsiveSpacing.base(context)),
               ListTile(
-                title: const Text('仅剩余天数'),
-                subtitle: const Text('如: 3 天'),
+                title: Text('仅剩余天数', overflow: TextOverflow.ellipsis),
+                subtitle: Text('如: 3 天', overflow: TextOverflow.ellipsis),
                 trailing: settings.cardDisplayFormat == 'days'
                     ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                     : null,
@@ -447,8 +460,8 @@ class _AppearanceCardState extends State<AppearanceCard> {
                 },
               ),
               ListTile(
-                title: const Text('详细年月日'),
-                subtitle: const Text('如: 1年2个月3天'),
+                title: Text('详细年月日', overflow: TextOverflow.ellipsis),
+                subtitle: Text('如: 1年2个月3天', overflow: TextOverflow.ellipsis),
                 trailing: settings.cardDisplayFormat == 'detailed'
                     ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                     : null,
@@ -457,7 +470,7 @@ class _AppearanceCardState extends State<AppearanceCard> {
                   Navigator.pop(context);
                 },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
             ],
           ),
         );
@@ -482,11 +495,11 @@ class _AppearanceCardState extends State<AppearanceCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 16),
-              const Text('选择日期格式', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
+              Text('选择日期格式', style: TextStyle(fontSize: ResponsiveFontSize.xl(context), fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+              SizedBox(height: ResponsiveSpacing.base(context)),
               ...formats.map((fmt) => ListTile(
-                title: Text(fmt),
+                title: Text(fmt, overflow: TextOverflow.ellipsis),
                 trailing: settings.dateFormat == fmt
                     ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                     : null,
@@ -495,7 +508,7 @@ class _AppearanceCardState extends State<AppearanceCard> {
                   Navigator.pop(context);
                 },
               )),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
             ],
           ),
         );
@@ -520,12 +533,12 @@ class _AppearanceCardState extends State<AppearanceCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 16),
-              const Text('粒子效果', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
+              Text('粒子效果', style: TextStyle(fontSize: ResponsiveFontSize.xl(context), fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+              SizedBox(height: ResponsiveSpacing.base(context)),
               ...particles.map((p) => ListTile(
                 leading: Icon(p['icon'] as IconData),
-                title: Text(p['label'] as String),
+                title: Text(p['label'] as String, overflow: TextOverflow.ellipsis),
                 trailing: settings.particleType == p['type']
                     ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                     : null,
@@ -534,7 +547,7 @@ class _AppearanceCardState extends State<AppearanceCard> {
                   Navigator.pop(context);
                 },
               )),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
             ],
           ),
         );
@@ -551,12 +564,12 @@ class _AppearanceCardState extends State<AppearanceCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 16),
-              const Text('进度条样式', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
+              Text('进度条样式', style: TextStyle(fontSize: ResponsiveFontSize.xl(context), fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+              SizedBox(height: ResponsiveSpacing.base(context)),
               ListTile(
-                title: const Text('标准进度条'),
-                subtitle: const Text('经典的线通过度条'),
+                title: Text('标准进度条', overflow: TextOverflow.ellipsis),
+                subtitle: Text('经典的线通过度条', overflow: TextOverflow.ellipsis),
                 trailing: settings.progressStyle == 'standard'
                     ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                     : null,
@@ -566,8 +579,8 @@ class _AppearanceCardState extends State<AppearanceCard> {
                 },
               ),
               ListTile(
-                title: const Text('背景进度条'),
-                subtitle: const Text('整个卡片作为进度背景'),
+                title: Text('背景进度条', overflow: TextOverflow.ellipsis),
+                subtitle: Text('整个卡片作为进度背景', overflow: TextOverflow.ellipsis),
                 trailing: settings.progressStyle == 'background'
                     ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                     : null,
@@ -576,7 +589,7 @@ class _AppearanceCardState extends State<AppearanceCard> {
                   Navigator.pop(context);
                 },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
             ],
           ),
         );
@@ -593,11 +606,11 @@ class _AppearanceCardState extends State<AppearanceCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 16),
-              const Text('进度计算方式', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
+              Text('进度计算方式', style: TextStyle(fontSize: ResponsiveFontSize.xl(context), fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+              SizedBox(height: ResponsiveSpacing.base(context)),
               ...['year', 'month', 'week', 'day', 'fixed'].map((calc) => ListTile(
-                title: Text(_getProgressCalculationLabel(calc)),
+                title: Text(_getProgressCalculationLabel(calc), overflow: TextOverflow.ellipsis),
                 trailing: settings.progressCalculation == calc
                     ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                     : null,
@@ -609,7 +622,7 @@ class _AppearanceCardState extends State<AppearanceCard> {
                   }
                 },
               )),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
             ],
           ),
         );
@@ -622,17 +635,17 @@ class _AppearanceCardState extends State<AppearanceCard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('设置固定天数'),
+        title: Text('设置固定天数', overflow: TextOverflow.ellipsis),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(suffixText: '天'),
+          decoration: InputDecoration(suffixText: '天'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text('取消', overflow: TextOverflow.ellipsis),
           ),
           FilledButton(
             onPressed: () {
@@ -640,7 +653,7 @@ class _AppearanceCardState extends State<AppearanceCard> {
               settings.setProgressFixedDays(days);
               Navigator.pop(context);
             },
-            child: const Text('确定'),
+            child: Text('确定', overflow: TextOverflow.ellipsis),
           ),
         ],
       ),
@@ -657,9 +670,9 @@ class _AppearanceCardState extends State<AppearanceCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('浅色主题方案', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Padding(
+                padding: EdgeInsets.all(ResponsiveSpacing.base(context)),
+                child: Text('浅色主题方案', style: TextStyle(fontSize: ResponsiveFontSize.xl(context), fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
               ),
               ListView.builder(
                 shrinkWrap: true,
@@ -669,25 +682,25 @@ class _AppearanceCardState extends State<AppearanceCard> {
                   final isSelected = settings.lightThemeIndex == index;
                   return ListTile(
                     leading: Container(
-                      width: 40,
-                      height: 40,
+                      width: ResponsiveUtils.scaledSize(context, 40),
+                      height: ResponsiveUtils.scaledSize(context, 40),
                       decoration: BoxDecoration(
                         color: scheme.background,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: scheme.surface, width: 2),
+                        borderRadius: BorderRadius.circular(ResponsiveBorderRadius.sm(context)),
+                        border: Border.all(color: scheme.surface, width: ResponsiveUtils.scaledSize(context, 2)),
                       ),
                       child: Center(
                         child: Container(
-                          width: 20,
-                          height: 20,
+                          width: ResponsiveUtils.scaledSize(context, 20),
+                          height: ResponsiveUtils.scaledSize(context, 20),
                           decoration: BoxDecoration(
                             color: scheme.surface,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xs(context)),
                           ),
                         ),
                       ),
                     ),
-                    title: Text(scheme.name),
+                    title: Text(scheme.name, overflow: TextOverflow.ellipsis),
                     trailing: isSelected ? const Icon(Icons.check, color: Colors.green) : null,
                     onTap: () {
                       settings.setLightThemeIndex(index);
@@ -713,9 +726,9 @@ class _AppearanceCardState extends State<AppearanceCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('夜间主题方案', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Padding(
+                padding: EdgeInsets.all(ResponsiveSpacing.base(context)),
+                child: Text('夜间主题方案', style: TextStyle(fontSize: ResponsiveFontSize.xl(context), fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
               ),
               ListView.builder(
                 shrinkWrap: true,
@@ -725,25 +738,25 @@ class _AppearanceCardState extends State<AppearanceCard> {
                   final isSelected = settings.darkThemeIndex == index;
                   return ListTile(
                     leading: Container(
-                      width: 40,
-                      height: 40,
+                      width: ResponsiveUtils.scaledSize(context, 40),
+                      height: ResponsiveUtils.scaledSize(context, 40),
                       decoration: BoxDecoration(
                         color: scheme.background,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: scheme.surface, width: 2),
+                        borderRadius: BorderRadius.circular(ResponsiveBorderRadius.sm(context)),
+                        border: Border.all(color: scheme.surface, width: ResponsiveUtils.scaledSize(context, 2)),
                       ),
                       child: Center(
                         child: Container(
-                          width: 20,
-                          height: 20,
+                          width: ResponsiveUtils.scaledSize(context, 20),
+                          height: ResponsiveUtils.scaledSize(context, 20),
                           decoration: BoxDecoration(
                             color: scheme.surface,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xs(context)),
                           ),
                         ),
                       ),
                     ),
-                    title: Text(scheme.name, style: const TextStyle(color: Colors.white70)),
+                    title: Text(scheme.name, style: const TextStyle(color: Colors.white70), overflow: TextOverflow.ellipsis),
                     trailing: isSelected ? const Icon(Icons.check, color: Colors.green) : null,
                     onTap: () {
                       settings.setDarkThemeIndex(index);
