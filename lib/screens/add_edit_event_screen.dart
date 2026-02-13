@@ -962,122 +962,164 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   void _showReminderDialog({Reminder? reminder, int? index}) {
     HapticFeedback.selectionClick();
     int days = reminder?.daysBefore ?? 1;
-    TimeOfDay time = reminder != null
-        ? TimeOfDay(hour: reminder.hour, minute: reminder.minute)
-        : const TimeOfDay(hour: 9, minute: 0);
+    TimeOfDayWithSeconds time = reminder != null
+        ? TimeOfDayWithSeconds(hour: reminder.hour, minute: reminder.minute, second: 0)
+        : const TimeOfDayWithSeconds(hour: 9, minute: 0, second: 0);
 
     showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(
-                reminder == null ? '添加提醒' : '编辑提醒',
-                style: TextStyle(fontSize: ResponsiveFontSize.lg(context)),
-                overflow: TextOverflow.ellipsis,
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        '提前天数: ',
-                        style: TextStyle(
-                          fontSize: ResponsiveFontSize.base(context),
-                        ),
-                        overflow: TextOverflow.ellipsis,
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: GlassCard(
+                padding: EdgeInsets.all(ResponsiveSpacing.lg(context)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      reminder == null ? '添加提醒' : '编辑提醒',
+                      style: TextStyle(
+                        fontSize: ResponsiveFontSize.lg(context),
+                        fontWeight: FontWeight.bold,
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.remove_circle_outline),
-                        onPressed: days > 0
-                            ? () {
-                                HapticFeedback.selectionClick();
-                                setDialogState(() => days--);
-                              }
-                            : null,
-                      ),
-                      Flexible(
-                        child: Text(
-                          days == 0 ? '当天' : '提前 $days 天',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: ResponsiveSpacing.lg(context)),
+                    // 提前天数选择
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '提前天数: ',
                           style: TextStyle(
                             fontSize: ResponsiveFontSize.base(context),
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add_circle_outline),
-                        onPressed: days < 365
-                            ? () {
-                                HapticFeedback.selectionClick();
-                                setDialogState(() => days++);
-                              }
-                            : null,
-                      ),
-                    ],
-                  ),
-                  ListTile(
-                    title: Text(
-                      '提醒时间',
-                      style: TextStyle(
-                        fontSize: ResponsiveFontSize.base(context),
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle_outline),
+                          onPressed: days > 0
+                              ? () {
+                                  HapticFeedback.selectionClick();
+                                  setDialogState(() => days--);
+                                }
+                              : null,
+                        ),
+                        Flexible(
+                          child: Text(
+                            days == 0 ? '当天' : '提前 $days 天',
+                            style: TextStyle(
+                              fontSize: ResponsiveFontSize.base(context),
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          onPressed: days < 365
+                              ? () {
+                                  HapticFeedback.selectionClick();
+                                  setDialogState(() => days++);
+                                }
+                              : null,
+                        ),
+                      ],
                     ),
-                    trailing: Text(
-                      time.format(context),
-                      style: TextStyle(
-                        fontSize: ResponsiveFontSize.base(context),
+                    SizedBox(height: ResponsiveSpacing.base(context)),
+                    Divider(),
+                    // 提醒时间选择
+                    ListTile(
+                      leading: IconBox(
+                        icon: Icons.access_time,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      title: Text(
+                        '提醒时间',
+                        style: TextStyle(
+                          fontSize: ResponsiveFontSize.base(context),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: Text(
+                        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+                        style: TextStyle(
+                          fontSize: ResponsiveFontSize.base(context),
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onTap: () async {
+                        HapticFeedback.selectionClick();
+                        final picked = await showTimePickerSheet(
+                          context: context,
+                          initialHour: time.hour,
+                          initialMinute: time.minute,
+                          initialSecond: 0,
+                          showSeconds: false,
+                        );
+                        if (picked != null) {
+                          setDialogState(() => time = picked);
+                        }
+                      },
                     ),
-                    onTap: () async {
-                      HapticFeedback.selectionClick();
-                      final picked = await showTimePicker(
-                        context: context,
-                        initialTime: time,
-                      );
-                      if (picked != null) setDialogState(() => time = picked);
-                    },
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    '取消',
-                    style: TextStyle(
-                      fontSize: ResponsiveFontSize.base(context),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    final newReminder = Reminder(
-                      id: reminder?.id ?? const Uuid().v4(),
-                      eventId: widget.event?.id ?? '', // TBD on save
-                      daysBefore: days,
-                      hour: time.hour,
-                      minute: time.minute,
-                    );
+                    SizedBox(height: ResponsiveSpacing.lg(context)),
+                    // 按钮
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            '取消',
+                            style: TextStyle(
+                              fontSize: ResponsiveFontSize.base(context),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        SizedBox(width: ResponsiveSpacing.sm(context)),
+                        FilledButton(
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            final newReminder = Reminder(
+                              id: reminder?.id ?? const Uuid().v4(),
+                              eventId: widget.event?.id ?? '', // TBD on save
+                              daysBefore: days,
+                              hour: time.hour,
+                              minute: time.minute,
+                            );
 
-                    setState(() {
-                      if (index != null) {
-                        _reminders[index] = newReminder;
-                      } else {
-                        _reminders.add(newReminder);
-                      }
-                    });
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    '确定',
-                    style: TextStyle(
+                            setState(() {
+                              if (index != null) {
+                                _reminders[index] = newReminder;
+                              } else {
+                                _reminders.add(newReminder);
+                              }
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: Text(
+                            '确定',
+                            style: TextStyle(
+                              fontSize: ResponsiveFontSize.base(context),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
                       fontSize: ResponsiveFontSize.base(context),
                     ),
                     overflow: TextOverflow.ellipsis,
