@@ -358,4 +358,57 @@ class NotificationService {
     
     debugPrint('✓ 已重新调度 ${activeEvents.length} 个事件的 $totalScheduled 个提醒');
   }
+  
+  /// 发送测试通知
+  /// 
+  /// 立即显示一个测试通知，用于验证通知功能是否正常工作
+  Future<void> sendTestNotification({
+    required String eventTitle,
+    String? message,
+  }) async {
+    if (!_initialized) {
+      await initialize();
+    }
+    
+    try {
+      const testNotificationId = 999999; // 固定 ID，方便识别测试通知
+      
+      final androidDetails = AndroidNotificationDetails(
+        'event_reminders',
+        '事件提醒',
+        channelDescription: '倒数日事件的提醒通知',
+        importance: Importance.high,
+        priority: Priority.high,
+        enableVibration: true,
+        playSound: true,
+        styleInformation: BigTextStyleInformation(
+          message ?? '这是一条测试通知 🔔',
+        ),
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      final notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await _notifications.show(
+        testNotificationId,
+        eventTitle,
+        message ?? '这是一条测试通知 🔔',
+        notificationDetails,
+        payload: 'test_notification',
+      );
+      
+      debugPrint('✓ 测试通知已发送');
+    } catch (e) {
+      debugPrint('❌ 发送测试通知失败: $e');
+      rethrow;
+    }
+  }
 }
