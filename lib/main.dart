@@ -47,8 +47,8 @@ void main() async {
   
   // 设置通知点击回调 - 导航到事件详情页
   notificationService.onNotificationTap = (String eventId) {
-    // 查找事件
     try {
+      // 查找事件
       final event = eventsProvider.events.firstWhere(
         (e) => e.id == eventId,
       );
@@ -61,9 +61,12 @@ void main() async {
           ),
         );
       }
-    } catch (e) {
-      // 事件未找到，忽略导航
+    } on StateError {
+      // 事件未找到（可能已被删除）
       debugPrint('通知点击: 事件 $eventId 未找到');
+    } catch (e) {
+      // 其他意外错误
+      debugPrint('通知点击处理失败: $e');
     }
   };
   

@@ -261,12 +261,15 @@ class NotificationService {
   /// 
   /// 使用确定性算法生成唯一的通知 ID，避免哈希碰撞。
   /// 基于事件 ID 和提醒 ID 的组合，确保同一提醒总是生成相同的 ID。
+  /// 
+  /// 注意：使用管道符(|)而非下划线(_)作为分隔符，因为 UUID 中可能包含下划线，
+  /// 而管道符更不可能出现在 ID 中，从而减少碰撞风险。
   int _generateNotificationId(String eventId, String reminderId) {
     // 使用 Dart 内置 hashCode，确保结果在有效范围内
     // 保持在 31 位有符号整数范围内，避免与测试通知 ID 冲突
     final hash = '$eventId|$reminderId'.hashCode & 0x7FFFFFFF;
     
-    // 确保不与测试通知 ID 范围冲突 (2000000000+)
+    // 确保不与测试通知 ID 范围冲突 (2000000000-2010000000)
     // 如果冲突，则调整到安全范围
     return hash < 2000000000 ? hash : hash % 2000000000;
   }
@@ -366,8 +369,9 @@ class NotificationService {
     
     try {
       // 使用时间戳生成唯一的测试通知 ID，避免多次测试时相互覆盖
-      // 将测试通知 ID 设置在 [2000000000, 2100000000) 范围内
-      final testNotificationId = 2000000000 + (DateTime.now().millisecondsSinceEpoch % 100000000);
+      // 测试通知 ID 范围: [2000000000, 2010000000)
+      // 使用较小的模数(10000000)减少与常规通知 ID 的碰撞风险
+      final testNotificationId = 2000000000 + (DateTime.now().millisecondsSinceEpoch % 10000000);
       
       final androidDetails = AndroidNotificationDetails(
         'event_reminders',
