@@ -610,11 +610,14 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                                   ),
                                                   color: Colors.redAccent,
                                                 ),
-                                                onPressed: () => setState(
-                                                  () => _reminders.removeAt(
-                                                    index,
-                                                  ),
-                                                ),
+                                                onPressed: () {
+                                                  HapticFeedback.mediumImpact();
+                                                  setState(
+                                                    () => _reminders.removeAt(
+                                                      index,
+                                                    ),
+                                                  );
+                                                },
                                               ),
                                             ],
                                           ),
@@ -972,6 +975,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   }
 
   void _showReminderDialog({Reminder? reminder, int? index}) {
+    HapticFeedback.selectionClick();
     int days = reminder?.daysBefore ?? 1;
     TimeOfDay time = reminder != null
         ? TimeOfDay(hour: reminder.hour, minute: reminder.minute)
@@ -1003,7 +1007,10 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                       IconButton(
                         icon: const Icon(Icons.remove_circle_outline),
                         onPressed: days > 0
-                            ? () => setDialogState(() => days--)
+                            ? () {
+                                HapticFeedback.selectionClick();
+                                setDialogState(() => days--);
+                              }
                             : null,
                       ),
                       Flexible(
@@ -1018,7 +1025,10 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                       IconButton(
                         icon: const Icon(Icons.add_circle_outline),
                         onPressed: days < 365
-                            ? () => setDialogState(() => days++)
+                            ? () {
+                                HapticFeedback.selectionClick();
+                                setDialogState(() => days++);
+                              }
                             : null,
                       ),
                     ],
@@ -1039,6 +1049,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     onTap: () async {
+                      HapticFeedback.selectionClick();
                       final picked = await showTimePicker(
                         context: context,
                         initialTime: time,
@@ -1061,6 +1072,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                 ),
                 TextButton(
                   onPressed: () {
+                    HapticFeedback.mediumImpact();
                     final newReminder = Reminder(
                       id: reminder?.id ?? const Uuid().v4(),
                       eventId: widget.event?.id ?? '', // TBD on save
@@ -1215,7 +1227,22 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
           reminders: event.reminders,
         );
       }
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        // 显示成功提示
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isEditing ? '保存成功' : '添加成功',
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+            duration: const Duration(seconds: 1),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -1227,6 +1254,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
               overflow: TextOverflow.ellipsis,
               maxLines: 2,
             ),
+            backgroundColor: Colors.red,
           ),
         );
       }
