@@ -262,18 +262,13 @@ class NotificationService {
   /// 使用确定性算法生成唯一的通知 ID，避免哈希碰撞。
   /// 基于事件 ID 和提醒 ID 的组合，确保同一提醒总是生成相同的 ID。
   int _generateNotificationId(String eventId, String reminderId) {
-    final combined = '$eventId|$reminderId';
+    // 使用 Dart 内置 hashCode，确保结果在有效范围内
+    // 保持在 31 位有符号整数范围内，避免与测试通知 ID 冲突
+    final hash = '$eventId|$reminderId'.hashCode & 0x7FFFFFFF;
     
-    // 使用改进的哈希算法减少碰撞
-    // FNV-1a 哈希的简化版本
-    int hash = 2166136261;
-    for (int i = 0; i < combined.length; i++) {
-      hash ^= combined.codeUnitAt(i);
-      hash = (hash * 16777619) & 0x7FFFFFFF;  // 保持在 32 位有符号整数范围内
-    }
-    
-    // 确保结果为正数且在有效范围内
-    return hash & 0x7FFFFFFF;
+    // 确保不与测试通知 ID 范围冲突 (2000000000+)
+    // 如果冲突，则调整到安全范围
+    return hash < 2000000000 ? hash : hash % 2000000000;
   }
 
   /// 取消事件的所有通知
@@ -370,9 +365,9 @@ class NotificationService {
     }
     
     try {
-      // 使用一个不太可能与事件通知 ID 冲突的值
+      // 使用时间戳生成唯一的测试通知 ID，避免多次测试时相互覆盖
       // 将测试通知 ID 设置在 [2000000000, 2100000000) 范围内
-      const testNotificationId = 2000000001; // 远离哈希生成的 ID 范围
+      final testNotificationId = 2000000000 + (DateTime.now().millisecondsSinceEpoch % 100000000);
       
       final androidDetails = AndroidNotificationDetails(
         'event_reminders',
@@ -406,7 +401,7 @@ class NotificationService {
         payload: 'test_notification',
       );
       
-      debugPrint('✓ 测试通知已发送');
+      debugPrint('✓ 测试通知已发送 (ID: $testNotificationId)');
     } catch (e) {
       debugPrint('❌ 发送测试通知失败: $e');
       rethrow;

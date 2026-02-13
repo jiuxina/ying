@@ -1141,15 +1141,19 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                             );
 
                             // 检查是否是重复的提醒（相同的天数和时间）
-                            final isDuplicate = _reminders.asMap().entries.any((entry) {
-                              final i = entry.key;
-                              final r = entry.value;
+                            bool isDuplicate = false;
+                            for (int i = 0; i < _reminders.length; i++) {
                               // 如果是编辑模式，排除当前正在编辑的提醒
-                              if (index != null && i == index) return false;
-                              return r.daysBefore == days && 
-                                     r.hour == time.hour && 
-                                     r.minute == time.minute;
-                            });
+                              if (index != null && i == index) continue;
+                              
+                              final r = _reminders[i];
+                              if (r.daysBefore == days && 
+                                  r.hour == time.hour && 
+                                  r.minute == time.minute) {
+                                isDuplicate = true;
+                                break;
+                              }
+                            }
                             
                             if (isDuplicate) {
                               Navigator.pop(context);
