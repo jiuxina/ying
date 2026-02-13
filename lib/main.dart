@@ -48,18 +48,22 @@ void main() async {
   // 设置通知点击回调 - 导航到事件详情页
   notificationService.onNotificationTap = (String eventId) {
     // 查找事件
-    final event = eventsProvider.events.cast<CountdownEvent?>().firstWhere(
-      (e) => e?.id == eventId,
-      orElse: () => null,
-    );
-    
-    if (event != null && navigatorKey.currentContext != null) {
-      // 导航到事件详情页
-      Navigator.of(navigatorKey.currentContext!).push(
-        MaterialPageRoute(
-          builder: (context) => EventDetailScreen(event: event),
-        ),
+    try {
+      final event = eventsProvider.events.firstWhere(
+        (e) => e.id == eventId,
       );
+      
+      if (navigatorKey.currentContext != null) {
+        // 导航到事件详情页
+        Navigator.of(navigatorKey.currentContext!).push(
+          MaterialPageRoute(
+            builder: (context) => EventDetailScreen(event: event),
+          ),
+        );
+      }
+    } catch (e) {
+      // 事件未找到，忽略导航
+      debugPrint('通知点击: 事件 $eventId 未找到');
     }
   };
   

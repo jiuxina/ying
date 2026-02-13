@@ -30,7 +30,6 @@ class NotificationService {
       tz.initializeTimeZones();
       // 使用设备本地时区，而不是硬编码为 Asia/Shanghai
       // 这样可以支持国际用户
-      final localTimeZone = DateTime.now().timeZoneName;
       try {
         // 尝试使用当前系统时区
         tz.setLocalLocation(tz.local);
@@ -371,7 +370,9 @@ class NotificationService {
     }
     
     try {
-      const testNotificationId = 999999; // 固定 ID，方便识别测试通知
+      // 使用一个不太可能与事件通知 ID 冲突的值
+      // 将测试通知 ID 设置在 [2000000000, 2100000000) 范围内
+      const testNotificationId = 2000000001; // 远离哈希生成的 ID 范围
       
       final androidDetails = AndroidNotificationDetails(
         'event_reminders',
