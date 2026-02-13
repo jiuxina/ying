@@ -287,7 +287,7 @@ class _EventCardState extends State<EventCard>
           Container(
             padding: EdgeInsets.symmetric(
               horizontal: ResponsiveSpacing.md(context), 
-              vertical: ResponsiveSpacing.xs(context) + ResponsiveUtils.scaledSpacing(context, 2),
+              vertical: ResponsiveUtils.scaledSpacing(context, 6),
             ),
             decoration: BoxDecoration(
               color: Colors.white.withAlpha(30),
@@ -342,7 +342,7 @@ class _EventCardState extends State<EventCard>
     final settings = context.watch<SettingsProvider>();
 
     return Container(
-      padding: EdgeInsets.all(ResponsiveSpacing.base(context) - ResponsiveUtils.scaledSpacing(context, 2)),
+      padding: EdgeInsets.all(ResponsiveUtils.scaledSpacing(context, 14)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -351,7 +351,7 @@ class _EventCardState extends State<EventCard>
             children: [
               Container(
                 padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveSpacing.sm(context) + ResponsiveUtils.scaledSpacing(context, 2), 
+                  horizontal: ResponsiveUtils.scaledSpacing(context, 10), 
                   vertical: ResponsiveSpacing.xs(context),
                 ),
                 decoration: BoxDecoration(
@@ -393,20 +393,20 @@ class _EventCardState extends State<EventCard>
                 ),
             ],
           ),
-          SizedBox(height: ResponsiveSpacing.sm(context) + ResponsiveUtils.scaledSpacing(context, 2)),
+          SizedBox(height: ResponsiveUtils.scaledSpacing(context, 10)),
 
           // 标题
           Text(
             event.title,
             style: TextStyle(
               color: Colors.white,
-              fontSize: ResponsiveFontSize.lg(context) + ResponsiveUtils.scaledFontSize(context, 1),
+              fontSize: ResponsiveUtils.scaledFontSize(context, 17),
               fontWeight: FontWeight.bold,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: ResponsiveSpacing.xs(context) + ResponsiveUtils.scaledSpacing(context, 2)),
+          SizedBox(height: ResponsiveUtils.scaledSpacing(context, 6)),
 
           // 天数/详细日期显示
           if (settings.cardDisplayFormat == 'detailed')
@@ -633,7 +633,7 @@ class _EventCardState extends State<EventCard>
         ),
         child: Icon(
           Icons.push_pin,
-          size: ResponsiveIconSize.xs(context) + ResponsiveUtils.scaledSize(context, 2),
+          size: ResponsiveUtils.scaledSize(context, 14),
           color: color,
         ),
       ),
