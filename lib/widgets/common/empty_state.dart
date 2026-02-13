@@ -5,12 +5,16 @@ class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String description;
+  final VoidCallback? onAction;
+  final String? actionLabel;
 
   const EmptyState({
     super.key,
     this.icon = Icons.event_available,
     this.title = '还没有事件',
     this.description = '点击右下角按钮添加第一个倒数日',
+    this.onAction,
+    this.actionLabel,
   });
 
   @override
@@ -59,6 +63,14 @@ class EmptyState extends StatelessWidget {
               softWrap: true,
               maxLines: 3,
             ),
+            if (onAction != null && actionLabel != null) ...[
+              SizedBox(height: ResponsiveSpacing.lg(context)),
+              FilledButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.clear),
+                label: Text(actionLabel!),
+              ),
+            ],
           ],
         ),
       ),

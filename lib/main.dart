@@ -6,6 +6,7 @@ import 'package:home_widget/home_widget.dart';
 
 import 'providers/events_provider.dart';
 import 'providers/settings_provider.dart';
+import 'services/notification_service.dart';
 import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 import 'utils/constants.dart';
@@ -26,6 +27,11 @@ void main() async {
 
   // Initialize home widget
   await HomeWidget.setAppGroupId(AppConstants.appGroupId);
+
+  // Initialize notification service
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+  await notificationService.requestPermissions();
 
   // Initialize settings
   final settingsProvider = SettingsProvider();
