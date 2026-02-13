@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../utils/responsive_utils.dart';
 
 /// ============================================================================
 /// 统一时间选择器 - 时/分/秒 三个滚轮并排显示
@@ -71,64 +72,74 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
       children: [
         // 当前时间显示
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: EdgeInsets.symmetric(
+            vertical: ResponsiveSpacing.base(context),
+          ),
           child: Text(
             '${_hour.toString().padLeft(2, '0')}:${_minute.toString().padLeft(2, '0')}:${_second.toString().padLeft(2, '0')}',
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              letterSpacing: 2,
+              letterSpacing: ResponsiveUtils.scaledSize(context, 2),
             ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
         // 滚轮选择器
         SizedBox(
-          height: 180,
+          height: ResponsiveUtils.scaledSize(context, 180),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // 小时
-              _buildWheelColumn(
-                context: context,
-                label: '时',
-                controller: _hourController,
-                itemCount: 24,
-                selectedValue: _hour,
-                onChanged: (value) {
-                  HapticFeedback.selectionClick();
-                  setState(() => _hour = value);
-                  _notifyChange();
-                },
+              Flexible(
+                child: _buildWheelColumn(
+                  context: context,
+                  label: '时',
+                  controller: _hourController,
+                  itemCount: 24,
+                  selectedValue: _hour,
+                  onChanged: (value) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _hour = value);
+                    _notifyChange();
+                  },
+                ),
               ),
               // 分隔符
               _buildSeparator(context),
               // 分钟
-              _buildWheelColumn(
-                context: context,
-                label: '分',
-                controller: _minuteController,
-                itemCount: 60,
-                selectedValue: _minute,
-                onChanged: (value) {
-                  HapticFeedback.selectionClick();
-                  setState(() => _minute = value);
-                  _notifyChange();
-                },
+              Flexible(
+                child: _buildWheelColumn(
+                  context: context,
+                  label: '分',
+                  controller: _minuteController,
+                  itemCount: 60,
+                  selectedValue: _minute,
+                  onChanged: (value) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _minute = value);
+                    _notifyChange();
+                  },
+                ),
               ),
               // 分隔符
               if (widget.showSeconds) _buildSeparator(context),
               // 秒数
               if (widget.showSeconds)
-                _buildWheelColumn(
-                  context: context,
-                  label: '秒',
-                  controller: _secondController,
-                  itemCount: 60,
-                  selectedValue: _second,
-                  onChanged: (value) {
-                    HapticFeedback.selectionClick();
-                    setState(() => _second = value);
-                    _notifyChange();
-                  },
+                Flexible(
+                  child: _buildWheelColumn(
+                    context: context,
+                    label: '秒',
+                    controller: _secondController,
+                    itemCount: 60,
+                    selectedValue: _second,
+                    onChanged: (value) {
+                      HapticFeedback.selectionClick();
+                      setState(() => _second = value);
+                      _notifyChange();
+                    },
+                  ),
                 ),
             ],
           ),
@@ -146,6 +157,9 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
     required ValueChanged<int> onChanged,
   }) {
     final theme = Theme.of(context);
+    final wheelWidth = ResponsiveUtils.scaledSize(context, 60);
+    final wheelHeight = ResponsiveUtils.scaledSize(context, 150);
+    final itemExtent = ResponsiveUtils.scaledSize(context, 40);
     
     return Column(
       children: [
@@ -155,15 +169,17 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
           style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.outline,
           ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: ResponsiveSpacing.xs(context)),
         // 滚轮
         SizedBox(
-          width: 60,
-          height: 150,
+          width: wheelWidth,
+          height: wheelHeight,
           child: ListWheelScrollView.useDelegate(
             controller: controller,
-            itemExtent: 40,
+            itemExtent: itemExtent,
             perspective: 0.005,
             diameterRatio: 1.5,
             physics: const FixedExtentScrollPhysics(),
@@ -176,7 +192,9 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
                   child: AnimatedDefaultTextStyle(
                     duration: const Duration(milliseconds: 150),
                     style: TextStyle(
-                      fontSize: isSelected ? 24 : 18,
+                      fontSize: isSelected
+                          ? ResponsiveFontSize.title(context)
+                          : ResponsiveFontSize.xl(context),
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       color: isSelected
                           ? theme.colorScheme.primary
@@ -195,13 +213,16 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
 
   Widget _buildSeparator(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveSpacing.sm(context),
+      ),
       child: Text(
         ':',
         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.w300,
               color: Theme.of(context).colorScheme.outline,
             ),
+        overflow: TextOverflow.visible,
       ),
     );
   }
@@ -237,8 +258,10 @@ Future<TimeOfDayWithSeconds?> showTimePickerSheet({
   await showModalBottomSheet(
     context: context,
     backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(ResponsiveBorderRadius.lg(context)),
+      ),
     ),
     builder: (context) {
       TimeOfDayWithSeconds tempTime = TimeOfDayWithSeconds(
@@ -253,12 +276,14 @@ Future<TimeOfDayWithSeconds?> showTimePickerSheet({
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 16),
+                SizedBox(height: ResponsiveSpacing.base(context)),
                 Text(
                   '选择时间',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
                 TimePickerSheet(
                   initialHour: initialHour,
@@ -269,9 +294,11 @@ Future<TimeOfDayWithSeconds?> showTimePickerSheet({
                     tempTime = time;
                   },
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: ResponsiveSpacing.base(context)),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveSpacing.xl(context),
+                  ),
                   child: Row(
                     children: [
                       Expanded(
@@ -280,7 +307,7 @@ Future<TimeOfDayWithSeconds?> showTimePickerSheet({
                           child: const Text('取消'),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      SizedBox(width: ResponsiveSpacing.base(context)),
                       Expanded(
                         child: FilledButton(
                           onPressed: () {
@@ -293,7 +320,7 @@ Future<TimeOfDayWithSeconds?> showTimePickerSheet({
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: ResponsiveSpacing.base(context)),
               ],
             ),
           );
