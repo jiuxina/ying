@@ -8,6 +8,7 @@ import '../../providers/settings_provider.dart';
 import '../../screens/add_edit_event_screen.dart';
 import '../../screens/event_detail_screen.dart';
 import '../../utils/constants.dart';
+import '../../utils/responsive_utils.dart';
 import '../animations/staggered_animation.dart';
 import '../category_selector.dart';
 import '../common/ui_helpers.dart';
@@ -32,21 +33,21 @@ class EventListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(AppConstants.paddingMedium),
+      padding: EdgeInsets.all(ResponsiveSpacing.base(context)),
       children: [
         // 分类筛选器
         const SectionHeader(title: '分类筛选', icon: Icons.category),
-        const SizedBox(height: 12),
+        SizedBox(height: ResponsiveSpacing.md(context)),
         CategorySelector(
           selectedCategoryId: selectedCategoryId,
           onCategoryChanged: onCategoryChanged,
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: ResponsiveSpacing.xl(context)),
 
         // 置顶事件
         if (pinnedEvents.isNotEmpty) ...[
           const SectionHeader(title: '置顶', icon: Icons.push_pin),
-          const SizedBox(height: 12),
+          SizedBox(height: ResponsiveSpacing.md(context)),
           ...pinnedEvents.asMap().entries.map((entry) => 
             StaggeredListItem(
               index: entry.key,
@@ -76,7 +77,7 @@ class EventListView extends StatelessWidget {
     return Column(
       children: [
         _EventListHeader(title: '全部事件', icon: Icons.event, isCustomSort: false),
-        const SizedBox(height: 12),
+        SizedBox(height: ResponsiveSpacing.md(context)),
         ...unpinnedEvents.asMap().entries.map((entry) => 
           StaggeredListItem(
             index: entry.key + animationOffset,
@@ -91,7 +92,7 @@ class EventListView extends StatelessWidget {
     return Column(
       children: [
         _EventListHeader(title: '全部事件 (长按拖拽)', icon: Icons.drag_indicator, isCustomSort: true),
-        const SizedBox(height: 12),
+        SizedBox(height: ResponsiveSpacing.md(context)),
         ReorderableListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -171,7 +172,7 @@ class EventListView extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Text(
                 event.title,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: ResponsiveFontSize.xl(context), fontWeight: FontWeight.bold),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -333,7 +334,7 @@ class _EventListHeader extends StatelessWidget {
                 Text(
                   _getSortLabel(settings.sortOrder),
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: ResponsiveFontSize.sm(context),
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
@@ -367,7 +368,7 @@ class _EventListHeader extends StatelessWidget {
                 Text(
                   settings.cardsExpanded ? '收起' : '展开',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: ResponsiveFontSize.sm(context),
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
@@ -406,7 +407,7 @@ class _EventListHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 16),
-              const Text('排序方式', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('排序方式', style: TextStyle(fontSize: ResponsiveFontSize.xl(context), fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               _buildSortOption(context, settings, 'custom', '自定义排序 (拖拽)', Icons.drag_indicator),
               _buildSortOption(context, settings, 'daysAsc', '按剩余天数（升序）', Icons.arrow_upward),
