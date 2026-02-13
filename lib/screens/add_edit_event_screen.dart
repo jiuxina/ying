@@ -65,6 +65,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   String? _initialBackgroundImage;
   String? _initialGroupId;
   bool _isSaving = false;
+  bool _isPickingImage = false;
 
   @override
   void initState() {
@@ -675,21 +676,31 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   subtitle: Text(
-                                    _backgroundImage != null ? '已设置' : '默认背景',
+                                    _isPickingImage
+                                        ? '选择中...'
+                                        : (_backgroundImage != null ? '已设置' : '默认背景'),
                                     style: TextStyle(
                                       fontSize: ResponsiveFontSize.sm(context),
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  trailing: _backgroundImage != null
-                                      ? IconButton(
-                                          icon: const Icon(Icons.close),
-                                          onPressed: () => setState(
-                                            () => _backgroundImage = null,
+                                  trailing: _isPickingImage
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
                                           ),
                                         )
-                                      : const Icon(Icons.chevron_right),
-                                  onTap: _pickImage,
+                                      : (_backgroundImage != null
+                                          ? IconButton(
+                                              icon: const Icon(Icons.close),
+                                              onPressed: () => setState(
+                                                () => _backgroundImage = null,
+                                              ),
+                                            )
+                                          : const Icon(Icons.chevron_right)),
+                                  onTap: _isPickingImage ? null : _pickImage,
                                 ),
                               ],
                             ),
@@ -1126,13 +1137,33 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   }
 
   Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (_isPickingImage) return;
 
-    if (image != null) {
-      setState(() {
-        _backgroundImage = image.path;
-      });
+    setState(() => _isPickingImage = true);
+    HapticFeedback.selectionClick();
+
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+      if (image != null && mounted) {
+        setState(() {
+          _backgroundImage = image.path;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('选择图片失败: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPickingImage = false);
+      }
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
@@ -130,30 +131,44 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   Future<void> _backup() async {
     if (!_isConfigValid()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先配置并测试连接')),
+        const SnackBar(
+          content: Text('请先配置并测试连接'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
+    HapticFeedback.mediumImpact();
     setState(() => _isSyncing = true);
 
     final result = await _cloudSyncService.backup();
 
     if (!mounted) return;
-    
+
     setState(() => _isSyncing = false);
 
     if (result.success) {
+      HapticFeedback.heavyImpact();
       final settings = Provider.of<SettingsProvider>(context, listen: false);
       await settings.updateLastSyncTime();
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('备份成功')),
+        const SnackBar(
+          content: Text('✓ 备份成功'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
       );
     } else {
+      HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('备份失败: ${result.errorMessage}')),
+        SnackBar(
+          content: Text('✗ 备份失败: ${result.errorMessage}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
       );
     }
   }
@@ -161,7 +176,10 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   Future<void> _restore() async {
     if (!_isConfigValid()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先配置并测试连接')),
+        const SnackBar(
+          content: Text('请先配置并测试连接'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
@@ -182,7 +200,10 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.pop(context, true);
+            },
             child: const Text('确认覆盖恢复'),
           ),
         ],
@@ -191,21 +212,32 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
 
     if (confirm != true) return;
 
+    HapticFeedback.mediumImpact();
     setState(() => _isSyncing = true);
 
     final result = await _cloudSyncService.restore();
 
     if (!mounted) return;
-    
+
     setState(() => _isSyncing = false);
 
     if (result.success) {
+      HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('恢复成功，请重启应用以应用更改')),
+        const SnackBar(
+          content: Text('✓ 恢复成功，请重启应用以应用更改'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
       );
     } else {
+      HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('恢复失败: ${result.errorMessage}')),
+        SnackBar(
+          content: Text('✗ 恢复失败: ${result.errorMessage}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
       );
     }
   }

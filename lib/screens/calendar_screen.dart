@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -128,6 +129,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ),
         onDaySelected: (selectedDay, focusedDay) {
           if (!isSameDay(_selectedDay, selectedDay)) {
+            HapticFeedback.selectionClick();
             setState(() {
               _selectedDay = selectedDay;
               _focusedDay = focusedDay;
@@ -136,10 +138,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
         },
         onFormatChanged: (format) {
           if (_calendarFormat != format) {
+            HapticFeedback.selectionClick();
             setState(() => _calendarFormat = format);
           }
         },
         onPageChanged: (focusedDay) {
+          HapticFeedback.lightImpact();
           _focusedDay = focusedDay;
         },
       ),
