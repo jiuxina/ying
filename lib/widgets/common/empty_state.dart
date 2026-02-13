@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/responsive_utils.dart';
 
 class EmptyState extends StatelessWidget {
   final IconData icon;
@@ -16,11 +17,12 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(48),
+        padding: EdgeInsets.all(ResponsiveSpacing.xxxl(context)),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(ResponsiveSpacing.xl(context)),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -32,24 +34,30 @@ class EmptyState extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                size: 48,
+                size: ResponsiveIconSize.xxl(context),
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: ResponsiveSpacing.xl(context)),
             Text(
               title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: ResponsiveSpacing.sm(context)),
             Text(
               description,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.outline,
                   ),
+              overflow: TextOverflow.visible,
+              softWrap: true,
+              maxLines: 3,
             ),
           ],
         ),

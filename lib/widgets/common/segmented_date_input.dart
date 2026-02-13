@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../utils/responsive_utils.dart';
 
 /// ============================================================================
 /// 分段日期输入组件 - YYYY/MM/DD 格式
@@ -135,7 +136,7 @@ class _SegmentedDateInputState extends State<SegmentedDateInput> {
     final theme = Theme.of(context);
     final textStyle = theme.textTheme.headlineMedium?.copyWith(
       fontWeight: FontWeight.bold,
-      letterSpacing: 2,
+      letterSpacing: ResponsiveUtils.scaledSize(context, 2),
     );
     final separatorStyle = theme.textTheme.headlineMedium?.copyWith(
       fontWeight: FontWeight.w300,
@@ -147,70 +148,87 @@ class _SegmentedDateInputState extends State<SegmentedDateInput> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // 年份
-        SizedBox(
-          width: 80,
-          child: TextField(
-            controller: _yearController,
-            focusNode: _yearFocus,
-            textAlign: TextAlign.center,
-            style: textStyle,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(4),
-            ],
-            decoration: const InputDecoration(
-              hintText: 'YYYY',
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
+        Flexible(
+          flex: 2,
+          child: SizedBox(
+            width: ResponsiveUtils.scaledSize(context, 80),
+            child: TextField(
+              controller: _yearController,
+              focusNode: _yearFocus,
+              textAlign: TextAlign.center,
+              style: textStyle,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(4),
+              ],
+              decoration: const InputDecoration(
+                hintText: 'YYYY',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+              onChanged: _onYearChanged,
             ),
-            onChanged: _onYearChanged,
           ),
         ),
         // 分隔符
-        Text(' / ', style: separatorStyle),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveSpacing.xs(context),
+          ),
+          child: Text(' / ', style: separatorStyle),
+        ),
         // 月份
-        SizedBox(
-          width: 50,
-          child: TextField(
-            controller: _monthController,
-            focusNode: _monthFocus,
-            textAlign: TextAlign.center,
-            style: textStyle,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(2),
-            ],
-            decoration: const InputDecoration(
-              hintText: 'MM',
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
+        Flexible(
+          child: SizedBox(
+            width: ResponsiveUtils.scaledSize(context, 50),
+            child: TextField(
+              controller: _monthController,
+              focusNode: _monthFocus,
+              textAlign: TextAlign.center,
+              style: textStyle,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(2),
+              ],
+              decoration: const InputDecoration(
+                hintText: 'MM',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+              onChanged: _onMonthChanged,
             ),
-            onChanged: _onMonthChanged,
           ),
         ),
         // 分隔符
-        Text(' / ', style: separatorStyle),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveSpacing.xs(context),
+          ),
+          child: Text(' / ', style: separatorStyle),
+        ),
         // 日期
-        SizedBox(
-          width: 50,
-          child: TextField(
-            controller: _dayController,
-            focusNode: _dayFocus,
-            textAlign: TextAlign.center,
-            style: textStyle,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(2),
-            ],
-            decoration: const InputDecoration(
-              hintText: 'DD',
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
+        Flexible(
+          child: SizedBox(
+            width: ResponsiveUtils.scaledSize(context, 50),
+            child: TextField(
+              controller: _dayController,
+              focusNode: _dayFocus,
+              textAlign: TextAlign.center,
+              style: textStyle,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(2),
+              ],
+              decoration: const InputDecoration(
+                hintText: 'DD',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+              onChanged: _onDayChanged,
             ),
-            onChanged: _onDayChanged,
           ),
         ),
       ],
@@ -230,8 +248,10 @@ Future<DateTime?> showSegmentedDatePicker({
   await showModalBottomSheet(
     context: context,
     backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(ResponsiveBorderRadius.lg(context)),
+      ),
     ),
     isScrollControlled: true,
     builder: (context) {
@@ -244,14 +264,16 @@ Future<DateTime?> showSegmentedDatePicker({
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
               Text(
                 '选择日期',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: ResponsiveSpacing.xl(context)),
               SegmentedDateInput(
                 initialDate: initialDate,
                 firstDate: firstDate,
@@ -260,9 +282,11 @@ Future<DateTime?> showSegmentedDatePicker({
                   tempDate = date;
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: ResponsiveSpacing.xl(context)),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveSpacing.xl(context),
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -271,7 +295,7 @@ Future<DateTime?> showSegmentedDatePicker({
                         child: const Text('取消'),
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(width: ResponsiveSpacing.base(context)),
                     Expanded(
                       child: FilledButton(
                         onPressed: () {
@@ -284,7 +308,7 @@ Future<DateTime?> showSegmentedDatePicker({
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveSpacing.base(context)),
             ],
           ),
         ),
