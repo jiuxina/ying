@@ -411,7 +411,11 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
                   if (_customBackgroundPath != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text('比例已变更，建议重新选择背景图片以适配新尺寸', maxLines: 2, overflow: TextOverflow.ellipsis),
+                        content: const Text(
+                          '比例已变更，建议重新选择背景图片以适配新尺寸',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         action: SnackBarAction(
                           label: '选择图片',
                           onPressed: _pickAndCropImage,
@@ -425,7 +429,7 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
               child: Container(
                 padding: EdgeInsets.symmetric(
                   horizontal: ResponsiveSpacing.md(context), 
-                  vertical: ResponsiveSpacing.xs(context) + 2
+                  vertical: ResponsiveSpacing.xs(context) + ResponsiveUtils.scaledSpacing(context, 2)
                 ),
                 decoration: BoxDecoration(
                   color: isSelected
