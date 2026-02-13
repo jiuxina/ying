@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
@@ -65,8 +66,9 @@ class _ImportScreenState extends State<ImportScreen> {
   Future<void> _confrimImport() async {
     if (_importedEvents.isEmpty) return;
 
+    HapticFeedback.mediumImpact();
     setState(() => _isLoading = true);
-    
+
     final provider = Provider.of<EventsProvider>(context, listen: false);
     int successCount = 0;
 
@@ -85,14 +87,19 @@ class _ImportScreenState extends State<ImportScreen> {
         _hasImported = true;
       });
 
+      HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('成功导入 $successCount 个事件')),
+        SnackBar(
+          content: Text('成功导入 $successCount 个事件'),
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.green,
+          action: SnackBarAction(
+            label: '关闭',
+            textColor: Colors.white,
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
       );
-      
-      // 延迟关闭页面
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) Navigator.pop(context);
-      });
     }
   }
 

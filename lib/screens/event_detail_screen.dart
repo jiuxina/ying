@@ -516,11 +516,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             icon: _event.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
             label: _event.isPinned ? '取消置顶' : '置顶',
             color: Colors.orange,
-            onTap: () {
-              HapticFeedback.mediumImpact();
-              context.read<EventsProvider>().togglePin(_event.id);
-              Navigator.pop(context);
-            },
+            onTap: () => _confirmPin(context),
           ),
         ),
         SizedBox(width: ResponsiveSpacing.md(context)),
@@ -530,11 +526,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             icon: Icons.archive,
             label: '归档',
             color: Colors.blue,
-            onTap: () {
-              HapticFeedback.mediumImpact();
-              context.read<EventsProvider>().toggleArchive(_event.id);
-              Navigator.pop(context);
-            },
+            onTap: () => _confirmArchive(context),
           ),
         ),
         SizedBox(width: ResponsiveSpacing.md(context)),
@@ -634,6 +626,126 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: Text(
               '删除',
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmPin(BuildContext context) {
+    HapticFeedback.mediumImpact();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
+        ),
+        title: Text(
+          _event.isPinned ? '取消置顶' : '置顶事件',
+          style: TextStyle(fontSize: ResponsiveFontSize.lg(context)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        content: Text(
+          _event.isPinned
+              ? '确定要取消置顶"${_event.title}"吗？'
+              : '确定要置顶"${_event.title}"吗？置顶的事件将显示在列表顶部。',
+          style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              '取消',
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<EventsProvider>().togglePin(_event.id);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _event.isPinned ? '已取消置顶' : '已置顶',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+            child: Text(
+              '确定',
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmArchive(BuildContext context) {
+    HapticFeedback.mediumImpact();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
+        ),
+        title: Text(
+          '归档事件',
+          style: TextStyle(fontSize: ResponsiveFontSize.lg(context)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        content: Text(
+          '确定要归档"${_event.title}"吗？归档后可在归档页面查看。',
+          style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              '取消',
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<EventsProvider>().toggleArchive(_event.id);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    '已归档',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.blue),
+            child: Text(
+              '归档',
               style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

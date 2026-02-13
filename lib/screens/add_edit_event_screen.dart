@@ -65,6 +65,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   String? _initialBackgroundImage;
   String? _initialGroupId;
   bool _isSaving = false;
+  bool _isPickingImage = false;
 
   @override
   void initState() {
@@ -610,11 +611,14 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                                   ),
                                                   color: Colors.redAccent,
                                                 ),
-                                                onPressed: () => setState(
-                                                  () => _reminders.removeAt(
-                                                    index,
-                                                  ),
-                                                ),
+                                                onPressed: () {
+                                                  HapticFeedback.mediumImpact();
+                                                  setState(
+                                                    () => _reminders.removeAt(
+                                                      index,
+                                                    ),
+                                                  );
+                                                },
                                               ),
                                             ],
                                           ),
@@ -672,21 +676,31 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   subtitle: Text(
-                                    _backgroundImage != null ? '已设置' : '默认背景',
+                                    _isPickingImage
+                                        ? '选择中...'
+                                        : (_backgroundImage != null ? '已设置' : '默认背景'),
                                     style: TextStyle(
                                       fontSize: ResponsiveFontSize.sm(context),
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  trailing: _backgroundImage != null
-                                      ? IconButton(
-                                          icon: const Icon(Icons.close),
-                                          onPressed: () => setState(
-                                            () => _backgroundImage = null,
+                                  trailing: _isPickingImage
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
                                           ),
                                         )
-                                      : const Icon(Icons.chevron_right),
-                                  onTap: _pickImage,
+                                      : (_backgroundImage != null
+                                          ? IconButton(
+                                              icon: const Icon(Icons.close),
+                                              onPressed: () => setState(
+                                                () => _backgroundImage = null,
+                                              ),
+                                            )
+                                          : const Icon(Icons.chevron_right)),
+                                  onTap: _isPickingImage ? null : _pickImage,
                                 ),
                               ],
                             ),
@@ -972,6 +986,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   }
 
   void _showReminderDialog({Reminder? reminder, int? index}) {
+    HapticFeedback.selectionClick();
     int days = reminder?.daysBefore ?? 1;
     TimeOfDay time = reminder != null
         ? TimeOfDay(hour: reminder.hour, minute: reminder.minute)
@@ -1003,7 +1018,10 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                       IconButton(
                         icon: const Icon(Icons.remove_circle_outline),
                         onPressed: days > 0
-                            ? () => setDialogState(() => days--)
+                            ? () {
+                                HapticFeedback.selectionClick();
+                                setDialogState(() => days--);
+                              }
                             : null,
                       ),
                       Flexible(
@@ -1018,7 +1036,10 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                       IconButton(
                         icon: const Icon(Icons.add_circle_outline),
                         onPressed: days < 365
-                            ? () => setDialogState(() => days++)
+                            ? () {
+                                HapticFeedback.selectionClick();
+                                setDialogState(() => days++);
+                              }
                             : null,
                       ),
                     ],
@@ -1039,6 +1060,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     onTap: () async {
+                      HapticFeedback.selectionClick();
                       final picked = await showTimePicker(
                         context: context,
                         initialTime: time,
@@ -1061,6 +1083,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                 ),
                 TextButton(
                   onPressed: () {
+                    HapticFeedback.mediumImpact();
                     final newReminder = Reminder(
                       id: reminder?.id ?? const Uuid().v4(),
                       eventId: widget.event?.id ?? '', // TBD on save
@@ -1114,13 +1137,33 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   }
 
   Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (_isPickingImage) return;
 
-    if (image != null) {
-      setState(() {
-        _backgroundImage = image.path;
-      });
+    setState(() => _isPickingImage = true);
+    HapticFeedback.selectionClick();
+
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+      if (image != null && mounted) {
+        setState(() {
+          _backgroundImage = image.path;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('选择图片失败: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPickingImage = false);
+      }
     }
   }
 
@@ -1215,7 +1258,22 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
           reminders: event.reminders,
         );
       }
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        // 显示成功提示
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isEditing ? '保存成功' : '添加成功',
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+            duration: const Duration(seconds: 1),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -1227,6 +1285,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
               overflow: TextOverflow.ellipsis,
               maxLines: 2,
             ),
+            backgroundColor: Colors.red,
           ),
         );
       }
