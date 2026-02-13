@@ -32,11 +32,13 @@ class EventListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+    
     return ListView(
       padding: EdgeInsets.all(ResponsiveSpacing.base(context)),
       children: [
-        // 全部事件 - 分类筛选
-        const SectionHeader(title: '全部事件', icon: Icons.event),
+        // 事件 - 带排序和展开/收起按钮
+        _buildMainHeader(context, settings),
         SizedBox(height: ResponsiveSpacing.md(context)),
         CategorySelector(
           selectedCategoryId: selectedCategoryId,
@@ -44,21 +46,11 @@ class EventListView extends StatelessWidget {
         ),
         SizedBox(height: ResponsiveSpacing.xl(context)),
 
-        // 置顶事件
-        if (pinnedEvents.isNotEmpty) ...[
-          const SectionHeader(title: '置顶', icon: Icons.push_pin),
-          SizedBox(height: ResponsiveSpacing.md(context)),
-          ...pinnedEvents.asMap().entries.map(
-            (entry) => StaggeredListItem(
-              index: entry.key,
-              child: _buildEventCard(context, entry.value),
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
-
-        // 普通事件
-        if (unpinnedEvents.isNotEmpty) ...[
+        // 事件列表（置顶事件+普通事件合并）
+        if (pinnedEvents.isEmpty && unpinnedEvents.isEmpty) ...[
+          // 空状态仍然显示，但保持按钮可见
+          _buildEmptyPlaceholder(context),
+        ] else ...[
           if (isCustomSort)
             _buildCustomSortList(context)
           else
@@ -70,20 +62,262 @@ class EventListView extends StatelessWidget {
     );
   }
 
-  Widget _buildStandardList(BuildContext context) {
-    // 计算动画起始偏移（置顶事件数量）
-    final animationOffset = pinnedEvents.length;
+  Widget _buildMainHeader(BuildContext context, SettingsProvider settings) {
+    return Row(
+      children: [
+        Icon(
+          Icons.event,
+          size: ResponsiveIconSize.sm(context),
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        SizedBox(width: ResponsiveSpacing.sm(context)),
+        Expanded(
+          child: Text(
+            '事件',
+            style: TextStyle(
+              fontSize: ResponsiveFontSize.lg(context),
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ),
+        SizedBox(width: ResponsiveSpacing.sm(context)),
+        GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            _showSortDialog(context, settings);
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: ResponsiveSpacing.sm(context),
+              vertical: ResponsiveSpacing.xs(context),
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.surface.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
+              border: Border.all(
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.sort,
+                  size: ResponsiveIconSize.sm(context),
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                SizedBox(width: ResponsiveSpacing.xs(context)),
+                Text(
+                  _getSortLabel(settings.sortOrder),
+                  style: TextStyle(
+                    fontSize: ResponsiveFontSize.sm(context),
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(width: ResponsiveSpacing.sm(context)),
+        GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            settings.toggleCardsExpanded();
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: ResponsiveSpacing.sm(context),
+              vertical: ResponsiveSpacing.xs(context),
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.surface.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
+              border: Border.all(
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  settings.cardsExpanded
+                      ? Icons.unfold_less
+                      : Icons.unfold_more,
+                  size: ResponsiveIconSize.sm(context),
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                SizedBox(width: ResponsiveSpacing.xs(context)),
+                Text(
+                  settings.cardsExpanded ? '收起' : '展开',
+                  style: TextStyle(
+                    fontSize: ResponsiveFontSize.sm(context),
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
+  Widget _buildEmptyPlaceholder(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: ResponsiveSpacing.xxl(context)),
+      child: Center(
+        child: Text(
+          '暂无事件',
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+            fontSize: ResponsiveFontSize.base(context),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getSortLabel(String sortOrder) {
+    switch (sortOrder) {
+      case 'custom':
+        return '自定义';
+      case 'daysAsc':
+        return '天数↑';
+      case 'daysDesc':
+        return '天数↓';
+      case 'dateAsc':
+        return '日期↑';
+      case 'dateDesc':
+        return '日期↓';
+      case 'titleAsc':
+        return '名称↑';
+      case 'titleDesc':
+        return '名称↓';
+      case 'createdDesc':
+        return '创建↓';
+      default:
+        return '排序';
+    }
+  }
+
+  void _showSortDialog(BuildContext context, SettingsProvider settings) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 16),
+              Text(
+                '排序方式',
+                style: TextStyle(
+                  fontSize: ResponsiveFontSize.xl(context),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildSortOption(
+                context,
+                settings,
+                'custom',
+                '自定义排序 (拖拽)',
+                Icons.drag_indicator,
+              ),
+              _buildSortOption(
+                context,
+                settings,
+                'daysAsc',
+                '按剩余天数（升序）',
+                Icons.arrow_upward,
+              ),
+              _buildSortOption(
+                context,
+                settings,
+                'daysDesc',
+                '按剩余天数（降序）',
+                Icons.arrow_downward,
+              ),
+              _buildSortOption(
+                context,
+                settings,
+                'dateAsc',
+                '按目标日期（升序）',
+                Icons.calendar_today,
+              ),
+              _buildSortOption(
+                context,
+                settings,
+                'dateDesc',
+                '按目标日期（降序）',
+                Icons.calendar_today,
+              ),
+              _buildSortOption(
+                context,
+                settings,
+                'titleAsc',
+                '按名称（A-Z）',
+                Icons.sort_by_alpha,
+              ),
+              _buildSortOption(
+                context,
+                settings,
+                'createdDesc',
+                '按创建时间（最新）',
+                Icons.access_time,
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSortOption(
+    BuildContext context,
+    SettingsProvider settings,
+    String order,
+    String label,
+    IconData icon,
+  ) {
+    final isSelected = settings.sortOrder == order;
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isSelected ? Theme.of(context).colorScheme.primary : null,
+      ),
+      title: Text(label),
+      trailing: isSelected
+          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+          : null,
+      onTap: () {
+        settings.setSortOrder(order);
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  /// Merge pinned events at the top, followed by unpinned events
+  List<CountdownEvent> get _allEvents => [...pinnedEvents, ...unpinnedEvents];
+
+  Widget _buildStandardList(BuildContext context) {
     return Column(
       children: [
-        if (selectedCategoryId != null)
-          _EventListHeader(title: '筛选结果', icon: Icons.filter_list, isCustomSort: false)
-        else
-          _EventListHeader(title: '最近事件', icon: Icons.schedule, isCustomSort: false),
-        SizedBox(height: ResponsiveSpacing.md(context)),
-        ...unpinnedEvents.asMap().entries.map(
+        ..._allEvents.asMap().entries.map(
           (entry) => StaggeredListItem(
-            index: entry.key + animationOffset,
+            index: entry.key,
             child: _buildEventCard(context, entry.value),
           ),
         ),
@@ -92,42 +326,51 @@ class EventListView extends StatelessWidget {
   }
 
   Widget _buildCustomSortList(BuildContext context) {
-    return Column(
-      children: [
-        _EventListHeader(
-          title: '自定义排序 (长按拖拽)',
-          icon: Icons.drag_indicator,
-          isCustomSort: true,
-        ),
-        SizedBox(height: ResponsiveSpacing.md(context)),
-        ReorderableListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: unpinnedEvents.length,
-          onReorder: (oldIndex, newIndex) {
-            if (oldIndex < newIndex) {
-              newIndex -= 1;
-            }
-            final item = unpinnedEvents[oldIndex];
-            final newOrderList = List<CountdownEvent>.from(unpinnedEvents);
-            newOrderList.removeAt(oldIndex);
-            newOrderList.insert(newIndex, item);
+    return ReorderableListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _allEvents.length,
+      onReorder: (oldIndex, newIndex) {
+        // Don't allow reordering pinned events with unpinned events
+        final pinnedCount = pinnedEvents.length;
+        
+        // If trying to move a pinned event or move into pinned section, ignore
+        if (oldIndex < pinnedCount || newIndex < pinnedCount) {
+          return;
+        }
+        
+        // Adjust indices to work with unpinnedEvents only
+        final adjustedOldIndex = oldIndex - pinnedCount;
+        var adjustedNewIndex = newIndex - pinnedCount;
+        
+        if (adjustedOldIndex < adjustedNewIndex) {
+          adjustedNewIndex -= 1;
+        }
+        
+        final item = unpinnedEvents[adjustedOldIndex];
+        final newOrderList = List<CountdownEvent>.from(unpinnedEvents);
+        newOrderList.removeAt(adjustedOldIndex);
+        newOrderList.insert(adjustedNewIndex, item);
 
-            HapticFeedback.selectionClick();
-            final settings = context.read<SettingsProvider>();
-            final newOrderIds = newOrderList.map((e) => e.id).toList();
-            settings.setCustomSortOrder(newOrderIds);
-          },
-          itemBuilder: (context, index) {
-            final event = unpinnedEvents[index];
-            return Padding(
-              key: ValueKey(event.id),
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildEventCard(context, event, isReorderable: true),
-            );
-          },
-        ),
-      ],
+        HapticFeedback.selectionClick();
+        final settings = context.read<SettingsProvider>();
+        final newOrderIds = newOrderList.map((e) => e.id).toList();
+        settings.setCustomSortOrder(newOrderIds);
+      },
+      itemBuilder: (context, index) {
+        final event = _allEvents[index];
+        final isPinned = index < pinnedEvents.length;
+        
+        return Padding(
+          key: ValueKey(event.id),
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildEventCard(
+            context, 
+            event, 
+            isReorderable: !isPinned, // Only unpinned events are reorderable
+          ),
+        );
+      },
     );
   }
 
@@ -285,245 +528,3 @@ class EventListView extends StatelessWidget {
   }
 }
 
-class _EventListHeader extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final bool isCustomSort;
-
-  const _EventListHeader({
-    required this.title,
-    required this.icon,
-    required this.isCustomSort,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
-
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const Spacer(),
-        GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            _showSortDialog(context, settings);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.surface.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.sort,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _getSortLabel(settings.sortOrder),
-                  style: TextStyle(
-                    fontSize: ResponsiveFontSize.sm(context),
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            settings.toggleCardsExpanded();
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.surface.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  settings.cardsExpanded
-                      ? Icons.unfold_less
-                      : Icons.unfold_more,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  settings.cardsExpanded ? '收起' : '展开',
-                  style: TextStyle(
-                    fontSize: ResponsiveFontSize.sm(context),
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _getSortLabel(String sortOrder) {
-    switch (sortOrder) {
-      case 'custom':
-        return '自定义';
-      case 'daysAsc':
-        return '天数↑';
-      case 'daysDesc':
-        return '天数↓';
-      case 'dateAsc':
-        return '日期↑';
-      case 'dateDesc':
-        return '日期↓';
-      case 'titleAsc':
-        return '名称↑';
-      case 'titleDesc':
-        return '名称↓';
-      case 'createdDesc':
-        return '创建↓';
-      default:
-        return '排序';
-    }
-  }
-
-  void _showSortDialog(BuildContext context, SettingsProvider settings) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 16),
-              Text(
-                '排序方式',
-                style: TextStyle(
-                  fontSize: ResponsiveFontSize.xl(context),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              _buildSortOption(
-                context,
-                settings,
-                'custom',
-                '自定义排序 (拖拽)',
-                Icons.drag_indicator,
-              ),
-              _buildSortOption(
-                context,
-                settings,
-                'daysAsc',
-                '按剩余天数（升序）',
-                Icons.arrow_upward,
-              ),
-              _buildSortOption(
-                context,
-                settings,
-                'daysDesc',
-                '按剩余天数（降序）',
-                Icons.arrow_downward,
-              ),
-              _buildSortOption(
-                context,
-                settings,
-                'dateAsc',
-                '按目标日期（升序）',
-                Icons.calendar_today,
-              ),
-              _buildSortOption(
-                context,
-                settings,
-                'dateDesc',
-                '按目标日期（降序）',
-                Icons.calendar_today,
-              ),
-              _buildSortOption(
-                context,
-                settings,
-                'titleAsc',
-                '按名称（A-Z）',
-                Icons.sort_by_alpha,
-              ),
-              _buildSortOption(
-                context,
-                settings,
-                'createdDesc',
-                '按创建时间（最新）',
-                Icons.access_time,
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSortOption(
-    BuildContext context,
-    SettingsProvider settings,
-    String order,
-    String label,
-    IconData icon,
-  ) {
-    final isSelected = settings.sortOrder == order;
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isSelected ? Theme.of(context).colorScheme.primary : null,
-      ),
-      title: Text(label),
-      trailing: isSelected
-          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
-          : null,
-      onTap: () {
-        settings.setSortOrder(order);
-        Navigator.pop(context);
-      },
-    );
-  }
-}

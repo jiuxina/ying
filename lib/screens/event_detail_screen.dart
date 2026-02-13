@@ -78,6 +78,29 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
+  /// 格式化时间组件为两位数字
+  String _formatTimeComponent(int value) {
+    return value.toString().padLeft(2, '0');
+  }
+
+  /// 格式化完整时间字符串 HH:MM:SS
+  String _formatTimeHMS(int hours, int minutes, int seconds) {
+    return '${_formatTimeComponent(hours)}:${_formatTimeComponent(minutes)}:${_formatTimeComponent(seconds)}';
+  }
+
+  /// 格式化详细时间字符串: D天 HH时 MM分 SS秒 (天数不补零，时分秒补零)
+  /// 注意：天数会减1，因为如果明天是目标日期，剩余时间不足一天，只是若干小时
+  String _formatDetailedTime(int days, int hours, int minutes, int seconds) {
+    // 如果有完整天数，减1后显示，因为剩余的时间不足整天
+    final adjustedDays = days > 0 ? days - 1 : 0;
+    if (adjustedDays > 0) {
+      return '$adjustedDays天 ${_formatTimeComponent(hours)}时 ${_formatTimeComponent(minutes)}分 ${_formatTimeComponent(seconds)}秒';
+    } else {
+      // 不足1天时，只显示时分秒
+      return '${_formatTimeComponent(hours)}时 ${_formatTimeComponent(minutes)}分 ${_formatTimeComponent(seconds)}秒';
+    }
+  }
+
   void _showCelebration() {
     if (_hasShownCelebration) return;
     setState(() => _hasShownCelebration = true);
@@ -146,6 +169,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       child: Column(
                         children: [
                           _buildCountdownCard(context, categoryColor),
+                          SizedBox(height: ResponsiveSpacing.lg(context)),
+                          _buildDetailedTimeInfo(context),
+                          SizedBox(height: ResponsiveSpacing.md(context)),
+                          _buildProgressInfo(context),
                           SizedBox(height: ResponsiveSpacing.lg(context)),
                           _buildInfoCard(context),
                           SizedBox(height: ResponsiveSpacing.lg(context)),
@@ -245,209 +272,336 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final minutes = absDiff.inMinutes % 60;
     final seconds = absDiff.inSeconds % 60;
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(ResponsiveSpacing.xxl(context)),
-      decoration: BoxDecoration(
-        gradient: _event.backgroundImage == null
-            ? LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  categoryColor,
-                  categoryColor.withValues(alpha: 0.7),
-                ],
-              )
-            : null,
-        borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
-        boxShadow: [
-          BoxShadow(
-            color: categoryColor.withValues(alpha: 0.3),
-            blurRadius: ResponsiveSpacing.lg(context),
-            offset: Offset(0, ResponsiveSpacing.sm(context)),
+    return Center(
+      child: AspectRatio(
+        aspectRatio: 1.0, // 正方形卡片
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: ResponsiveUtils.scaledSize(context, 400),
+            maxHeight: ResponsiveUtils.scaledSize(context, 400),
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          if (_event.backgroundImage != null)
-            Positioned.fill(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
-                child: Image.file(
-                  File(_event.backgroundImage!),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox(),
-                ),
-              ),
-            ),
-          if (_event.backgroundImage != null)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
+          decoration: BoxDecoration(
+            gradient: _event.backgroundImage == null
+                ? LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.black.withValues(alpha: 0.3),
-                      Colors.black.withValues(alpha: 0.5),
+                      categoryColor,
+                      categoryColor.withValues(alpha: 0.7),
                     ],
-                  ),
-                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
-                ),
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
+            boxShadow: [
+              BoxShadow(
+                color: categoryColor.withValues(alpha: 0.3),
+                blurRadius: ResponsiveSpacing.xl(context),
+                offset: Offset(0, ResponsiveSpacing.md(context)),
               ),
-            ),
-          Column(
+            ],
+          ),
+          child: Stack(
             children: [
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveSpacing.base(context),
-                  vertical: ResponsiveSpacing.sm(context),
+              if (_event.backgroundImage != null)
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
+                    child: Image.file(
+                      File(_event.backgroundImage!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox(),
+                    ),
+                  ),
                 ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
+              if (_event.backgroundImage != null)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.3),
+                          Colors.black.withValues(alpha: 0.5),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
+                    ),
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+              Padding(
+                padding: EdgeInsets.all(ResponsiveSpacing.xl(context)),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // 分类标签
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ResponsiveSpacing.md(context),
+                        vertical: ResponsiveSpacing.xs(context),
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            category.icon,
+                            style: TextStyle(fontSize: ResponsiveFontSize.lg(context)),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(width: ResponsiveSpacing.xs(context)),
+                          Flexible(
+                            child: Text(
+                              category.name,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: ResponsiveFontSize.sm(context),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: ResponsiveSpacing.lg(context)),
+                    
+                    // 事件标题
                     Text(
-                      category.icon,
-                      style: TextStyle(fontSize: ResponsiveFontSize.xl(context)),
-                      maxLines: 1,
+                      _event.title,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: ResponsiveFontSize.xxl(context),
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(width: ResponsiveSpacing.sm(context)),
-                    Flexible(
-                      child: Text(
-                        category.name,
+                    
+                    const Spacer(),
+                    
+                    // 倒计时主体
+                    if (_event.daysRemaining == 0) ...[
+                      Text(
+                        '今天',
                         style: TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: ResponsiveFontSize.base(context),
+                          fontSize: ResponsiveUtils.scaledFontSize(context, 72.0),
+                          fontWeight: FontWeight.bold,
+                          height: 1,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                    ] else ...[
+                      Text(
+                        isCountUp ? '已经' : (days >= 0 ? '还有' : '已过'),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: ResponsiveFontSize.lg(context),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: ResponsiveSpacing.xs(context)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          AnimatedNumber(
+                            value: days,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: ResponsiveUtils.scaledFontSize(context, 96.0),
+                              fontWeight: FontWeight.bold,
+                              height: 1,
+                            ),
+                            duration: const Duration(milliseconds: 800),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(bottom: ResponsiveSpacing.sm(context)),
+                            child: Text(
+                              '天',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontSize: ResponsiveFontSize.xxl(context),
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    
+                    const Spacer(),
                   ],
                 ),
               ),
-              SizedBox(height: ResponsiveSpacing.xl(context)),
-              Text(
-                _event.title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: ResponsiveFontSize.heading(context),
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: ResponsiveSpacing.xxl(context)),
-              Text(
-                isCountUp ? '已经' : (days >= 0 ? '还有' : '已过'),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: ResponsiveFontSize.lg(context),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: ResponsiveSpacing.sm(context)),
-              if (_event.daysRemaining == 0) ...[
-                Text(
-                  '今天',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: ResponsiveUtils.scaledFontSize(context, 72.0),
-                    fontWeight: FontWeight.bold,
-                    height: 1,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ] else ...[
-                 AnimatedNumber(
-                   value: days,
-                   style: TextStyle(
-                     color: Colors.white,
-                     fontSize: ResponsiveUtils.scaledFontSize(context, 72.0),
-                     fontWeight: FontWeight.bold,
-                     height: 1,
-                   ),
-                   duration: const Duration(milliseconds: 800),
-                 ),
-                Text(
-                  '天',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: ResponsiveFontSize.xxl(context),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              SizedBox(height: ResponsiveSpacing.base(context)),
-              // Real-time HH:MM:SS display
-               Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveSpacing.md(context),
-                  vertical: ResponsiveSpacing.xs(context) * 1.5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
-                ),
-                child: Text(
-                  '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                    fontSize: ResponsiveFontSize.lg(context),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-
-              if (!isCountUp && _event.daysRemaining > 0) ...[
-                SizedBox(height: ResponsiveSpacing.xxl(context)),
-                Consumer<SettingsProvider>(
-                  builder: (context, settings, child) {
-                    final progress = _calculateProgress(_event, settings);
-                    return Column(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xs(context)),
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            backgroundColor: Colors.white.withValues(alpha: 0.3),
-                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                            minHeight: ResponsiveSpacing.sm(context),
-                          ),
-                        ),
-                        SizedBox(height: ResponsiveSpacing.sm(context)),
-                        Text(
-                          '${(progress * 100).toInt()}% 剩余',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.8),
-                            fontSize: ResponsiveFontSize.base(context),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ],
             ],
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  /// 构建卡片下方的详细时间信息
+  Widget _buildDetailedTimeInfo(BuildContext context) {
+    final days = _event.daysRemaining.abs();
+    final isCountUp = _event.isCountUp;
+    
+    // Calculate precise time difference
+    final diff = _event.targetDate.difference(_now);
+    final absDiff = diff.abs();
+    final hours = absDiff.inHours % 24;
+    final minutes = absDiff.inMinutes % 60;
+    final seconds = absDiff.inSeconds % 60;
+
+    if (_event.daysRemaining == 0) {
+      // D-Day: 只显示时分秒
+      return Center(
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: ResponsiveUtils.scaledSize(context, 400),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveSpacing.lg(context),
+            vertical: ResponsiveSpacing.md(context),
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
+          ),
+          child: Text(
+            _formatTimeHMS(hours, minutes, seconds),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'monospace',
+              fontSize: ResponsiveFontSize.xl(context),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: ResponsiveUtils.scaledSize(context, 400),
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: ResponsiveSpacing.lg(context),
+          vertical: ResponsiveSpacing.md(context),
+        ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              '精确倒计时',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                fontSize: ResponsiveFontSize.sm(context),
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: ResponsiveSpacing.xs(context)),
+            Text(
+              _formatDetailedTime(days, hours, minutes, seconds),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+                fontSize: ResponsiveFontSize.lg(context),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 构建进度条信息
+  Widget _buildProgressInfo(BuildContext context) {
+    final isCountUp = _event.isCountUp;
+    
+    if (isCountUp || _event.daysRemaining <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, child) {
+        final progress = _calculateProgress(_event, settings);
+        return Center(
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: ResponsiveUtils.scaledSize(context, 400),
+            ),
+            padding: EdgeInsets.all(ResponsiveSpacing.md(context)),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '进度',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        fontSize: ResponsiveFontSize.sm(context),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      '${(progress * 100).toInt()}% 剩余',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontSize: ResponsiveFontSize.sm(context),
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+                SizedBox(height: ResponsiveSpacing.sm(context)),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xs(context)),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).colorScheme.primary,
+                    ),
+                    minHeight: ResponsiveSpacing.sm(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

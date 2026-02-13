@@ -256,27 +256,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                          _searchController.text.isEmpty && 
                          _selectedCategoryId == null;
 
-    if (events.isEmpty) {
-      if (_isSearching || _selectedCategoryId != null) {
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: EmptyState(
-            key: const Key('search_empty'),
-            icon: Icons.search_off,
-            title: '未找到相关事件',
-            description: '尝试其他搜索词或清除分类筛选',
-            actionLabel: '清除筛选',
-            onAction: () {
-              setState(() {
-                _selectedCategoryId = null;
-                if (_isSearching) {
-                  _searchController.clear();
-                }
-              });
-            },
-          ),
-        );
-      }
+    if (events.isEmpty && !_isSearching && _selectedCategoryId == null) {
+      // Only show default empty state when there are truly no events at all
       return AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         child: const EmptyState(key: Key('default_empty')),
@@ -299,36 +280,41 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  /// 检查事件是否匹配搜索查询
+  bool _matchesSearch(CountdownEvent event, String query) {
+    if (query.isEmpty) return true;
+    final matchesTitle = event.title.toLowerCase().contains(query);
+    final matchesNote = event.note?.toLowerCase().contains(query) ?? false;
+    return matchesTitle || matchesNote;
+  }
+
   List<CountdownEvent> _getFilteredEvents(EventsProvider provider) {
     final settings = context.read<SettingsProvider>();
     final query = _searchController.text.toLowerCase();
-    final hasSearch = query.isNotEmpty;
 
-    // Single-pass filtering
-    final events = provider.events.where((e) {
-      // Skip archived events
-      if (e.isArchived) return false;
+    // First, separate pinned and unpinned events
+    final allNonArchivedEvents = provider.events.where((e) => !e.isArchived).toList();
+    final pinnedEvents = allNonArchivedEvents.where((e) => e.isPinned).toList();
+    final unpinnedEvents = allNonArchivedEvents.where((e) => !e.isPinned).toList();
 
-      // Category filter
+    // Filter unpinned events (pinned events bypass category filter)
+    final filteredUnpinnedEvents = unpinnedEvents.where((e) {
+      // Category filter (only for unpinned events)
       if (_selectedCategoryId != null && e.categoryId != _selectedCategoryId) {
         return false;
       }
-
       // Search filter
-      if (hasSearch) {
-        final matchesTitle = e.title.toLowerCase().contains(query);
-        final matchesNote = e.note?.toLowerCase().contains(query) ?? false;
-        if (!matchesTitle && !matchesNote) return false;
-      }
-
-      return true;
+      return _matchesSearch(e, query);
     }).toList();
 
-    // Sorting: pinned first, then by user's sort preference
-    events.sort((a, b) {
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
+    // Apply search filter to pinned events (bypass category filter)
+    final filteredPinnedEvents = pinnedEvents.where((e) => _matchesSearch(e, query)).toList();
 
+    // Sort pinned events by creation time (FIFO - first pinned appears first)
+    filteredPinnedEvents.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    // Sort unpinned events by user's sort preference
+    filteredUnpinnedEvents.sort((a, b) {
       switch (settings.sortOrder) {
         case 'custom':
           final customOrder = settings.customSortOrder;
@@ -351,7 +337,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     });
 
-    return events;
+    // Combine: pinned first, then unpinned
+    return [...filteredPinnedEvents, ...filteredUnpinnedEvents];
   }
 
   Widget _buildExpandableFAB() {
