@@ -291,7 +291,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     ],
                   )
                 : null,
-            borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xxl(context)),
+            borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
             boxShadow: [
               BoxShadow(
                 color: categoryColor.withValues(alpha: 0.3),
@@ -305,7 +305,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               if (_event.backgroundImage != null)
                 Positioned.fill(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xxl(context)),
+                    borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
                     child: Image.file(
                       File(_event.backgroundImage!),
                       fit: BoxFit.cover,
@@ -325,7 +325,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                           Colors.black.withValues(alpha: 0.5),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xxl(context)),
+                      borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
                     ),
                   ),
                 ),
