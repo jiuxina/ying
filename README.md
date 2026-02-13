@@ -123,18 +123,52 @@
 
 ### 方式二：从源码构建
 
+#### 环境要求
+
+- **Flutter SDK**: >= 3.9.2
+- **Dart SDK**: >= 3.9.2
+- **Android SDK**: API 21+ (Android 5.0+)
+- **iOS**: iOS 12.0+ (可选)
+
+#### 构建步骤
+
 ```bash
-# 克隆仓库
+# 1. 克隆仓库
 git clone https://github.com/jiuxina/ying.git
 cd ying
 
-# 安装依赖
+# 2. 安装依赖
 flutter pub get
 
-# 构建 APK
+# 3. 运行代码检查（可选）
+flutter analyze
+
+# 4. 运行测试（可选）
+flutter test
+
+# 5. 构建 APK（分架构构建，体积更小）
 flutter build apk --release --split-per-abi
 
-# APK 位于: build/app/outputs/flutter-apk/
+# 或构建通用 APK（体积较大但兼容所有架构）
+flutter build apk --release
+
+# 6. APK 位于: build/app/outputs/flutter-apk/
+# - app-arm64-v8a-release.apk
+# - app-armeabi-v7a-release.apk
+# - app-x86_64-release.apk
+```
+
+#### 开发模式运行
+
+```bash
+# 连接设备或启动模拟器后运行
+flutter run
+
+# 以调试模式运行
+flutter run --debug
+
+# 以性能分析模式运行
+flutter run --profile
 ```
 
 ## 📖 使用说明
@@ -186,6 +220,57 @@ flutter build apk --release --split-per-abi
 
 - Flutter SDK: ^3.9.2
 - Dart SDK: ^3.9.2
+
+### 项目架构
+
+本项目采用 **MVVM（Model-View-ViewModel）** 架构模式：
+
+```
+lib/
+├── models/              # 数据模型层
+│   ├── countdown_event.dart    # 事件模型
+│   ├── event_category.dart     # 分类模型
+│   ├── event_group.dart        # 分组模型
+│   └── reminder.dart           # 提醒模型
+├── providers/           # 状态管理层（ViewModel）
+│   ├── events_provider.dart    # 事件状态管理
+│   └── settings_provider.dart  # 设置状态管理
+├── services/            # 业务逻辑层
+│   ├── database_service.dart   # 数据库服务
+│   ├── cloud_sync_service.dart # 云同步服务
+│   ├── webdav_service.dart     # WebDAV 客户端
+│   ├── backup_service.dart     # 备份恢复服务
+│   └── ...
+├── screens/             # 页面视图层
+│   ├── home_screen.dart        # 主页
+│   ├── add_edit_event_screen.dart  # 编辑页
+│   └── settings/               # 设置相关页面
+├── widgets/             # 可复用组件
+│   ├── event_card.dart         # 事件卡片
+│   ├── share_card_templates.dart   # 分享卡片模板
+│   └── common/                 # 通用组件
+├── utils/               # 工具类
+│   ├── constants.dart          # 常量定义
+│   ├── app_exception.dart      # 异常处理
+│   └── responsive_utils.dart   # 响应式工具
+└── theme/               # 主题配置
+    └── app_theme.dart
+```
+
+**核心技术栈：**
+- **状态管理**: Provider（轻量级、官方推荐）
+- **本地存储**:
+  - sqflite（结构化数据）
+  - shared_preferences（配置项）
+  - flutter_secure_storage（敏感数据）
+- **云同步**: webdav_client（支持主流网盘）
+- **日期处理**: intl + lunar（公历/农历支持）
+
+**代码质量保障：**
+- 严格的 Lint 规则（analysis_options.yaml）
+- 单元测试覆盖核心业务逻辑
+- 类型安全的异常处理体系
+- 数据库索引优化查询性能
 
 ### 主要依赖
 

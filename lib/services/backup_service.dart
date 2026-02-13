@@ -8,10 +8,20 @@ import 'package:share_plus/share_plus.dart';
 import '../utils/app_exception.dart';
 import 'database_service.dart';
 
+/// 备份服务
+///
+/// 提供数据备份和恢复功能，支持导出为 JSON 文件和从 JSON 文件恢复数据。
 class BackupService {
   final DatabaseService _dbService = DatabaseService();
 
-  /// Create a backup file and share it
+  /// 创建备份文件并分享
+  ///
+  /// 导出所有数据为 JSON 格式，生成带时间戳的备份文件并通过系统分享功能分享。
+  /// 备份文件命名格式：`ying_backup_yyyyMMdd_HHmm.json`
+  ///
+  /// 抛出：
+  /// - [FileSystemException] 如果文件创建失败
+  /// - [AppException] 如果备份过程中发生其他错误
   Future<void> createBackup() async {
     try {
       final data = await _dbService.exportAllData();
@@ -35,8 +45,18 @@ class BackupService {
     }
   }
 
-  /// Restore backup from file
-  /// Returns true if successful
+  /// 从备份文件恢复数据
+  ///
+  /// 允许用户选择 JSON 格式的备份文件，验证文件格式后恢复数据。
+  ///
+  /// 返回：
+  /// - `true` 如果恢复成功
+  /// - `false` 如果用户取消选择
+  ///
+  /// 抛出：
+  /// - [ValidationException] 如果备份文件格式无效
+  /// - [FileSystemException] 如果文件不存在或无法读取
+  /// - [AppException] 如果恢复过程中发生其他错误
   Future<bool> restoreBackup() async {
     try {
       final result = await FilePicker.platform.pickFiles(
