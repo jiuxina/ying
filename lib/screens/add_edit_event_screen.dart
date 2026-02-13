@@ -6,6 +6,7 @@ import '../models/countdown_event.dart';
 import '../providers/events_provider.dart';
 import '../utils/constants.dart';
 import '../utils/lunar_utils.dart';
+import '../utils/responsive_utils.dart';
 import '../widgets/common/app_background.dart';
 import '../widgets/common/ui_helpers.dart';
 import '../widgets/common/segmented_date_input.dart';
@@ -130,16 +131,16 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('放弃更改？'),
-        content: const Text('您有未保存的更改，确定要离开吗？'),
+        title: Text('放弃更改？', style: TextStyle(fontSize: ResponsiveFontSize.lg(context)), overflow: TextOverflow.ellipsis),
+        content: Text('您有未保存的更改，确定要离开吗？', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis, maxLines: 2),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('继续编辑'),
+            child: Text('继续编辑', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('放弃'),
+            child: Text('放弃', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
           ),
         ],
       ),
@@ -174,11 +175,11 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                 child: Form(
                   key: _formKey,
                   child: ListView(
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsets.all(ResponsiveSpacing.lg(context)),
                     children: [
                       // 基本信息
                       const SectionHeader(title: '基本信息', icon: Icons.info),
-                      const SizedBox(height: 12),
+                      SizedBox(height: ResponsiveSpacing.md(context)),
                       GlassCard(
                         child: Column(
                           children: [
@@ -190,7 +191,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                               validator: (v) => (v == null || v.trim().isEmpty) ? '请输入事件名称' : null,
                               key: const Key('event_title_input'),
                             ),
-                            const Divider(height: 1),
+                            Divider(height: ResponsiveUtils.scaledSize(context, 1)),
                             // 分组选择
                             Consumer<EventsProvider>(
                               builder: (context, provider, child) {
@@ -200,26 +201,26 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                   children: [
                                     ListTile(
                                       leading: IconBox(icon: Icons.folder, color: Theme.of(context).colorScheme.secondary),
-                                      title: const Text('所属分组'),
+                                      title: Text('所属分组', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
                                       trailing: DropdownButtonHideUnderline(
                                         child: DropdownButton<String?>(
                                           value: _groupId,
-                                          hint: const Text('无分组'),
+                                          hint: Text('无分组', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
                                           items: [
-                                              const DropdownMenuItem<String?>(
+                                              DropdownMenuItem<String?>(
                                                 value: null,
-                                                child: Text('无分组'),
+                                                child: Text('无分组', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
                                               ),
                                               ...groups.map((g) => DropdownMenuItem<String?>(
                                                 value: g.id,
-                                                child: Text(g.name),
+                                                child: Text(g.name, style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis, maxLines: 1),
                                               )),
                                           ],
                                           onChanged: (v) => setState(() => _groupId = v),
                                         ),
                                       ),
                                     ),
-                                    const Divider(height: 1),
+                                    Divider(height: ResponsiveUtils.scaledSize(context, 1)),
                                   ],
                                 );
                               },
@@ -234,81 +235,88 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: ResponsiveSpacing.lg(context)),
 
                       // 分类
                       const SectionHeader(title: '分类', icon: Icons.category),
-                      const SizedBox(height: 12),
+                      SizedBox(height: ResponsiveSpacing.md(context)),
                       _buildCategorySelector(),
-                      const SizedBox(height: 20),
+                      SizedBox(height: ResponsiveSpacing.lg(context)),
 
                       // 日期设置
                       const SectionHeader(title: '日期设置', icon: Icons.calendar_month),
-                      const SizedBox(height: 12),
+                      SizedBox(height: ResponsiveSpacing.md(context)),
                       GlassCard(
                         child: Column(
                           children: [
                             ListTile(
                               leading: const IconBox(icon: Icons.event, color: Colors.blue),
-                              title: const Text('目标日期'),
+                              title: Text('目标日期', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
                               subtitle: Text(
                                 DateFormat('yyyy年MM月dd日').format(_targetDate) +
                                     (_isLunar ? ' (农历)' : ''),
+                                style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                                overflow: TextOverflow.ellipsis,
                               ),
                               trailing: const Icon(Icons.chevron_right),
                               onTap: _selectDate,
                             ),
-                            const Divider(height: 1),
+                            Divider(height: ResponsiveUtils.scaledSize(context, 1)),
                             SwitchListTile(
                               secondary: const IconBox(icon: Icons.auto_awesome, color: Colors.purple),
-                              title: const Text('使用农历日期'),
+                              title: Text('使用农历日期', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
                               value: _isLunar,
                               onChanged: (v) => setState(() => _isLunar = v),
                             ),
-                            const Divider(height: 1),
+                            Divider(height: ResponsiveUtils.scaledSize(context, 1)),
                             SwitchListTile(
                               secondary: const IconBox(icon: Icons.replay, color: Colors.green),
-                              title: const Text('正数日（已过天数）'),
+                              title: Text('正数日（已过天数）', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
                               value: _isCountUp,
                               onChanged: (v) => setState(() => _isCountUp = v),
                             ),
-                            const Divider(height: 1),
+                            Divider(height: ResponsiveUtils.scaledSize(context, 1)),
                             SwitchListTile(
                               secondary: const IconBox(icon: Icons.access_time_filled, color: Colors.cyan),
-                              title: const Text('精确时间（时分秒）'),
+                              title: Text('精确时间（时分秒）', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
                               subtitle: Text(_useExactTime 
                                   ? '${_targetHour.toString().padLeft(2, '0')}:${_targetMinute.toString().padLeft(2, '0')}:${_targetSecond.toString().padLeft(2, '0')}'
-                                  : '默认 00:00:00'),
+                                  : '默认 00:00:00',
+                                style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               value: _useExactTime,
                               onChanged: (v) => setState(() => _useExactTime = v),
                             ),
                             if (_useExactTime) ...[
-                              const Divider(height: 1),
+                              Divider(height: ResponsiveUtils.scaledSize(context, 1)),
                               ListTile(
                                 leading: const IconBox(icon: Icons.schedule, color: Colors.indigo),
-                                title: const Text('目标时间'),
+                                title: Text('目标时间', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
                                 subtitle: Text(
                                   '${_targetHour.toString().padLeft(2, '0')}:${_targetMinute.toString().padLeft(2, '0')}:${_targetSecond.toString().padLeft(2, '0')}',
+                                  style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 trailing: const Icon(Icons.chevron_right),
                                 onTap: _selectTargetTime,
                               ),
                             ],
-                            const Divider(height: 1),
+                            Divider(height: ResponsiveUtils.scaledSize(context, 1)),
                             SwitchListTile(
                               secondary: const IconBox(icon: Icons.repeat, color: Colors.orange),
-                              title: const Text('每年重复'),
+                              title: Text('每年重复', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
                               value: _isRepeating,
                               onChanged: (v) => setState(() => _isRepeating = v),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: ResponsiveSpacing.lg(context)),
 
                       // 通知设置
                       const SectionHeader(title: '通知提醒', icon: Icons.notifications),
-                      const SizedBox(height: 12),
+                      SizedBox(height: ResponsiveSpacing.md(context)),
                       GlassCard(
                         child: Column(
                           children: [
@@ -317,12 +325,12 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                 icon: _enableNotification ? Icons.notifications_active : Icons.notifications_off,
                                 color: _enableNotification ? Colors.orange : Colors.grey,
                               ),
-                              title: const Text('开启提醒'),
+                              title: Text('开启提醒', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
                               value: _enableNotification,
                               onChanged: (v) => setState(() => _enableNotification = v),
                             ),
                             if (_enableNotification) ...[
-                              const Divider(height: 1),
+                              Divider(height: ResponsiveUtils.scaledSize(context, 1)),
                               // Reminders List
                               ..._reminders.asMap().entries.map((entry) {
                                 final index = entry.key;
@@ -333,48 +341,57 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                       leading: const IconBox(icon: Icons.alarm, color: Colors.blue),
                                       title: Text(r.daysBefore == 0 
                                           ? '当天' 
-                                          : (r.daysBefore < 0 ? '已过 ${r.daysBefore.abs()} 天' : '提前 ${r.daysBefore} 天')),
-                                      subtitle: Text('${r.hour.toString().padLeft(2,'0')}:${r.minute.toString().padLeft(2,'0')}'),
+                                          : (r.daysBefore < 0 ? '已过 ${r.daysBefore.abs()} 天' : '提前 ${r.daysBefore} 天'),
+                                        style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      subtitle: Text('${r.hour.toString().padLeft(2,'0')}:${r.minute.toString().padLeft(2,'0')}',
+                                        style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                       trailing: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           IconButton(
-                                            icon: const Icon(Icons.edit, size: 20),
+                                            icon: Icon(Icons.edit, size: ResponsiveIconSize.md(context)),
                                             onPressed: () => _showReminderDialog(reminder: r, index: index),
                                           ),
                                           IconButton(
-                                            icon: const Icon(Icons.delete, size: 20, color: Colors.redAccent),
+                                            icon: Icon(Icons.delete, size: ResponsiveIconSize.md(context), color: Colors.redAccent),
                                             onPressed: () => setState(() => _reminders.removeAt(index)),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    const Divider(height: 1),
+                                    Divider(height: ResponsiveUtils.scaledSize(context, 1)),
                                   ],
                                 );
                               }), 
                               // Add Button
                               ListTile(
                                 leading: const Icon(Icons.add_circle_outline, color: Colors.green),
-                                title: const Text('添加提醒'),
+                                title: Text('添加提醒', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
                                 onTap: () => _showReminderDialog(),
                               ),
                             ],
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: ResponsiveSpacing.lg(context)),
 
                       // 背景设置
                       const SectionHeader(title: '背景设置', icon: Icons.image),
-                      const SizedBox(height: 12),
+                      SizedBox(height: ResponsiveSpacing.md(context)),
                       GlassCard(
                         child: Column(
                           children: [
                             ListTile(
                               leading: const IconBox(icon: Icons.image, color: Colors.pink),
-                              title: const Text('背景图片'),
-                              subtitle: Text(_backgroundImage != null ? '已设置' : '默认背景'),
+                              title: Text('背景图片', style: TextStyle(fontSize: ResponsiveFontSize.base(context)), overflow: TextOverflow.ellipsis),
+                              subtitle: Text(_backgroundImage != null ? '已设置' : '默认背景',
+                                style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               trailing: _backgroundImage != null
                                   ? IconButton(
                                       icon: const Icon(Icons.close),
@@ -386,11 +403,11 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      SizedBox(height: ResponsiveSpacing.xxl(context)),
 
                       // 保存按钮
                       _buildSaveButton(),
-                      const SizedBox(height: 32),
+                      SizedBox(height: ResponsiveSpacing.xxl(context)),
                     ],
                   ),
                 ),
@@ -405,7 +422,12 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+      padding: EdgeInsets.fromLTRB(
+        ResponsiveSpacing.sm(context),
+        ResponsiveSpacing.sm(context),
+        ResponsiveSpacing.base(context),
+        ResponsiveSpacing.sm(context),
+      ),
       child: Row(
         children: [
           GlassIconButton(
@@ -417,12 +439,14 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
               }
             },
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: ResponsiveSpacing.sm(context)),
           Text(
             _isEditing ? '编辑事件' : '添加事件',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
+                  fontSize: ResponsiveFontSize.title(context),
                 ),
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -439,20 +463,23 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
     Key? key,
   }) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(ResponsiveSpacing.base(context)),
       child: Row(
         crossAxisAlignment: maxLines > 1 ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
           IconBox(icon: icon, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 16),
+          SizedBox(width: ResponsiveSpacing.base(context)),
           Expanded(
             child: TextFormField(
               key: key,
               controller: controller,
               maxLines: maxLines,
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
               decoration: InputDecoration(
                 labelText: label,
+                labelStyle: TextStyle(fontSize: ResponsiveFontSize.base(context)),
                 hintText: hint,
+                hintStyle: TextStyle(fontSize: ResponsiveFontSize.base(context)),
                 border: InputBorder.none,
               ),
               validator: validator,
@@ -468,8 +495,8 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
       builder: (context, provider, child) {
         final categories = provider.categories;
         return Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: ResponsiveSpacing.sm(context),
+          runSpacing: ResponsiveSpacing.sm(context),
           children: categories.map((category) {
             final isSelected = _categoryId == category.id;
             final color = Color(category.color);
@@ -481,27 +508,35 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
               },
               child: AnimatedContainer(
                 duration: AppConstants.animationFast,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveSpacing.base(context),
+                  vertical: ResponsiveSpacing.sm(context) + ResponsiveSpacing.xs(context),
+                ),
                 decoration: BoxDecoration(
                   color: isSelected ? color : Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
                   border: Border.all(
                     color: isSelected ? color : Theme.of(context).dividerColor.withValues(alpha: 0.5),
                   ),
                   boxShadow: isSelected
-                      ? [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 8)]
+                      ? [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: ResponsiveSpacing.sm(context))]
                       : null,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(category.icon, style: const TextStyle(fontSize: 16)),
-                    const SizedBox(width: 6),
-                    Text(
-                      category.name,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : null,
-                        fontWeight: isSelected ? FontWeight.bold : null,
+                    Text(category.icon, style: TextStyle(fontSize: ResponsiveFontSize.lg(context))),
+                    SizedBox(width: ResponsiveSpacing.xs(context) + ResponsiveSpacing.xs(context)),
+                    Flexible(
+                      child: Text(
+                        category.name,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : null,
+                          fontWeight: isSelected ? FontWeight.bold : null,
+                          fontSize: ResponsiveFontSize.base(context),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ],
@@ -523,12 +558,12 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
             Theme.of(context).colorScheme.secondary,
           ],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ResponsiveBorderRadius.base(context)),
         boxShadow: [
           BoxShadow(
             color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            blurRadius: ResponsiveSpacing.md(context),
+            offset: Offset(0, ResponsiveSpacing.xs(context)),
           ),
         ],
       ),
@@ -536,45 +571,48 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
         color: Colors.transparent,
         child: InkWell(
           key: const Key('save_event_button'),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(ResponsiveBorderRadius.base(context)),
           onTap: _isSaving ? null : _save,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(vertical: ResponsiveSpacing.base(context)),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: _isSaving
                   ? [
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
+                      SizedBox(
+                        width: ResponsiveIconSize.md(context),
+                        height: ResponsiveIconSize.md(context),
+                        child: const CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      const Text(
+                      SizedBox(width: ResponsiveSpacing.md(context)),
+                      Text(
                         '保存中...',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: ResponsiveFontSize.lg(context),
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ]
                   : [
                       Icon(
                         _isEditing ? Icons.check : Icons.add,
                         color: Colors.white,
+                        size: ResponsiveIconSize.base(context),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: ResponsiveSpacing.sm(context)),
                       Text(
                         _isEditing ? '保存修改' : '添加事件',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: ResponsiveFontSize.lg(context),
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
             ),
@@ -616,18 +654,29 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(reminder == null ? '添加提醒' : '编辑提醒'),
+              title: Text(reminder == null ? '添加提醒' : '编辑提醒',
+                style: TextStyle(fontSize: ResponsiveFontSize.lg(context)),
+                overflow: TextOverflow.ellipsis,
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                    Row(
                      children: [
-                       const Text('提前天数: '),
+                       Text('提前天数: ',
+                         style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                         overflow: TextOverflow.ellipsis,
+                       ),
                        IconButton(
                          icon: const Icon(Icons.remove_circle_outline),
                          onPressed: days > 0 ? () => setDialogState(() => days--) : null,
                        ),
-                       Text(days == 0 ? '当天' : '提前 $days 天'),
+                       Flexible(
+                         child: Text(days == 0 ? '当天' : '提前 $days 天',
+                           style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                           overflow: TextOverflow.ellipsis,
+                         ),
+                       ),
                        IconButton(
                          icon: const Icon(Icons.add_circle_outline),
                          onPressed: days < 365 ? () => setDialogState(() => days++) : null,
@@ -635,8 +684,14 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                      ],
                    ),
                    ListTile(
-                     title: const Text('提醒时间'),
-                     trailing: Text(time.format(context)),
+                     title: Text('提醒时间',
+                       style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                       overflow: TextOverflow.ellipsis,
+                     ),
+                     trailing: Text(time.format(context),
+                       style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                       overflow: TextOverflow.ellipsis,
+                     ),
                      onTap: () async {
                        final picked = await showTimePicker(context: context, initialTime: time);
                        if (picked != null) setDialogState(() => time = picked);
@@ -645,7 +700,13 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                 ],
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('取消',
+                    style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 TextButton(
                   onPressed: () {
                     final newReminder = Reminder(
@@ -665,7 +726,10 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                     });
                     Navigator.pop(context);
                   }, 
-                  child: const Text('确定'),
+                  child: Text('确定',
+                    style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             );
@@ -797,7 +861,13 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('保存失败: $e')),
+          SnackBar(
+            content: Text('保存失败: $e',
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ),
         );
       }
     }
