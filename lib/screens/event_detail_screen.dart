@@ -611,100 +611,107 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   Widget _buildInfoCard(BuildContext context) {
     final dateFormat = DateFormat('yyyy年MM月dd日 EEEE', 'zh_CN');
 
-    return GlassCard(
-      child: Column(
-        children: [
-          ListTile(
-            leading: const IconBox(icon: Icons.calendar_today, color: Colors.blue),
-            title: Text(
-              '目标日期',
-              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              dateFormat.format(_event.targetDate),
-              style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+    return Center(
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: ResponsiveUtils.scaledSize(context, 400),
+        ),
+        child: GlassCard(
+          child: Column(
+            children: [
+              ListTile(
+                leading: const IconBox(icon: Icons.calendar_today, color: Colors.blue),
+                title: Text(
+                  '目标日期',
+                  style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  dateFormat.format(_event.targetDate),
+                  style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (_event.isLunar && _event.lunarDateStr != null) ...[
+                const Divider(height: 1),
+                ListTile(
+                  leading: const IconBox(icon: Icons.auto_awesome, color: Colors.purple),
+                  title: Text(
+                    '农历日期',
+                    style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    _event.lunarDateStr!,
+                    style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+              if (_event.isRepeating) ...[
+                const Divider(height: 1),
+                ListTile(
+                  leading: const IconBox(icon: Icons.repeat, color: Colors.green),
+                  title: Text(
+                    '重复',
+                    style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    '每年重复',
+                    style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+              const Divider(height: 1),
+              ListTile(
+                leading: IconBox(
+                  icon: _event.enableNotification ? Icons.notifications_active : Icons.notifications_off,
+                  color: _event.enableNotification ? Colors.orange : Colors.grey,
+                ),
+                title: Text(
+                  '通知提醒',
+                  style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  _event.enableNotification
+                      ? '提前 ${_event.notifyDaysBefore} 天，${_event.notifyHour.toString().padLeft(2, '0')}:${_event.notifyMinute.toString().padLeft(2, '0')} 提醒'
+                      : '已关闭',
+                  style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (_event.note != null && _event.note!.isNotEmpty) ...[
+                const Divider(height: 1),
+                ListTile(
+                  leading: const IconBox(icon: Icons.notes, color: Colors.teal),
+                  title: Text(
+                    '备注',
+                    style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    _event.note!,
+                    style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ],
           ),
-          if (_event.isLunar && _event.lunarDateStr != null) ...[
-            const Divider(height: 1),
-            ListTile(
-              leading: const IconBox(icon: Icons.auto_awesome, color: Colors.purple),
-              title: Text(
-                '农历日期',
-                style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                _event.lunarDateStr!,
-                style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-          if (_event.isRepeating) ...[
-            const Divider(height: 1),
-            ListTile(
-              leading: const IconBox(icon: Icons.repeat, color: Colors.green),
-              title: Text(
-                '重复',
-                style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                '每年重复',
-                style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-          const Divider(height: 1),
-          ListTile(
-            leading: IconBox(
-              icon: _event.enableNotification ? Icons.notifications_active : Icons.notifications_off,
-              color: _event.enableNotification ? Colors.orange : Colors.grey,
-            ),
-            title: Text(
-              '通知提醒',
-              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              _event.enableNotification
-                  ? '提前 ${_event.notifyDaysBefore} 天，${_event.notifyHour.toString().padLeft(2, '0')}:${_event.notifyMinute.toString().padLeft(2, '0')} 提醒'
-                  : '已关闭',
-              style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (_event.note != null && _event.note!.isNotEmpty) ...[
-            const Divider(height: 1),
-            ListTile(
-              leading: const IconBox(icon: Icons.notes, color: Colors.teal),
-              title: Text(
-                '备注',
-                style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                _event.note!,
-                style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
