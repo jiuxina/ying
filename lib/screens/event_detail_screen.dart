@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:confetti/confetti.dart';
 import '../models/countdown_event.dart';
 import '../providers/events_provider.dart';
+import '../providers/settings_provider.dart';
 import '../widgets/animations/counting_animation.dart';
 import '../widgets/common/app_background.dart';
 import '../widgets/common/ui_helpers.dart';
@@ -96,6 +97,27 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         _confettiController.play();
       },
     );
+  }
+
+  /// 根据设置计算进度（与主页一致）
+  /// 返回剩余时间百分比：1.0 表示时间充裕，0.0 表示已到期
+  double _calculateProgress(CountdownEvent event, SettingsProvider settings) {
+    if (event.isCountUp || event.daysRemaining < 0) return 0.0;
+    
+    int totalDays;
+    switch (settings.progressCalculation) {
+      case 'created':
+        // 从创建时开始算（剩余进度，100%→0%）
+        totalDays = event.targetDate.difference(event.createdAt).inDays;
+        if (totalDays <= 0) return 0.0;
+        return (event.daysRemaining / totalDays).clamp(0.0, 1.0);
+      case 'fixed':
+      default:
+        // 按固定天数（剩余进度，100%→0%）
+        totalDays = settings.progressFixedDays;
+        if (totalDays <= 0) return 0.0;
+        return (event.daysRemaining / totalDays).clamp(0.0, 1.0);
+    }
   }
 
   @override
@@ -227,14 +249,16 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       width: double.infinity,
       padding: EdgeInsets.all(ResponsiveSpacing.xxl(context)),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            categoryColor,
-            categoryColor.withValues(alpha: 0.7),
-          ],
-        ),
+        gradient: _event.backgroundImage == null
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  categoryColor,
+                  categoryColor.withValues(alpha: 0.7),
+                ],
+              )
+            : null,
         borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
         boxShadow: [
           BoxShadow(
@@ -254,6 +278,22 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   File(_event.backgroundImage!),
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => const SizedBox(),
+                ),
+              ),
+            ),
+          if (_event.backgroundImage != null)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.black.withValues(alpha: 0.5),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xl(context)),
                 ),
               ),
             ),
@@ -375,24 +415,33 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
               if (!isCountUp && _event.daysRemaining > 0) ...[
                 SizedBox(height: ResponsiveSpacing.xxl(context)),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xs(context)),
-                  child: LinearProgressIndicator(
-                    value: _event.progressPercentage,
-                    backgroundColor: Colors.white.withValues(alpha: 0.3),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                    minHeight: ResponsiveSpacing.sm(context),
-                  ),
-                ),
-                SizedBox(height: ResponsiveSpacing.sm(context)),
-                Text(
-                  '${(_event.progressPercentage * 100).toInt()}% 剩余',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: ResponsiveFontSize.base(context),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Consumer<SettingsProvider>(
+                  builder: (context, settings, child) {
+                    final progress = _calculateProgress(_event, settings);
+                    return Column(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(ResponsiveBorderRadius.xs(context)),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            backgroundColor: Colors.white.withValues(alpha: 0.3),
+                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                            minHeight: ResponsiveSpacing.sm(context),
+                          ),
+                        ),
+                        SizedBox(height: ResponsiveSpacing.sm(context)),
+                        Text(
+                          '${(progress * 100).toInt()}% 剩余',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: ResponsiveFontSize.base(context),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ],
