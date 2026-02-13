@@ -34,6 +34,7 @@ dependencies:
   
   # 通知（使用最新版本）
   flutter_local_notifications: ^19.0.0
+  timezone: ^0.9.0
   
   # 桌面小部件
   home_widget: ^0.7.0

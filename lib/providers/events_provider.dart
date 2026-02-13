@@ -6,6 +6,7 @@ import '../models/category_model.dart';
 import '../models/reminder.dart';
 import '../services/database_service.dart';
 import '../services/widget_service.dart';
+import '../services/notification_service.dart';
 
 /// 事件状态管理 Provider
 ///
@@ -15,12 +16,17 @@ import '../services/widget_service.dart';
 /// 3. 提供事件筛选（分类、搜索）与排序功能。
 /// 4. 同步更新桌面小部件 (WidgetService)。
 /// 5. 与数据库层 (DatabaseService) 交互进行持久化。
+/// 6. 管理事件通知 (NotificationService)。
 class EventsProvider extends ChangeNotifier {
   final DatabaseService _dbService;
+  final NotificationService _notificationService;
   final Uuid _uuid = const Uuid();
 
-  EventsProvider({DatabaseService? dbService}) 
-      : _dbService = dbService ?? DatabaseService();
+  EventsProvider({
+    DatabaseService? dbService,
+    NotificationService? notificationService,
+  })  : _dbService = dbService ?? DatabaseService(),
+        _notificationService = notificationService ?? NotificationService();
 
   List<CountdownEvent> _events = [];
   List<CountdownEvent> _archivedEvents = [];
@@ -213,6 +219,10 @@ class EventsProvider extends ChangeNotifier {
     }
     
     _events.add(event);
+    
+    // Schedule notifications
+    await _notificationService.scheduleEventReminders(event);
+    
     notifyListeners();
   }
 
@@ -220,6 +230,10 @@ class EventsProvider extends ChangeNotifier {
   Future<void> insertEvent(CountdownEvent event) async {
     await _dbService.insertEvent(event);
     _events.add(event);
+    
+    // Schedule notifications
+    await _notificationService.scheduleEventReminders(event);
+    
     await _updateWidget();
     notifyListeners();
   }
@@ -240,6 +254,9 @@ class EventsProvider extends ChangeNotifier {
       _events[index] = updatedEvent;
     }
 
+    // Update notifications
+    await _notificationService.scheduleEventReminders(updatedEvent);
+
     await _updateWidget();
     notifyListeners();
   }
@@ -247,6 +264,10 @@ class EventsProvider extends ChangeNotifier {
   /// 删除事件
   Future<void> deleteEvent(String id) async {
     await _dbService.deleteEvent(id);
+    
+    // Cancel notifications
+    await _notificationService.cancelEventNotifications(id);
+    
     _events.removeWhere((e) => e.id == id);
     _archivedEvents.removeWhere((e) => e.id == id);
     await _updateWidget();
