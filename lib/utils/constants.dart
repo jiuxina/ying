@@ -280,11 +280,37 @@ class AppConstants {
     'MM月dd日',
   ];
   // ==================== 更新服务 ====================
-  
+
   /// GitHub Releases API
   static const String githubApiUrl = 'https://api.github.com/repos/jiuxina/ying/releases/latest';
-  
+
   /// GitHub 代理地址
   static const String proxyUrl = 'https://gh-proxy.org';
+
+  // ==================== 数据库表名 ====================
+
+  /// 事件表名
+  static const String eventsTable = 'events';
+
+  /// 分类表名
+  static const String categoriesTable = 'categories';
+
+  /// 提醒表名
+  static const String remindersTable = 'reminders';
+
+  /// 事件分组表名
+  static const String eventGroupsTable = 'event_groups';
+
+  /// 小部件配置表名
+  static const String widgetConfigsTable = 'widget_configs';
+
+  // ==================== 时间常量 ====================
+
+  /// 事件预览天数（30天）
+  static const int eventPreviewDays = 30;
+
+  /// 字体大小范围
+  static const double minFontSize = 12.0;
+  static const double maxFontSize = 24.0;
 }
 

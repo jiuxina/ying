@@ -46,3 +46,21 @@ class PermissionException extends AppException {
   PermissionException(super.message)
       : super(code: 'PERMISSION_DENIED');
 }
+
+/// 文件系统异常
+class FileSystemException extends AppException {
+  FileSystemException(super.message, {super.originalException})
+      : super(code: 'FILE_SYSTEM_ERROR');
+}
+
+/// 云同步异常
+class CloudSyncException extends AppException {
+  CloudSyncException(super.message, {super.originalException})
+      : super(code: 'CLOUD_SYNC_ERROR');
+}
+
+/// 输入验证异常
+class ValidationException extends AppException {
+  ValidationException(super.message)
+      : super(code: 'VALIDATION_ERROR');
+}
