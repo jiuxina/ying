@@ -8,6 +8,7 @@ import 'providers/events_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/notification_service.dart';
 import 'screens/home_screen.dart';
+import 'screens/event_detail_screen.dart';
 import 'theme/app_theme.dart';
 import 'utils/constants.dart';
 import 'widgets/particle_background.dart';
@@ -15,6 +16,9 @@ import 'widgets/particle_background.dart';
 import 'utils/route_observer.dart'; // import for globalRouteObserver
 
 import 'pages/widget_config_page.dart';
+
+// 全局导航器键，用于在没有 BuildContext 的情况下导航
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// 应用入口
 ///
@@ -28,11 +32,6 @@ void main() async {
   // Initialize home widget
   await HomeWidget.setAppGroupId(AppConstants.appGroupId);
 
-  // Initialize notification service
-  final notificationService = NotificationService();
-  await notificationService.initialize();
-  await notificationService.requestPermissions();
-
   // Initialize settings
   final settingsProvider = SettingsProvider();
   await settingsProvider.init();
@@ -40,6 +39,32 @@ void main() async {
   // Initialize events
   final eventsProvider = EventsProvider();
   await eventsProvider.init();
+
+  // Initialize notification service
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+  await notificationService.requestPermissions();
+  
+  // 设置通知点击回调 - 导航到事件详情页
+  notificationService.onNotificationTap = (String eventId) {
+    // 查找事件
+    final event = eventsProvider.events.cast<CountdownEvent?>().firstWhere(
+      (e) => e?.id == eventId,
+      orElse: () => null,
+    );
+    
+    if (event != null && navigatorKey.currentContext != null) {
+      // 导航到事件详情页
+      Navigator.of(navigatorKey.currentContext!).push(
+        MaterialPageRoute(
+          builder: (context) => EventDetailScreen(event: event),
+        ),
+      );
+    }
+  };
+  
+  // 重新调度所有活动事件的提醒（应用启动时恢复）
+  await notificationService.rescheduleAllReminders(eventsProvider.events);
 
   // 设置系统 UI 样式 - 沉浸式状态栏
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -72,6 +97,7 @@ class YingApp extends StatelessWidget {
     final settings = context.watch<SettingsProvider>();
 
     return MaterialApp(
+      navigatorKey: navigatorKey,  // 设置全局导航器键
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme(
