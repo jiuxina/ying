@@ -166,8 +166,6 @@ class NotificationService {
         tz.TZDateTime.from(notificationDate, tz.local),
         notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
         payload: event.id,
       );
 
