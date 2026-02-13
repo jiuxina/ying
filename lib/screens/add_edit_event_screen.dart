@@ -625,7 +625,25 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    onTap: () => _showReminderDialog(),
+                                    subtitle: _reminders.length >= 10
+                                        ? Text(
+                                            '最多可添加10个提醒',
+                                            style: TextStyle(
+                                              fontSize: ResponsiveFontSize.sm(
+                                                context,
+                                              ),
+                                              color: Colors.orange,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          )
+                                        : null,
+                                    trailing: _reminders.length >= 10
+                                        ? null
+                                        : const Icon(Icons.chevron_right),
+                                    enabled: _reminders.length < 10,
+                                    onTap: _reminders.length < 10
+                                        ? () => _showReminderDialog()
+                                        : null,
                                   ),
                                 ],
                               ],
@@ -1092,6 +1110,34 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                               hour: time.hour,
                               minute: time.minute,
                             );
+
+                            // 检查是否是重复的提醒（相同的天数和时间）
+                            final isDuplicate = _reminders.asMap().entries.any((entry) {
+                              final i = entry.key;
+                              final r = entry.value;
+                              // 如果是编辑模式，排除当前正在编辑的提醒
+                              if (index != null && i == index) return false;
+                              return r.daysBefore == days && 
+                                     r.hour == time.hour && 
+                                     r.minute == time.minute;
+                            });
+                            
+                            if (isDuplicate) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    '⚠️ 已存在相同的提醒设置',
+                                    style: TextStyle(
+                                      fontSize: ResponsiveFontSize.base(context),
+                                    ),
+                                  ),
+                                  backgroundColor: Colors.orange,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                              return;
+                            }
 
                             setState(() {
                               if (index != null) {
