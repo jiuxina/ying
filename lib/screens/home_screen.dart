@@ -292,26 +292,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   List<CountdownEvent> _getFilteredEvents(EventsProvider provider) {
     final settings = context.read<SettingsProvider>();
-    var events = provider.events.where((e) => !e.isArchived).toList();
+    final query = _searchController.text.toLowerCase();
+    final hasSearch = query.isNotEmpty;
 
-    // 分类筛选
-    if (_selectedCategoryId != null) {
-      events = events.where((e) => e.categoryId == _selectedCategoryId).toList();
-    }
+    // Single-pass filtering
+    final events = provider.events.where((e) {
+      // Skip archived events
+      if (e.isArchived) return false;
 
-    // 搜索筛选
-    if (_searchController.text.isNotEmpty) {
-      final query = _searchController.text.toLowerCase();
-      events = events.where((e) =>
-          e.title.toLowerCase().contains(query) ||
-          (e.note?.toLowerCase().contains(query) ?? false)).toList();
-    }
+      // Category filter
+      if (_selectedCategoryId != null && e.categoryId != _selectedCategoryId) {
+        return false;
+      }
 
-    // 排序：置顶优先，然后按用户选择的排序方式
+      // Search filter
+      if (hasSearch) {
+        final matchesTitle = e.title.toLowerCase().contains(query);
+        final matchesNote = e.note?.toLowerCase().contains(query) ?? false;
+        if (!matchesTitle && !matchesNote) return false;
+      }
+
+      return true;
+    }).toList();
+
+    // Sorting: pinned first, then by user's sort preference
     events.sort((a, b) {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-      
+
       switch (settings.sortOrder) {
         case 'custom':
           final customOrder = settings.customSortOrder;

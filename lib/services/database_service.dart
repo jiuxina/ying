@@ -36,7 +36,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 4, // Increment version
+      version: 5, // Increment version for index migration
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -69,6 +69,13 @@ class DatabaseService {
       )
     ''');
 
+    // Create indexes for frequently queried columns
+    await db.execute('CREATE INDEX idx_events_category ON $_tableName(category)');
+    await db.execute('CREATE INDEX idx_events_archived ON $_tableName(isArchived)');
+    await db.execute('CREATE INDEX idx_events_pinned ON $_tableName(isPinned)');
+    await db.execute('CREATE INDEX idx_events_target_date ON $_tableName(targetDate)');
+    await db.execute('CREATE INDEX idx_events_group_id ON $_tableName(groupId)');
+
     await db.execute('''
       CREATE TABLE $_groupsTable (
         id TEXT PRIMARY KEY,
@@ -100,7 +107,7 @@ class DatabaseService {
       ''');
       await db.execute('ALTER TABLE $_tableName ADD COLUMN groupId TEXT');
     }
-    
+
     if (oldVersion < 3) {
       await _createCategoriesTable(db);
       await _seedDefaultCategories(db);
@@ -113,6 +120,17 @@ class DatabaseService {
       // and use table for extras. Or migrate.
       // Let's migrate if possible, or just start fresh with multiple reminders support.
       // For now, let's just create the table.
+    }
+
+    // Add indexes for better query performance (version 5+)
+    if (oldVersion < 5) {
+      // Check if indexes don't exist before creating them
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_events_category ON $_tableName(category)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_events_archived ON $_tableName(isArchived)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_events_pinned ON $_tableName(isPinned)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_events_target_date ON $_tableName(targetDate)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_events_group_id ON $_tableName(groupId)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_reminders_event_id ON $_remindersTable(eventId)');
     }
   }
   
@@ -139,6 +157,8 @@ class DatabaseService {
         FOREIGN KEY (eventId) REFERENCES $_tableName (id) ON DELETE CASCADE
       )
     ''');
+    // Create index for faster lookups by eventId
+    await db.execute('CREATE INDEX idx_reminders_event_id ON $_remindersTable(eventId)');
   }
 
   Future<void> _seedDefaultCategories(Database db) async {
