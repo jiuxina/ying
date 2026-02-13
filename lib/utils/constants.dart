@@ -51,22 +51,25 @@ class FontOption {
 
 class AppConstants {
   // ==================== 应用信息 ====================
-  
+
   /// 应用名称
   static const String appName = '萤';
-  
+
+  /// 应用包名/App Group ID
+  static const String appGroupId = 'com.jiuxina.ying';
+
   /// 版本号
   static const String appVersion = '1.0.0';
-  
+
   /// 应用描述
   static const String appDescription = '用心记录每一个重要时刻';
-  
+
   /// 作者
   static const String author = 'jiuxina';
-  
+
   /// GitHub 仓库地址
   static const String githubUrl = 'https://github.com/jiuxina/ying';
-  
+
   /// 反馈邮箱
   static const String feedbackEmail = 'jiuxina@outlook.com';
 
