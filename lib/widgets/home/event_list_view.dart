@@ -35,8 +35,8 @@ class EventListView extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.all(ResponsiveSpacing.base(context)),
       children: [
-        // 分类筛选器
-        const SectionHeader(title: '分类筛选', icon: Icons.category),
+        // 全部事件 - 分类筛选
+        const SectionHeader(title: '全部事件', icon: Icons.event),
         SizedBox(height: ResponsiveSpacing.md(context)),
         CategorySelector(
           selectedCategoryId: selectedCategoryId,
@@ -76,7 +76,10 @@ class EventListView extends StatelessWidget {
 
     return Column(
       children: [
-        _EventListHeader(title: '全部事件', icon: Icons.event, isCustomSort: false),
+        if (selectedCategoryId != null)
+          _EventListHeader(title: '筛选结果', icon: Icons.filter_list, isCustomSort: false)
+        else
+          _EventListHeader(title: '最近事件', icon: Icons.schedule, isCustomSort: false),
         SizedBox(height: ResponsiveSpacing.md(context)),
         ...unpinnedEvents.asMap().entries.map(
           (entry) => StaggeredListItem(
@@ -92,7 +95,7 @@ class EventListView extends StatelessWidget {
     return Column(
       children: [
         _EventListHeader(
-          title: '全部事件 (长按拖拽)',
+          title: '自定义排序 (长按拖拽)',
           icon: Icons.drag_indicator,
           isCustomSort: true,
         ),

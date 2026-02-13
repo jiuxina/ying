@@ -402,30 +402,8 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                     1,
                                   ),
                                 ),
-                                SwitchListTile(
-                                  secondary: const IconBox(
-                                    icon: Icons.replay,
-                                    color: Colors.green,
-                                  ),
-                                  title: Text(
-                                    '正数日（已过天数）',
-                                    style: TextStyle(
-                                      fontSize: ResponsiveFontSize.base(
-                                        context,
-                                      ),
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  value: _isCountUp,
-                                  onChanged: (v) =>
-                                      setState(() => _isCountUp = v),
-                                ),
-                                Divider(
-                                  height: ResponsiveUtils.scaledSize(
-                                    context,
-                                    1,
-                                  ),
-                                ),
+                                // "正数日" switch removed - automatically derived from target date
+                                // Divider removed
                                 SwitchListTile(
                                   secondary: const IconBox(
                                     icon: Icons.access_time_filled,
@@ -768,11 +746,13 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
     return Padding(
       padding: EdgeInsets.all(ResponsiveSpacing.base(context)),
       child: Row(
-        crossAxisAlignment: maxLines > 1
-            ? CrossAxisAlignment.start
-            : CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          IconBox(icon: icon, color: Theme.of(context).colorScheme.primary),
+          // Wrap IconBox in Align to center it when TextField grows
+          Align(
+            alignment: Alignment.center,
+            child: IconBox(icon: icon, color: Theme.of(context).colorScheme.primary),
+          ),
           SizedBox(width: ResponsiveSpacing.base(context)),
           Expanded(
             child: TextFormField(
@@ -972,15 +952,9 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
       lastDate: DateTime(2200),
     );
     if (picked != null) {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final pickedDay = DateTime(picked.year, picked.month, picked.day);
       setState(() {
         _targetDate = picked;
-        // 自动设置正数日：当目标日期在过去时
-        if (pickedDay.isBefore(today)) {
-          _isCountUp = true;
-        }
+        // _isCountUp is now automatically derived when saving
       });
     }
   }
@@ -1198,6 +1172,16 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
       lunarDateStr = LunarUtils.getLunarDateString(_targetDate);
     }
 
+    // Auto-derive isCountUp from target date
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDay = DateTime(
+      targetDateTime.year,
+      targetDateTime.month,
+      targetDateTime.day,
+    );
+    final autoIsCountUp = targetDay.isBefore(today);
+
     // Sync legacy fields with first reminder if available
     int legacyDays = _reminders.isNotEmpty ? _reminders.first.daysBefore : 1;
     int legacyHour = _reminders.isNotEmpty ? _reminders.first.hour : 9;
@@ -1218,7 +1202,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
       isLunar: _isLunar,
       lunarDateStr: lunarDateStr,
       categoryId: _categoryId, // Corrected variable name
-      isCountUp: _isCountUp,
+      isCountUp: autoIsCountUp, // Automatically derived
       isRepeating: _isRepeating,
       isPinned: widget.event?.isPinned ?? false,
       isArchived: widget.event?.isArchived ?? false,
