@@ -88,7 +88,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return '${_formatTimeComponent(hours)}:${_formatTimeComponent(minutes)}:${_formatTimeComponent(seconds)}';
   }
 
-  /// 格式化详细时间字符串 X天 YY时 ZZ分 SS秒
+  /// 格式化详细时间字符串: D天 HH时 MM分 SS秒 (天数不补零，时分秒补零)
   String _formatDetailedTime(int days, int hours, int minutes, int seconds) {
     return '$days天 ${_formatTimeComponent(hours)}时 ${_formatTimeComponent(minutes)}分 ${_formatTimeComponent(seconds)}秒';
   }
