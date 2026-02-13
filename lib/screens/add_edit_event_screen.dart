@@ -1120,19 +1120,8 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
       },
     );
   }
-                      fontSize: ResponsiveFontSize.base(context),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 
+  // Removed unused _selectTime method
   // Removed unused _selectTime method
   Future<void> _selectTargetTime() async {
     HapticFeedback.selectionClick();

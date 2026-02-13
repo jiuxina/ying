@@ -55,9 +55,18 @@ class NotificationService {
   }
 
   /// 处理通知点击事件
+  /// 
+  /// TODO: 实现导航到事件详情页
+  /// 需要使用 GlobalKey<NavigatorState> 或其他导航方案，
+  /// 因为此回调在应用启动时可能没有 BuildContext。
+  /// 
+  /// 可能的实现方案：
+  /// 1. 使用 navigatorKey 在 MaterialApp 中定义全局 Navigator
+  /// 2. 将 eventId 从 payload 中提取，查找事件并推送详情页
+  /// 3. 处理应用未运行时的启动导航
   void _onNotificationTapped(NotificationResponse response) {
     debugPrint('通知被点击: ${response.payload}');
-    // TODO: 根据 payload 跳转到对应事件详情页
+    // Implementation pending: Navigate to event detail screen
   }
 
   /// 请求通知权限
@@ -186,13 +195,21 @@ class NotificationService {
   }
 
   /// 取消事件的所有通知
+  /// 
+  /// 注意：当前实现遍历所有待处理通知以查找匹配的事件 ID，复杂度为 O(n)。
+  /// 建议优化：在数据库中存储通知 ID 映射，实现直接查找和删除（O(1)）。
+  /// 
+  /// 由于 flutter_local_notifications 使用哈希生成 ID，
+  /// 无法直接根据事件 ID 计算所有相关通知的 ID。
+  /// 可能的优化方案：
+  /// 1. 在数据库中维护 event_id -> [notification_ids] 的映射表
+  /// 2. 使用固定的 ID 生成规则（如 eventId.hashCode + reminderIndex）
   Future<void> cancelEventNotifications(String eventId) async {
     if (!_initialized) return;
     
     try {
-      // 注意：由于我们使用哈希生成 ID，无法直接获取所有相关通知
-      // 建议：在数据库中存储通知 ID，或使用固定的 ID 生成规则
-      // 当前实现：取消所有待处理通知（性能考虑，仅用于演示）
+      // 注意：当前实现需要遍历所有待处理通知
+      // 这是因为我们使用哈希生成的通知 ID，无法直接计算
       final pendingNotifications = await _notifications.pendingNotificationRequests();
       for (final notification in pendingNotifications) {
         if (notification.payload == eventId) {
