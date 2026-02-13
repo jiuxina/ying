@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/countdown_event.dart';
 import '../providers/events_provider.dart';
+import '../services/notification_service.dart';
 import '../utils/constants.dart';
 import '../utils/lunar_utils.dart';
 import '../utils/responsive_utils.dart';
