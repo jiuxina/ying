@@ -150,7 +150,7 @@ abstract class _BaseTemplate extends StatelessWidget {
               height: 1.0,
             ),
             maxLines: 1,
-            overflow: TextOverflow.visible,
+            overflow: TextOverflow.clip,
             softWrap: false,
           ),
           SizedBox(width: adaptedFontSize * 0.08),
@@ -410,7 +410,7 @@ class _GradientTemplate extends _BaseTemplate {
                 '${event.daysRemaining.abs()}',
                 style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                 maxLines: 1,
-                overflow: TextOverflow.visible,
+                overflow: TextOverflow.clip,
                 softWrap: false,
               ),
             ),
@@ -611,7 +611,7 @@ class _CardTemplate extends _BaseTemplate {
                                         height: 1
                                       ),
                                       maxLines: 1,
-                                      overflow: TextOverflow.visible,
+                                      overflow: TextOverflow.clip,
                                       softWrap: false,
                                     ),
                                   ),
@@ -694,7 +694,7 @@ class _CardTemplate extends _BaseTemplate {
                                             height: 1
                                           ),
                                           maxLines: 1,
-                                          overflow: TextOverflow.visible,
+                                          overflow: TextOverflow.clip,
                                           softWrap: false,
                                         ),
                                         Text(
@@ -832,7 +832,7 @@ class _FestiveTemplate extends _BaseTemplate {
                                          color: Colors.white
                                        ),
                                        maxLines: 1,
-                                       overflow: TextOverflow.visible,
+                                       overflow: TextOverflow.clip,
                                        softWrap: false,
                                      ),
                                      Text(
@@ -973,7 +973,7 @@ class _FestiveTemplate extends _BaseTemplate {
                                      color: Colors.white
                                    ),
                                    maxLines: 1,
-                                   overflow: TextOverflow.visible,
+                                   overflow: TextOverflow.clip,
                                    softWrap: false,
                                  ),
                                  Text(
@@ -1098,7 +1098,7 @@ class _PosterTemplate extends _BaseTemplate {
                                                   height: 1
                                                 ),
                                                 maxLines: 1,
-                                                overflow: TextOverflow.visible,
+                                                overflow: TextOverflow.clip,
                                                 softWrap: false,
                                               ),
                                               Text(
@@ -1209,7 +1209,7 @@ class _PosterTemplate extends _BaseTemplate {
                                               height: 1
                                             ),
                                             maxLines: 1,
-                                            overflow: TextOverflow.visible,
+                                            overflow: TextOverflow.clip,
                                             softWrap: false,
                                           ), 
                                           Text(
