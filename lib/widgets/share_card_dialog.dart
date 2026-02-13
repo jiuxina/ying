@@ -100,6 +100,7 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
 
     // 计算预览尺寸 (响应式，基于屏幕宽度)
     final screenWidth = MediaQuery.of(context).size.width;
+    // 4倍间距 = Dialog insetPadding(左右各1倍) + 内部边距(左右各1倍)
     double previewWidth = (screenWidth - ResponsiveSpacing.base(context) * 4).clamp(280.0, 350.0);
     double previewHeight;
     switch (_selectedRatio) {
@@ -429,7 +430,7 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
               child: Container(
                 padding: EdgeInsets.symmetric(
                   horizontal: ResponsiveSpacing.md(context), 
-                  vertical: ResponsiveSpacing.xs(context) + ResponsiveUtils.scaledSpacing(context, 2)
+                  vertical: ResponsiveSpacing.xs(context) * 1.5
                 ),
                 decoration: BoxDecoration(
                   color: isSelected
