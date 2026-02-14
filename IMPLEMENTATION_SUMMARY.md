@@ -53,7 +53,7 @@
 
 #### 新增依赖
 ```yaml
-flutter_overlay_window: ^0.5.2
+flutter_overlay_window: ^0.5.0
 ```
 
 #### Android 权限
