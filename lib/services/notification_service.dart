@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -23,14 +24,27 @@ class NotificationService {
   
   // 通知点击回调 - 将由外部设置
   Function(String eventId)? onNotificationTap;
+  
+  // 通知配置常量
+  static const _vibrationPattern = [0, 500, 200, 500];  // 振动模式：静止-振动-暂停-振动
+  static const _ledColor = Color(0xFF2196F3);  // LED颜色：蓝色
+  static const _ledOnMs = 1000;  // LED亮起时长
+  static const _ledOffMs = 500;  // LED熄灭时长
+  static const _initTimeoutSeconds = 30;  // 初始化超时时间（秒）
 
   /// 初始化通知服务
   Future<void> initialize() async {
     if (_initialized) return;
     if (_initializing) {
-      // 等待其他初始化完成
+      // 等待其他初始化完成（带超时）
+      final startTime = DateTime.now();
       while (_initializing) {
         await Future.delayed(const Duration(milliseconds: 100));
+        // 超时检查，防止无限等待
+        if (DateTime.now().difference(startTime).inSeconds > _initTimeoutSeconds) {
+          debugPrint('⚠️ 等待通知服务初始化超时');
+          throw TimeoutException('通知服务初始化超时', const Duration(seconds: _initTimeoutSeconds));
+        }
       }
       return;
     }
@@ -128,7 +142,7 @@ class NotificationService {
           if (canScheduleExact != null && !canScheduleExact) {
             debugPrint('⚠️ 警告：精确闹钟权限未授予。通知可能不准时。');
             debugPrint('提示：请在系统设置中为本应用启用"精确闹钟"权限以确保通知准时送达。');
-            debugPrint('路径：设置 -> 应用 -> 萤 -> 特殊访问权限 -> 闹钟和提醒 -> 允许');
+            debugPrint('路径：设置 -> 应用 -> 特殊访问权限 -> 闹钟和提醒 -> 允许');
             
             // 尝试请求精确闹钟权限（Android 12+）
             try {
@@ -264,11 +278,11 @@ class NotificationService {
         importance: Importance.high,
         priority: Priority.high,
         enableVibration: true,
-        vibrationPattern: Int64List.fromList([0, 500, 200, 500]),  // 振动模式：静止-振动-暂停-振动
+        vibrationPattern: Int64List.fromList(_vibrationPattern),
         enableLights: true,
-        ledColor: const Color(0xFF2196F3),
-        ledOnMs: 1000,
-        ledOffMs: 500,
+        ledColor: _ledColor,
+        ledOnMs: _ledOnMs,
+        ledOffMs: _ledOffMs,
         playSound: true,
         sound: const RawResourceAndroidNotificationSound('notification'),  // 使用默认通知音
         channelShowBadge: true,
@@ -456,11 +470,11 @@ class NotificationService {
         importance: Importance.high,
         priority: Priority.high,
         enableVibration: true,
-        vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+        vibrationPattern: Int64List.fromList(_vibrationPattern),
         enableLights: true,
-        ledColor: const Color(0xFF2196F3),
-        ledOnMs: 1000,
-        ledOffMs: 500,
+        ledColor: _ledColor,
+        ledOnMs: _ledOnMs,
+        ledOffMs: _ledOffMs,
         playSound: true,
         sound: const RawResourceAndroidNotificationSound('notification'),
         channelShowBadge: true,
