@@ -7,6 +7,7 @@ import '../models/reminder.dart';
 import '../services/database_service.dart';
 import '../services/widget_service.dart';
 import '../services/notification_service.dart';
+import '../services/debug_logger.dart';
 
 /// 事件状态管理 Provider
 ///
@@ -20,6 +21,7 @@ import '../services/notification_service.dart';
 class EventsProvider extends ChangeNotifier {
   final DatabaseService _dbService;
   final NotificationService _notificationService;
+  final DebugLogger _debugLogger = DebugLogger();
   final Uuid _uuid = const Uuid();
 
   EventsProvider({
@@ -228,6 +230,11 @@ class EventsProvider extends ChangeNotifier {
 
   /// 直接添加事件对象
   Future<void> insertEvent(CountdownEvent event) async {
+    _debugLogger.event('创建事件: ${event.title}', data: {
+      'targetDate': event.targetDate.toIso8601String(),
+      'hasReminders': event.reminders.isNotEmpty,
+    });
+    
     await _dbService.insertEvent(event);
     _events.add(event);
     
@@ -236,10 +243,14 @@ class EventsProvider extends ChangeNotifier {
     
     await _updateWidget();
     notifyListeners();
+    
+    _debugLogger.success('事件创建成功: ${event.title}');
   }
 
   /// 更新事件
   Future<void> updateEvent(CountdownEvent event) async {
+    _debugLogger.event('更新事件: ${event.title}');
+    
     final updatedEvent = event.copyWith(updatedAt: DateTime.now());
     await _dbService.updateEvent(updatedEvent);
     
@@ -259,10 +270,15 @@ class EventsProvider extends ChangeNotifier {
 
     await _updateWidget();
     notifyListeners();
+    
+    _debugLogger.success('事件更新成功: ${event.title}');
   }
 
   /// 删除事件
   Future<void> deleteEvent(String id) async {
+    final event = _events.firstWhere((e) => e.id == id);
+    _debugLogger.event('删除事件: ${event.title}');
+    
     await _dbService.deleteEvent(id);
     
     // Cancel notifications
@@ -272,6 +288,8 @@ class EventsProvider extends ChangeNotifier {
     _archivedEvents.removeWhere((e) => e.id == id);
     await _updateWidget();
     notifyListeners();
+    
+    _debugLogger.success('事件删除成功');
   }
 
   /// 切换置顶状态
