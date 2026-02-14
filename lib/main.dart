@@ -43,7 +43,15 @@ void main() async {
   // Initialize notification service
   final notificationService = NotificationService();
   await notificationService.initialize();
-  await notificationService.requestPermissions();
+  
+  // Request notification permissions
+  final permissionGranted = await notificationService.requestPermissions();
+  if (!permissionGranted) {
+    debugPrint('⚠️ 通知权限未授予，通知功能可能无法正常工作');
+    debugPrint('提示：请在系统设置中为本应用启用通知权限');
+  } else {
+    debugPrint('✓ 通知权限已授予');
+  }
   
   // 设置通知点击回调 - 导航到事件详情页
   notificationService.onNotificationTap = (String eventId) {
