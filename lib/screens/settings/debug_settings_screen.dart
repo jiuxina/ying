@@ -33,7 +33,7 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> {
       final status = await FlutterOverlayWindow.isActive();
       if (mounted) {
         setState(() {
-          _isOverlayActive = status;
+          _isOverlayActive = status ?? false;
         });
       }
     } catch (e) {
@@ -45,11 +45,11 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> {
     try {
       final hasPermission = await FlutterOverlayWindow.isPermissionGranted();
       
-      if (!hasPermission) {
+      if (hasPermission != true) {
         _debugService.info('Requesting overlay permission', source: 'DebugSettings');
         final granted = await FlutterOverlayWindow.requestPermission();
         
-        if (!granted && mounted) {
+        if (granted != true && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('需要悬浮窗权限才能使用调试功能'),
