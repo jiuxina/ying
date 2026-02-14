@@ -77,7 +77,7 @@ dependencies:
   image_cropper: ^11.0.0
   
   # 悬浮窗
-  flutter_overlay_window: ^0.5.2
+  flutter_overlay_window: ^0.5.0
 
 dev_dependencies:
   flutter_test:
