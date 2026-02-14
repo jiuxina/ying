@@ -297,16 +297,16 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
+              children: [
+                const Text(
                   '为什么需要这些配置？',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
-                SizedBox(height: 12),
-                Text(
+                const SizedBox(height: 12),
+                const Text(
                   '• Android 系统为了省电，会限制后台应用的活动\n'
                   '• 定时通知需要在后台运行，因此需要特殊权限\n'
                   '• 完成上述配置后，即使应用关闭，通知也能正常工作\n'
