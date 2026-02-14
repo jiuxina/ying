@@ -230,66 +230,100 @@ class EventsProvider extends ChangeNotifier {
 
   /// 直接添加事件对象
   Future<void> insertEvent(CountdownEvent event) async {
-    _debugLogger.event('创建事件: ${event.title}', data: {
-      'targetDate': event.targetDate.toIso8601String(),
-      'hasReminders': event.reminders.isNotEmpty,
-    });
-    
-    await _dbService.insertEvent(event);
-    _events.add(event);
-    
-    // Schedule notifications
-    await _notificationService.scheduleEventReminders(event);
-    
-    await _updateWidget();
-    notifyListeners();
-    
-    _debugLogger.success('事件创建成功: ${event.title}');
+    try {
+      _debugLogger.event('创建事件: ${event.title}', data: {
+        'targetDate': event.targetDate.toIso8601String(),
+        'hasReminders': event.reminders.isNotEmpty,
+      });
+      
+      await _dbService.insertEvent(event);
+      _events.add(event);
+      
+      // Schedule notifications
+      await _notificationService.scheduleEventReminders(event);
+      
+      await _updateWidget();
+      notifyListeners();
+      
+      _debugLogger.success('事件创建成功: ${event.title}');
+    } catch (e) {
+      _debugLogger.error('创建事件失败: ${event.title}', data: {'error': e.toString()});
+      rethrow;
+    }
   }
 
   /// 更新事件
   Future<void> updateEvent(CountdownEvent event) async {
-    _debugLogger.event('更新事件: ${event.title}');
-    
-    final updatedEvent = event.copyWith(updatedAt: DateTime.now());
-    await _dbService.updateEvent(updatedEvent);
-    
-    // Update reminders
-    await _dbService.deleteEventReminders(event.id);
-    for (var reminder in event.reminders) {
-      await _dbService.insertReminder(reminder.toMap());
+    try {
+      _debugLogger.event('更新事件: ${event.title}');
+      
+      final updatedEvent = event.copyWith(updatedAt: DateTime.now());
+      await _dbService.updateEvent(updatedEvent);
+      
+      // Update reminders
+      await _dbService.deleteEventReminders(event.id);
+      for (var reminder in event.reminders) {
+        await _dbService.insertReminder(reminder.toMap());
+      }
+
+      final index = _events.indexWhere((e) => e.id == event.id);
+      if (index != -1) {
+        _events[index] = updatedEvent;
+      }
+
+      // Update notifications
+      await _notificationService.scheduleEventReminders(updatedEvent);
+
+      await _updateWidget();
+      notifyListeners();
+      
+      _debugLogger.success('事件更新成功: ${event.title}');
+    } catch (e) {
+      _debugLogger.error('更新事件失败: ${event.title}', data: {'error': e.toString()});
+      rethrow;
     }
-
-    final index = _events.indexWhere((e) => e.id == event.id);
-    if (index != -1) {
-      _events[index] = updatedEvent;
-    }
-
-    // Update notifications
-    await _notificationService.scheduleEventReminders(updatedEvent);
-
-    await _updateWidget();
-    notifyListeners();
-    
-    _debugLogger.success('事件更新成功: ${event.title}');
   }
 
   /// 删除事件
   Future<void> deleteEvent(String id) async {
-    final event = _events.firstWhere((e) => e.id == id);
-    _debugLogger.event('删除事件: ${event.title}');
-    
-    await _dbService.deleteEvent(id);
-    
-    // Cancel notifications
-    await _notificationService.cancelEventNotifications(id);
-    
-    _events.removeWhere((e) => e.id == id);
-    _archivedEvents.removeWhere((e) => e.id == id);
-    await _updateWidget();
-    notifyListeners();
-    
-    _debugLogger.success('事件删除成功');
+    try {
+      // 首先尝试从活动事件中查找
+      var event = _events.cast<CountdownEvent?>().firstWhere(
+        (e) => e?.id == id,
+        orElse: () => null,
+      );
+      
+      // 如果未找到，尝试从归档事件中查找
+      event ??= _archivedEvents.cast<CountdownEvent?>().firstWhere(
+        (e) => e?.id == id,
+        orElse: () => null,
+      );
+      
+      if (event != null) {
+        _debugLogger.event('删除事件: ${event.title}');
+      } else {
+        _debugLogger.warning('删除事件: ID=$id (事件未找到)');
+      }
+      
+      await _dbService.deleteEvent(id);
+      
+      // Cancel notifications
+      await _notificationService.cancelEventNotifications(id);
+      
+      _events.removeWhere((e) => e.id == id);
+      _archivedEvents.removeWhere((e) => e.id == id);
+      await _updateWidget();
+      notifyListeners();
+      
+      if (event != null) {
+        _debugLogger.success('事件删除成功: ${event.title}');
+      } else {
+        _debugLogger.success('事件删除成功: ID=$id');
+      }
+    } catch (e) {
+      _debugLogger.error('删除事件失败: ID=$id', data: {'error': e.toString()});
+      rethrow;
+    }
   }
 
   /// 切换置顶状态

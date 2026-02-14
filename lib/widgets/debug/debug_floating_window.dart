@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../services/debug_logger.dart';
 import '../../services/notification_service.dart';
 
@@ -54,7 +55,7 @@ class _DebugFloatingWindowState extends State<DebugFloatingWindow>
   Map<String, dynamic>? _notificationStatus;
 
   /// 待处理通知列表
-  List<dynamic> _pendingNotifications = [];
+  List<PendingNotificationRequest> _pendingNotifications = [];
 
   /// 是否展开（最小化/最大化）
   bool _isExpanded = true;
