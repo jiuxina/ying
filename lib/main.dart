@@ -129,8 +129,49 @@ void main() async {
 /// 萤 - 倒数日应用
 ///
 /// 使用 MaterialApp 作为根组件，配置主题、路由和全局装饰。
-class YingApp extends StatelessWidget {
+class YingApp extends StatefulWidget {
   const YingApp({super.key});
+
+  @override
+  State<YingApp> createState() => _YingAppState();
+}
+
+class _YingAppState extends State<YingApp> with WidgetsBindingObserver {
+  final DebugService _debugService = DebugService();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _debugService.updateAppState('Resumed');
+        break;
+      case AppLifecycleState.inactive:
+        _debugService.updateAppState('Inactive');
+        break;
+      case AppLifecycleState.paused:
+        _debugService.updateAppState('Paused');
+        break;
+      case AppLifecycleState.detached:
+        _debugService.updateAppState('Detached');
+        break;
+      case AppLifecycleState.hidden:
+        _debugService.updateAppState('Hidden');
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
