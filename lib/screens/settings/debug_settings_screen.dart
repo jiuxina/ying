@@ -429,7 +429,6 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> {
       ),
       onTap: () {
         onTap();
-        setState(() {});
       },
       trailing: Icon(
         Icons.chevron_right,

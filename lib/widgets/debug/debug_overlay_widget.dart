@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../services/debug_service.dart';
+import '../../services/debug_service.dart';
 
 /// ============================================================================
 /// 调试悬浮窗 UI

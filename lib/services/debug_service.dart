@@ -42,7 +42,7 @@ class DebugService {
   final int _maxRoutes = 50;
 
   // 应用状态
-  String _appState = 'Active';
+  String _appState = 'Unknown';
   final Map<String, dynamic> _systemInfo = {};
   
   // 监听器
@@ -113,12 +113,20 @@ class DebugService {
 
   /// 记录路由导航
   void recordRoute(String route) {
-    _routeHistory.add('${DateTime.now().toString().substring(11, 19)} -> $route');
+    final timeStr = _formatTime(DateTime.now());
+    _routeHistory.add('$timeStr -> $route');
     if (_routeHistory.length > _maxRoutes) {
       _routeHistory.removeAt(0);
     }
     log('Navigation: $route', level: 'debug', source: 'Router');
     _notifyListeners();
+  }
+
+  /// 格式化时间为 HH:mm:ss
+  String _formatTime(DateTime dateTime) {
+    return '${dateTime.hour.toString().padLeft(2, '0')}:'
+        '${dateTime.minute.toString().padLeft(2, '0')}:'
+        '${dateTime.second.toString().padLeft(2, '0')}';
   }
 
   /// 更新应用状态
