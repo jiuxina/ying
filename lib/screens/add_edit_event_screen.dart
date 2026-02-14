@@ -39,7 +39,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   bool _isLunar = false;
   bool _isCountUp = false;
   bool _isRepeating = false;
-  bool _enableNotification = true;
+  bool _enableNotification = false;
 
   String? _backgroundImage;
 
@@ -62,7 +62,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   bool _initialIsLunar = false;
   bool _initialIsCountUp = false;
   bool _initialIsRepeating = false;
-  bool _initialEnableNotification = true;
+  bool _initialEnableNotification = false;
   String? _initialBackgroundImage;
   String? _initialGroupId;
   bool _isSaving = false;
@@ -537,6 +537,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                   ..._reminders.asMap().entries.map((entry) {
                                     final index = entry.key;
                                     final r = entry.value;
+                                    final dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
                                     return Column(
                                       children: [
                                         ListTile(
@@ -545,11 +546,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                             color: Colors.blue,
                                           ),
                                           title: Text(
-                                            r.daysBefore == 0
-                                                ? '当天'
-                                                : (r.daysBefore < 0
-                                                      ? '已过 ${r.daysBefore.abs()} 天'
-                                                      : '提前 ${r.daysBefore} 天'),
+                                            dateFormat.format(r.reminderDateTime),
                                             style: TextStyle(
                                               fontSize: ResponsiveFontSize.base(
                                                 context,
@@ -557,15 +554,17 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
-                                          subtitle: Text(
-                                            '${r.hour.toString().padLeft(2, '0')}:${r.minute.toString().padLeft(2, '0')}',
-                                            style: TextStyle(
-                                              fontSize: ResponsiveFontSize.sm(
-                                                context,
-                                              ),
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+                                          subtitle: r.customMessage != null && r.customMessage!.isNotEmpty
+                                              ? Text(
+                                                  r.customMessage!,
+                                                  style: TextStyle(
+                                                    fontSize: ResponsiveFontSize.sm(
+                                                      context,
+                                                    ),
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                )
+                                              : null,
                                           trailing: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
@@ -1010,189 +1009,275 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
 
   void _showReminderDialog({Reminder? reminder, int? index}) {
     HapticFeedback.selectionClick();
-    int days = reminder?.daysBefore ?? 1;
-    TimeOfDayWithSeconds time = reminder != null
-        ? TimeOfDayWithSeconds(hour: reminder.hour, minute: reminder.minute, second: 0)
-        : const TimeOfDayWithSeconds(hour: 9, minute: 0, second: 0);
+    
+    // 计算默认值：目标日期（或今天）+ 时间（或00:00:00）
+    DateTime defaultDateTime;
+    if (_useExactTime) {
+      // 如果设置了精确时间，使用目标日期时间
+      defaultDateTime = _targetDate;
+    } else {
+      // 否则使用目标日期 + 00:00:00
+      defaultDateTime = DateTime(
+        _targetDate.year,
+        _targetDate.month,
+        _targetDate.day,
+        0,
+        0,
+        0,
+      );
+    }
+    
+    DateTime selectedDateTime = reminder?.reminderDateTime ?? defaultDateTime;
+    final customMessageController = TextEditingController(
+      text: reminder?.customMessage ?? '',
+    );
 
     showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final dateFormat = DateFormat('yyyy-MM-dd');
+            final timeFormat = DateFormat('HH:mm:ss');
+            
             return Dialog(
               backgroundColor: Colors.transparent,
               child: GlassCard(
                 padding: EdgeInsets.all(ResponsiveSpacing.lg(context)),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      reminder == null ? '添加提醒' : '编辑提醒',
-                      style: TextStyle(
-                        fontSize: ResponsiveFontSize.lg(context),
-                        fontWeight: FontWeight.bold,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        reminder == null ? '添加提醒' : '编辑提醒',
+                        style: TextStyle(
+                          fontSize: ResponsiveFontSize.lg(context),
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: ResponsiveSpacing.lg(context)),
-                    // 提前天数选择
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '提前天数: ',
+                      SizedBox(height: ResponsiveSpacing.lg(context)),
+                      
+                      // 日期选择
+                      ListTile(
+                        leading: IconBox(
+                          icon: Icons.calendar_today,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        title: Text(
+                          '提醒日期',
                           style: TextStyle(
                             fontSize: ResponsiveFontSize.base(context),
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.remove_circle_outline),
-                          onPressed: days > 0
-                              ? () {
-                                  HapticFeedback.selectionClick();
-                                  setDialogState(() => days--);
-                                }
-                              : null,
-                        ),
-                        Flexible(
-                          child: Text(
-                            days == 0 ? '当天' : '提前 $days 天',
-                            style: TextStyle(
-                              fontSize: ResponsiveFontSize.base(context),
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                        trailing: Text(
+                          dateFormat.format(selectedDateTime),
+                          style: TextStyle(
+                            fontSize: ResponsiveFontSize.base(context),
+                            fontWeight: FontWeight.bold,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline),
-                          onPressed: days < 365
-                              ? () {
-                                  HapticFeedback.selectionClick();
-                                  setDialogState(() => days++);
-                                }
-                              : null,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: ResponsiveSpacing.base(context)),
-                    Divider(),
-                    // 提醒时间选择
-                    ListTile(
-                      leading: IconBox(
-                        icon: Icons.access_time,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      title: Text(
-                        '提醒时间',
-                        style: TextStyle(
-                          fontSize: ResponsiveFontSize.base(context),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: Text(
-                        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          fontSize: ResponsiveFontSize.base(context),
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      onTap: () async {
-                        HapticFeedback.selectionClick();
-                        final picked = await showTimePickerSheet(
-                          context: context,
-                          initialHour: time.hour,
-                          initialMinute: time.minute,
-                          initialSecond: 0,
-                          showSeconds: false,
-                        );
-                        if (picked != null) {
-                          setDialogState(() => time = picked);
-                        }
-                      },
-                    ),
-                    SizedBox(height: ResponsiveSpacing.lg(context)),
-                    // 按钮
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(
-                            '取消',
-                            style: TextStyle(
-                              fontSize: ResponsiveFontSize.base(context),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        SizedBox(width: ResponsiveSpacing.sm(context)),
-                        FilledButton(
-                          onPressed: () {
-                            HapticFeedback.mediumImpact();
-                            final newReminder = Reminder(
-                              id: reminder?.id ?? const Uuid().v4(),
-                              eventId: widget.event?.id ?? '', // TBD on save
-                              daysBefore: days,
-                              hour: time.hour,
-                              minute: time.minute,
-                            );
-
-                            // 检查是否是重复的提醒（相同的天数和时间）
-                            bool isDuplicate = false;
-                            for (int i = 0; i < _reminders.length; i++) {
-                              // 如果是编辑模式，排除当前正在编辑的提醒
-                              if (index != null && i == index) continue;
-                              
-                              final r = _reminders[i];
-                              if (r.daysBefore == days && 
-                                  r.hour == time.hour && 
-                                  r.minute == time.minute) {
-                                isDuplicate = true;
-                                break;
-                              }
-                            }
-                            
-                            if (isDuplicate) {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    '⚠️ 已存在相同的提醒设置',
-                                    style: TextStyle(
-                                      fontSize: ResponsiveFontSize.base(context),
-                                    ),
-                                  ),
-                                  backgroundColor: Colors.orange,
-                                  duration: const Duration(seconds: 2),
-                                ),
+                        onTap: () async {
+                          HapticFeedback.selectionClick();
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDateTime,
+                            firstDate: DateTime(1900),
+                            lastDate: DateTime(2200),
+                          );
+                          if (picked != null) {
+                            setDialogState(() {
+                              selectedDateTime = DateTime(
+                                picked.year,
+                                picked.month,
+                                picked.day,
+                                selectedDateTime.hour,
+                                selectedDateTime.minute,
+                                selectedDateTime.second,
                               );
-                              return;
-                            }
-
-                            setState(() {
-                              if (index != null) {
-                                _reminders[index] = newReminder;
-                              } else {
-                                _reminders.add(newReminder);
-                              }
                             });
-                            Navigator.pop(context);
-                          },
-                          child: Text(
-                            '确定',
-                            style: TextStyle(
-                              fontSize: ResponsiveFontSize.base(context),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          }
+                        },
+                      ),
+                      
+                      Divider(height: ResponsiveUtils.scaledSize(context, 1)),
+                      
+                      // 时间选择（时分秒）
+                      ListTile(
+                        leading: IconBox(
+                          icon: Icons.access_time,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
-                      ],
-                    ),
-                  ],
+                        title: Text(
+                          '提醒时间',
+                          style: TextStyle(
+                            fontSize: ResponsiveFontSize.base(context),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: Text(
+                          timeFormat.format(selectedDateTime),
+                          style: TextStyle(
+                            fontSize: ResponsiveFontSize.base(context),
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () async {
+                          HapticFeedback.selectionClick();
+                          final picked = await showTimePickerSheet(
+                            context: context,
+                            initialHour: selectedDateTime.hour,
+                            initialMinute: selectedDateTime.minute,
+                            initialSecond: selectedDateTime.second,
+                            showSeconds: true,
+                          );
+                          if (picked != null) {
+                            setDialogState(() {
+                              selectedDateTime = DateTime(
+                                selectedDateTime.year,
+                                selectedDateTime.month,
+                                selectedDateTime.day,
+                                picked.hour,
+                                picked.minute,
+                                picked.second,
+                              );
+                            });
+                          }
+                        },
+                      ),
+                      
+                      SizedBox(height: ResponsiveSpacing.base(context)),
+                      Divider(height: ResponsiveUtils.scaledSize(context, 1)),
+                      SizedBox(height: ResponsiveSpacing.base(context)),
+                      
+                      // 自定义提醒内容
+                      TextFormField(
+                        controller: customMessageController,
+                        decoration: InputDecoration(
+                          labelText: '自定义提醒内容（可选）',
+                          hintText: '输入自定义提醒内容',
+                          prefixIcon: Icon(Icons.message),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              ResponsiveBorderRadius.md(context),
+                            ),
+                          ),
+                          filled: false,
+                        ),
+                        maxLines: 2,
+                        maxLength: 200,
+                        style: TextStyle(
+                          fontSize: ResponsiveFontSize.base(context),
+                        ),
+                      ),
+                      
+                      SizedBox(height: ResponsiveSpacing.lg(context)),
+                      // 按钮
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              customMessageController.dispose();
+                              Navigator.pop(context);
+                            },
+                            child: Text(
+                              '取消',
+                              style: TextStyle(
+                                fontSize: ResponsiveFontSize.base(context),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          SizedBox(width: ResponsiveSpacing.sm(context)),
+                          FilledButton(
+                            onPressed: () {
+                              HapticFeedback.mediumImpact();
+                              
+                              // 检查提醒时间是否已过
+                              if (selectedDateTime.isBefore(DateTime.now())) {
+                                customMessageController.dispose();
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '⚠️ 提醒时间不能早于当前时间',
+                                      style: TextStyle(
+                                        fontSize: ResponsiveFontSize.base(context),
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.orange,
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                                return;
+                              }
+                              
+                              final newReminder = Reminder(
+                                id: reminder?.id ?? const Uuid().v4(),
+                                eventId: widget.event?.id ?? '', // TBD on save
+                                reminderDateTime: selectedDateTime,
+                                customMessage: customMessageController.text.trim().isEmpty
+                                    ? null
+                                    : customMessageController.text.trim(),
+                              );
+
+                              // 检查是否是重复的提醒（相同的时间）
+                              bool isDuplicate = false;
+                              for (int i = 0; i < _reminders.length; i++) {
+                                // 如果是编辑模式，排除当前正在编辑的提醒
+                                if (index != null && i == index) continue;
+                                
+                                final r = _reminders[i];
+                                if (r.reminderDateTime == selectedDateTime) {
+                                  isDuplicate = true;
+                                  break;
+                                }
+                              }
+                              
+                              if (isDuplicate) {
+                                customMessageController.dispose();
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '⚠️ 已存在相同的提醒设置',
+                                      style: TextStyle(
+                                        fontSize: ResponsiveFontSize.base(context),
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.orange,
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              setState(() {
+                                if (index != null) {
+                                  _reminders[index] = newReminder;
+                                } else {
+                                  _reminders.add(newReminder);
+                                }
+                              });
+                              customMessageController.dispose();
+                              Navigator.pop(context);
+                            },
+                            child: Text(
+                              '确定',
+                              style: TextStyle(
+                                fontSize: ResponsiveFontSize.base(context),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -1216,16 +1301,29 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
           ? '倒数日测试' 
           : _titleController.text;
       
-      // 构建测试消息（使用第一个提醒的设置作为示例）
+      // 构建测试消息
       String message = '这是一条测试通知 🔔';
       if (_reminders.isNotEmpty) {
         final firstReminder = _reminders.first;
-        if (firstReminder.daysBefore == 0) {
-          message = '今天就是 $title 的日子！🎉';
-        } else if (firstReminder.daysBefore == 1) {
-          message = '明天就是 $title 了！还有1天 ⏰';
+        // 如果有自定义消息，使用自定义消息
+        if (firstReminder.customMessage != null && firstReminder.customMessage!.isNotEmpty) {
+          message = firstReminder.customMessage!;
         } else {
-          message = '$title 还有 ${firstReminder.daysBefore} 天 📆';
+          // 计算剩余天数
+          final now = DateTime.now();
+          final targetDay = DateTime(_targetDate.year, _targetDate.month, _targetDate.day);
+          final today = DateTime(now.year, now.month, now.day);
+          final daysRemaining = targetDay.difference(today).inDays;
+          
+          if (daysRemaining == 0) {
+            message = '今天就是 $title 的日子！🎉';
+          } else if (daysRemaining == 1) {
+            message = '明天就是 $title 了！还有1天 ⏰';
+          } else if (daysRemaining == 2) {
+            message = '后天就是 $title 了！还有2天 📅';
+          } else {
+            message = '$title 还有 $daysRemaining 天 📆';
+          }
         }
       }
       
@@ -1353,9 +1451,23 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
     final autoIsCountUp = targetDay.isBefore(today);
 
     // Sync legacy fields with first reminder if available
-    int legacyDays = _reminders.isNotEmpty ? _reminders.first.daysBefore : 1;
-    int legacyHour = _reminders.isNotEmpty ? _reminders.first.hour : 9;
-    int legacyMinute = _reminders.isNotEmpty ? _reminders.first.minute : 0;
+    // These are for backward compatibility with the old notification fields
+    int legacyDays = 1;
+    int legacyHour = 9;
+    int legacyMinute = 0;
+    
+    if (_reminders.isNotEmpty) {
+      final firstReminder = _reminders.first;
+      // Calculate days before from the reminderDateTime
+      final reminderDay = DateTime(
+        firstReminder.reminderDateTime.year,
+        firstReminder.reminderDateTime.month,
+        firstReminder.reminderDateTime.day,
+      );
+      legacyDays = targetDay.difference(reminderDay).inDays;
+      legacyHour = firstReminder.reminderDateTime.hour;
+      legacyMinute = firstReminder.reminderDateTime.minute;
+    }
 
     // Ensure `categoryId` is passed correctly (it was `category: _category` in previous file view, but `categoryId` is the correct param name in model)
     // Wait, the file uses `category: _category` which I suspected was an error or legacy var name.

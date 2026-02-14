@@ -36,7 +36,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 5, // Increment version for index migration
+      version: 6, // Increment version for reminder schema migration
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -132,6 +132,13 @@ class DatabaseService {
       await db.execute('CREATE INDEX IF NOT EXISTS idx_events_group_id ON $_tableName(groupId)');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_reminders_event_id ON $_remindersTable(eventId)');
     }
+    
+    // Migrate reminders table schema (version 6+)
+    if (oldVersion < 6) {
+      // Drop and recreate reminders table with new schema
+      await db.execute('DROP TABLE IF EXISTS $_remindersTable');
+      await _createRemindersTable(db);
+    }
   }
   
   Future<void> _createCategoriesTable(Database db) async {
@@ -151,9 +158,8 @@ class DatabaseService {
       CREATE TABLE $_remindersTable (
         id TEXT PRIMARY KEY,
         eventId TEXT NOT NULL,
-        daysBefore INTEGER NOT NULL,
-        hour INTEGER NOT NULL,
-        minute INTEGER NOT NULL,
+        reminderDateTime INTEGER NOT NULL,
+        customMessage TEXT,
         FOREIGN KEY (eventId) REFERENCES $_tableName (id) ON DELETE CASCADE
       )
     ''');
@@ -369,7 +375,7 @@ class DatabaseService {
       _remindersTable,
       where: 'eventId = ?',
       whereArgs: [eventId],
-      orderBy: 'daysBefore DESC, hour ASC',
+      orderBy: 'reminderDateTime ASC',
     );
   }
 
@@ -407,7 +413,7 @@ class DatabaseService {
   /// 解决 N+1 查询问题
   Future<Map<String, List<Map<String, dynamic>>>> getAllRemindersGrouped() async {
     final db = await database;
-    final results = await db.query(_remindersTable, orderBy: 'daysBefore DESC, hour ASC');
+    final results = await db.query(_remindersTable, orderBy: 'reminderDateTime ASC');
     
     final grouped = <String, List<Map<String, dynamic>>>{};
     for (final row in results) {

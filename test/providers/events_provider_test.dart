@@ -227,7 +227,10 @@ void main() {
         title: 'Reminder Event',
         targetDate: DateTime.now().add(const Duration(days: 1)),
         reminders: [
-          Reminder.create(eventId: 'temp', daysBefore: 1, hour: 9, minute: 0),
+          Reminder.create(
+            eventId: 'temp',
+            reminderDateTime: DateTime.now().add(const Duration(hours: 9)),
+          ),
         ],
       );
 

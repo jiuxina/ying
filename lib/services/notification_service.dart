@@ -243,40 +243,23 @@ class NotificationService {
   /// 返回 true 表示调度成功，false 表示失败
   Future<bool> _scheduleReminder(CountdownEvent event, Reminder reminder) async {
     try {
-      final targetDate = event.targetDate;
+      final reminderDateTime = reminder.reminderDateTime;
       
-      // 创建目标日期的午夜时间（使用时区感知）
-      final tzTargetMidnight = tz.TZDateTime(
-        tz.local,
-        targetDate.year,
-        targetDate.month,
-        targetDate.day,
-        _midnightHour,
-        _midnightMinute,
-        _midnightSecond,
-      );
-      
-      // 减去提前天数（使用天数计算，避免DST问题）
-      final tzReminderDay = tzTargetMidnight.subtract(
-        Duration(days: reminder.daysBefore),
-      );
-      
-      // 然后设置正确的提醒时间（小时和分钟）
-      // 重新创建TZDateTime以确保时区正确性，避免DST边界问题
+      // 创建时区感知的提醒时间
       final tzNotificationDateTime = tz.TZDateTime(
         tz.local,
-        tzReminderDay.year,
-        tzReminderDay.month,
-        tzReminderDay.day,
-        reminder.hour,
-        reminder.minute,
-        _midnightSecond,
+        reminderDateTime.year,
+        reminderDateTime.month,
+        reminderDateTime.day,
+        reminderDateTime.hour,
+        reminderDateTime.minute,
+        reminderDateTime.second,
       );
 
       // 如果通知时间已过，则不调度
       final now = tz.TZDateTime.now(tz.local);
       if (tzNotificationDateTime.isBefore(now)) {
-        debugPrint('⏭ 提醒时间已过，跳过: ${event.title} - ${reminder.daysBefore}天前 ${reminder.hour}:${reminder.minute.toString().padLeft(2, '0')}');
+        debugPrint('⏭ 提醒时间已过，跳过: ${event.title} - ${tzNotificationDateTime.toIso8601String()}');
         return false;
       }
 
@@ -335,23 +318,44 @@ class NotificationService {
 
   /// 生成提醒消息
   /// 
-  /// 根据提前天数生成友好的提醒文本
+  /// 根据事件和提醒信息生成友好的提醒文本，包含剩余时间
   String _getReminderMessage(CountdownEvent event, Reminder reminder) {
-    final days = reminder.daysBefore;
-    final timeStr = '${reminder.hour.toString().padLeft(2, '0')}:${reminder.minute.toString().padLeft(2, '0')}';
+    // 如果有自定义消息，优先使用
+    if (reminder.customMessage != null && reminder.customMessage!.isNotEmpty) {
+      return reminder.customMessage!;
+    }
     
-    if (days == 0) {
-      return '今天就是 ${event.title} 的日子！🎉';
-    } else if (days == 1) {
+    // 计算从提醒时间到目标日期的剩余时间
+    final targetDate = event.targetDate;
+    final reminderDateTime = reminder.reminderDateTime;
+    
+    // 计算剩余天数
+    final targetDay = DateTime(targetDate.year, targetDate.month, targetDate.day);
+    final reminderDay = DateTime(reminderDateTime.year, reminderDateTime.month, reminderDateTime.day);
+    final daysRemaining = targetDay.difference(reminderDay).inDays;
+    
+    // 计算剩余时分秒
+    final timeRemaining = targetDate.difference(reminderDateTime);
+    final hours = timeRemaining.inHours % 24;
+    final minutes = timeRemaining.inMinutes % 60;
+    
+    // 生成消息
+    if (daysRemaining == 0) {
+      if (hours == 0 && minutes == 0) {
+        return '今天就是 ${event.title} 的日子！🎉';
+      } else {
+        return '今天就是 ${event.title}！还有 ${hours}小时${minutes}分钟 ⏰';
+      }
+    } else if (daysRemaining == 1) {
       return '明天就是 ${event.title} 了！还有1天 ⏰';
-    } else if (days == 2) {
+    } else if (daysRemaining == 2) {
       return '后天就是 ${event.title} 了！还有2天 📅';
-    } else if (days <= 7) {
-      return '${event.title} 还有 $days 天 📆';
-    } else if (days <= 30) {
-      return '${event.title} 还有 $days 天 🗓️';
+    } else if (daysRemaining <= 7) {
+      return '${event.title} 还有 $daysRemaining 天 📆';
+    } else if (daysRemaining <= 30) {
+      return '${event.title} 还有 $daysRemaining 天 🗓️';
     } else {
-      return '${event.title} 还有 $days 天';
+      return '${event.title} 还有 $daysRemaining 天';
     }
   }
 
