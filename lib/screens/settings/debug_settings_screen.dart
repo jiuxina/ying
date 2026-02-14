@@ -18,14 +18,30 @@ class DebugSettingsScreen extends StatefulWidget {
   State<DebugSettingsScreen> createState() => _DebugSettingsScreenState();
 }
 
-class _DebugSettingsScreenState extends State<DebugSettingsScreen> {
+class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsBindingObserver {
   final DebugService _debugService = DebugService();
   bool _isOverlayActive = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkOverlayStatus();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Check overlay status when app resumes
+    if (state == AppLifecycleState.resumed) {
+      _checkOverlayStatus();
+    }
   }
 
   Future<void> _checkOverlayStatus() async {
@@ -77,7 +93,8 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> {
 
   Future<void> _showOverlay() async {
     try {
-      await FlutterOverlayWindow.showOverlay(
+      // Show the overlay
+      final result = await FlutterOverlayWindow.showOverlay(
         height: 600,
         width: 350,
         alignment: OverlayAlignment.centerRight,
@@ -86,19 +103,30 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> {
         enableDrag: true,
       );
 
-      _debugService.info('Debug overlay shown', source: 'DebugSettings');
+      _debugService.info('Debug overlay show result: $result', source: 'DebugSettings');
+      
+      // Wait a bit for the overlay to actually start
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Check if overlay is actually active
+      await _checkOverlayStatus();
       
       if (mounted) {
-        setState(() {
-          _isOverlayActive = true;
-        });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('调试悬浮窗已启动'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (_isOverlayActive) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('调试悬浮窗已启动'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('悬浮窗启动失败，请检查权限设置'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
       }
     } catch (e) {
       _debugService.error('Failed to show overlay: $e', source: 'DebugSettings');
@@ -115,16 +143,33 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> {
 
   Future<void> _closeOverlay() async {
     try {
-      await FlutterOverlayWindow.closeOverlay();
-      _debugService.info('Debug overlay closed', source: 'DebugSettings');
+      final result = await FlutterOverlayWindow.closeOverlay();
+      _debugService.info('Debug overlay close result: $result', source: 'DebugSettings');
       
-      if (mounted) {
-        setState(() {
-          _isOverlayActive = false;
-        });
+      // Wait a bit for the overlay to actually close
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // Check if overlay is actually closed
+      await _checkOverlayStatus();
+      
+      if (mounted && !_isOverlayActive) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('调试悬浮窗已关闭'),
+            backgroundColor: Colors.blue,
+          ),
+        );
       }
     } catch (e) {
       _debugService.error('Failed to close overlay: $e', source: 'DebugSettings');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('关闭悬浮窗失败: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
