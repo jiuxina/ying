@@ -7,6 +7,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
 import '../models/countdown_event.dart';
 import '../models/reminder.dart';
+import 'debug_logger.dart';
 
 /// 通知服务
 /// 
@@ -19,6 +20,7 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
+  final DebugLogger _debugLogger = DebugLogger();
   bool _initialized = false;
   bool _initializing = false;  // 防止并发初始化
   
@@ -50,6 +52,7 @@ class NotificationService {
         // 超时检查，防止无限等待
         if (DateTime.now().difference(startTime).inSeconds > _initTimeoutSeconds) {
           debugPrint('⚠️ 等待通知服务初始化超时');
+          _debugLogger.error('等待通知服务初始化超时');
           throw TimeoutException('通知服务初始化超时', const Duration(seconds: _initTimeoutSeconds));
         }
       }
@@ -57,6 +60,7 @@ class NotificationService {
     }
     
     _initializing = true;
+    _debugLogger.info('开始初始化通知服务...');
     
     try {
       // 初始化时区数据
@@ -68,6 +72,7 @@ class NotificationService {
         final location = tz.getLocation('Asia/Shanghai');
         tz.setLocalLocation(location);
         debugPrint('✓ 通知服务使用时区: Asia/Shanghai (UTC+8)');
+        _debugLogger.timezone('时区设置成功: Asia/Shanghai (UTC+8)');
       } catch (e) {
         try {
           // 备选：亚洲/重庆（已弃用但仍可用作别名，与上海相同时区）
@@ -76,9 +81,11 @@ class NotificationService {
           final location = tz.getLocation('Asia/Chongqing');
           tz.setLocalLocation(location);
           debugPrint('✓ 通知服务使用时区: Asia/Chongqing (UTC+8)');
+          _debugLogger.timezone('时区设置成功: Asia/Chongqing (UTC+8)');
         } catch (e2) {
           // 最后备选：UTC（确保初始化总能成功）
           debugPrint('⚠️ 无法设置中国时区，使用 UTC: $e');
+          _debugLogger.warning('无法设置中国时区，使用 UTC', data: {'error': e.toString()});
           tz.setLocalLocation(tz.UTC);
         }
       }
@@ -105,8 +112,10 @@ class NotificationService {
 
       _initialized = true;
       debugPrint('✓ 通知服务初始化成功');
+      _debugLogger.success('通知服务初始化成功');
     } catch (e) {
       debugPrint('❌ 通知服务初始化失败: $e');
+      _debugLogger.error('通知服务初始化失败', data: {'error': e.toString()});
       rethrow;
     } finally {
       _initializing = false;
@@ -130,6 +139,7 @@ class NotificationService {
   /// 请求通知权限
   Future<bool> requestPermissions() async {
     bool granted = false;
+    _debugLogger.permission('开始请求通知权限...');
     
     if (defaultTargetPlatform == TargetPlatform.android) {
       final androidImplementation =
@@ -142,8 +152,11 @@ class NotificationService {
         
         if (!granted) {
           debugPrint('❌ 通知权限被拒绝');
+          _debugLogger.permission('通知权限被拒绝');
           return false;
         }
+        
+        _debugLogger.permission('通知权限已授予');
         
         // Android 12+ (API 31+) 需要检查精确闹钟权限
         try {
@@ -152,6 +165,7 @@ class NotificationService {
             debugPrint('⚠️ 警告：精确闹钟权限未授予。通知可能不准时。');
             debugPrint('提示：请在系统设置中为本应用启用"精确闹钟"权限以确保通知准时送达。');
             debugPrint('路径：设置 -> 应用 -> 特殊访问权限 -> 闹钟和提醒 -> 允许');
+            _debugLogger.warning('精确闹钟权限未授予，通知可能不准时');
             
             // 尝试请求精确闹钟权限（Android 12+）
             try {
@@ -160,9 +174,11 @@ class NotificationService {
               final recheckExact = await androidImplementation.canScheduleExactNotifications();
               if (recheckExact == true) {
                 debugPrint('✓ 精确闹钟权限已授予');
+                _debugLogger.permission('精确闹钟权限已授予');
               }
             } catch (e) {
               debugPrint('无法自动请求精确闹钟权限: $e');
+              _debugLogger.warning('无法自动请求精确闹钟权限', data: {'error': e.toString()});
             }
             
             // 即使没有精确闹钟权限，仍返回true让应用继续运行
@@ -170,9 +186,11 @@ class NotificationService {
             return true;
           } else if (canScheduleExact == true) {
             debugPrint('✓ 精确闹钟权限已授予');
+            _debugLogger.permission('精确闹钟权限已授予');
           }
         } catch (e) {
           debugPrint('检查精确闹钟权限时出错: $e');
+          _debugLogger.error('检查精确闹钟权限时出错', data: {'error': e.toString()});
         }
         
         return granted;
@@ -191,8 +209,10 @@ class NotificationService {
         
         if (granted) {
           debugPrint('✓ iOS通知权限已授予');
+          _debugLogger.permission('iOS通知权限已授予');
         } else {
           debugPrint('❌ iOS通知权限被拒绝');
+          _debugLogger.permission('iOS通知权限被拒绝');
         }
         
         return granted;
@@ -210,9 +230,12 @@ class NotificationService {
     }
 
     if (!event.enableNotification || event.reminders.isEmpty) {
+      _debugLogger.notification('跳过事件通知调度: ${event.title} (未启用通知或无提醒)');
       return;
     }
 
+    _debugLogger.notification('开始调度事件通知: ${event.title} (${event.reminders.length}个提醒)');
+    
     // 取消该事件的所有旧通知
     await cancelEventNotifications(event.id);
 
@@ -232,9 +255,11 @@ class NotificationService {
     
     if (successCount > 0) {
       debugPrint('✓ 成功调度 $successCount 个提醒通知 (${event.title})');
+      _debugLogger.success('成功调度 $successCount 个提醒通知: ${event.title}');
     }
     if (failCount > 0) {
       debugPrint('⚠️ $failCount 个提醒调度失败 (${event.title})');
+      _debugLogger.warning('$failCount 个提醒调度失败: ${event.title}');
     }
   }
 
@@ -260,10 +285,18 @@ class NotificationService {
       final now = tz.TZDateTime.now(tz.local);
       if (tzNotificationDateTime.isBefore(now)) {
         debugPrint('⏭ 提醒时间已过，跳过: ${event.title} - ${tzNotificationDateTime.toIso8601String()}');
+        _debugLogger.notification('提醒时间已过，跳过: ${event.title}', 
+          data: {'time': tzNotificationDateTime.toIso8601String()});
         return false;
       }
 
       final notificationId = _generateNotificationId(event.id, reminder.id);
+      
+      _debugLogger.notification('调度通知: ${event.title}',
+        data: {
+          'notificationId': notificationId,
+          'scheduledTime': tzNotificationDateTime.toIso8601String(),
+        });
       
       final androidDetails = AndroidNotificationDetails(
         'event_reminders',
@@ -309,9 +342,12 @@ class NotificationService {
       );
 
       debugPrint('✓ 已调度提醒: ${event.title} - ${tzNotificationDateTime.toIso8601String()}');
+      _debugLogger.success('通知已调度: ${event.title}', 
+        data: {'id': notificationId, 'time': tzNotificationDateTime.toIso8601String()});
       return true;
     } catch (e) {
       debugPrint('❌ 调度提醒失败: ${event.title} - $e');
+      _debugLogger.error('调度提醒失败: ${event.title}', data: {'error': e.toString()});
       return false;
     }
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:app_links/app_links.dart';
 
@@ -13,6 +14,7 @@ import '../widgets/common/expandable_fab.dart';
 import '../widgets/home/home_header.dart';
 import '../widgets/home/search_header.dart';
 import '../widgets/home/event_list_view.dart';
+import '../widgets/debug/debug_floating_window.dart';
 import 'add_edit_event_screen.dart';
 import 'settings_screen.dart';
 import 'archive_screen.dart';
@@ -342,47 +344,60 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildExpandableFAB() {
-    return ExpandableFab(
-      items: [
-        ExpandableFabItem(
-          icon: Icons.archive_outlined,
-          label: '归档',
-          color: Colors.orange,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ArchiveScreen()),
-            );
-          },
-        ),
-        ExpandableFabItem(
-          icon: Icons.calendar_month,
-          label: '日历',
-          color: Colors.teal,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CalendarScreen()),
-            );
-          },
-        ),
-        ExpandableFabItem(
-          icon: Icons.add,
-          label: '添加事件',
-          color: Theme.of(context).colorScheme.primary,
-          onPressed: () {
-            HapticFeedback.mediumImpact();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                settings: const RouteSettings(name: 'editor'),
-                builder: (context) => const AddEditEventScreen(),
-              ),
-            );
-          },
-        ),
-      ],
-    );
+    // 构建基本的FAB项目
+    final items = <ExpandableFabItem>[
+      ExpandableFabItem(
+        icon: Icons.archive_outlined,
+        label: '归档',
+        color: Colors.orange,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ArchiveScreen()),
+          );
+        },
+      ),
+      ExpandableFabItem(
+        icon: Icons.calendar_month,
+        label: '日历',
+        color: Colors.teal,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CalendarScreen()),
+          );
+        },
+      ),
+      ExpandableFabItem(
+        icon: Icons.add,
+        label: '添加事件',
+        color: Theme.of(context).colorScheme.primary,
+        onPressed: () {
+          HapticFeedback.mediumImpact();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: 'editor'),
+              builder: (context) => const AddEditEventScreen(),
+            ),
+          );
+        },
+      ),
+    ];
+
+    // 仅在调试模式下添加调试按钮
+    if (kDebugMode) {
+      items.insert(0, ExpandableFabItem(
+        icon: Icons.bug_report,
+        label: '调试',
+        color: Colors.purple,
+        onPressed: () {
+          DebugFloatingWindow.show(context);
+        },
+      ));
+    }
+
+    return ExpandableFab(items: items);
   }
 }
 
