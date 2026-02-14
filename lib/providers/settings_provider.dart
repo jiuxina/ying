@@ -143,6 +143,11 @@ class SettingsProvider extends ChangeNotifier {
   /// 上次同步时间
   DateTime? _lastSyncTime;
 
+  // ==================== 调试设置 ====================
+  
+  /// 是否启用调试模式
+  bool _debugModeEnabled = false;
+
   // ==================== Getters ====================
   
   ThemeMode get themeMode => _themeMode;
@@ -180,6 +185,9 @@ class SettingsProvider extends ChangeNotifier {
   bool get autoSyncEnabled => _autoSyncEnabled;
   DateTime? get lastSyncTime => _lastSyncTime;
   bool get isWebdavConfigured => _webdavUrl.isNotEmpty && _webdavUsername.isNotEmpty && _webdavPassword.isNotEmpty;
+  
+  // 调试 getters
+  bool get debugModeEnabled => _debugModeEnabled;
   
   // 小部件设置 getters
   WidgetType get currentWidgetType => _currentWidgetType;
@@ -302,6 +310,9 @@ class SettingsProvider extends ChangeNotifier {
         }
       }
     }
+
+    // 调试设置
+    _debugModeEnabled = prefs.getBool('debug_mode_enabled') ?? false;
 
     notifyListeners();
   }
@@ -696,6 +707,16 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setString('webdav_url', url);
     await prefs.setString('webdav_username', username);
     await _secureStorage.write(key: 'webdav_password', value: password);
+    notifyListeners();
+  }
+
+  // ==================== 调试设置方法 ====================
+
+  /// 设置调试模式开关
+  Future<void> setDebugModeEnabled(bool enabled) async {
+    _debugModeEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('debug_mode_enabled', enabled);
     notifyListeners();
   }
 }

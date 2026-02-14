@@ -3,15 +3,18 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 import 'providers/events_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/notification_service.dart';
+import 'services/debug_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/event_detail_screen.dart';
 import 'theme/app_theme.dart';
 import 'utils/constants.dart';
 import 'widgets/particle_background.dart';
+import 'widgets/debug/debug_overlay_widget.dart';
 
 import 'utils/route_observer.dart'; // import for globalRouteObserver
 
@@ -19,6 +22,18 @@ import 'pages/widget_config_page.dart';
 
 // 全局导航器键，用于在没有 BuildContext 的情况下导航
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+/// 悬浮窗入口点
+@pragma("vm:entry-point")
+void overlayMain() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: DebugOverlayWidget(),
+    ),
+  );
+}
 
 /// 应用入口
 ///
@@ -43,6 +58,13 @@ void main() async {
   // Initialize notification service
   final notificationService = NotificationService();
   await notificationService.initialize();
+  
+  // Initialize debug service
+  final debugService = DebugService();
+  if (settingsProvider.debugModeEnabled) {
+    await debugService.initialize();
+    debugService.info('App started', source: 'Main');
+  }
   
   // Request notification permissions
   final permissionGranted = await notificationService.requestPermissions();
