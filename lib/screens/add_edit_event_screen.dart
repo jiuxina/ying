@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/countdown_event.dart';
 import '../providers/events_provider.dart';
+import '../services/notification_service.dart';
 import '../utils/constants.dart';
 import '../utils/lunar_utils.dart';
 import '../utils/responsive_utils.dart';
@@ -625,8 +626,55 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    onTap: () => _showReminderDialog(),
+                                    subtitle: _reminders.length >= 10
+                                        ? Text(
+                                            '最多可添加10个提醒',
+                                            style: TextStyle(
+                                              fontSize: ResponsiveFontSize.sm(
+                                                context,
+                                              ),
+                                              color: Colors.orange,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          )
+                                        : null,
+                                    trailing: _reminders.length >= 10
+                                        ? null
+                                        : const Icon(Icons.chevron_right),
+                                    enabled: _reminders.length < 10,
+                                    onTap: _reminders.length < 10
+                                        ? () => _showReminderDialog()
+                                        : null,
                                   ),
+                                  // Test Notification Button
+                                  if (_enableNotification && _reminders.isNotEmpty)
+                                    ListTile(
+                                      leading: const Icon(
+                                        Icons.notifications_active,
+                                        color: Colors.deepPurple,
+                                      ),
+                                      title: Text(
+                                        '测试通知',
+                                        style: TextStyle(
+                                          fontSize: ResponsiveFontSize.base(
+                                            context,
+                                          ),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      subtitle: Text(
+                                        '立即发送一条测试通知',
+                                        style: TextStyle(
+                                          fontSize: ResponsiveFontSize.sm(
+                                            context,
+                                          ),
+                                          color: Colors.grey,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      trailing: const Icon(Icons.send),
+                                      onTap: _sendTestNotification,
+                                    ),
                                 ],
                               ],
                             ),
@@ -1093,6 +1141,38 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                               minute: time.minute,
                             );
 
+                            // 检查是否是重复的提醒（相同的天数和时间）
+                            bool isDuplicate = false;
+                            for (int i = 0; i < _reminders.length; i++) {
+                              // 如果是编辑模式，排除当前正在编辑的提醒
+                              if (index != null && i == index) continue;
+                              
+                              final r = _reminders[i];
+                              if (r.daysBefore == days && 
+                                  r.hour == time.hour && 
+                                  r.minute == time.minute) {
+                                isDuplicate = true;
+                                break;
+                              }
+                            }
+                            
+                            if (isDuplicate) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    '⚠️ 已存在相同的提醒设置',
+                                    style: TextStyle(
+                                      fontSize: ResponsiveFontSize.base(context),
+                                    ),
+                                  ),
+                                  backgroundColor: Colors.orange,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                              return;
+                            }
+
                             setState(() {
                               if (index != null) {
                                 _reminders[index] = newReminder;
@@ -1123,7 +1203,65 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   }
 
   // Removed unused _selectTime method
-  // Removed unused _selectTime method
+  
+  /// 发送测试通知
+  Future<void> _sendTestNotification() async {
+    HapticFeedback.mediumImpact();
+    
+    try {
+      final notificationService = NotificationService();
+      
+      // 使用当前标题或默认标题
+      final title = _titleController.text.isEmpty 
+          ? '倒数日测试' 
+          : _titleController.text;
+      
+      // 构建测试消息（使用第一个提醒的设置作为示例）
+      String message = '这是一条测试通知 🔔';
+      if (_reminders.isNotEmpty) {
+        final firstReminder = _reminders.first;
+        if (firstReminder.daysBefore == 0) {
+          message = '今天就是 $title 的日子！🎉';
+        } else if (firstReminder.daysBefore == 1) {
+          message = '明天就是 $title 了！还有1天 ⏰';
+        } else {
+          message = '$title 还有 ${firstReminder.daysBefore} 天 📆';
+        }
+      }
+      
+      await notificationService.sendTestNotification(
+        eventTitle: title,
+        message: message,
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '✓ 测试通知已发送',
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '❌ 发送测试通知失败: $e',
+              style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+  
   Future<void> _selectTargetTime() async {
     HapticFeedback.selectionClick();
     final picked = await showTimePickerSheet(

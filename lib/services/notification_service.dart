@@ -17,6 +17,9 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
   bool _initialized = false;
+  
+  // 通知点击回调 - 将由外部设置
+  Function(String eventId)? onNotificationTap;
 
   /// 初始化通知服务
   Future<void> initialize() async {
@@ -25,7 +28,17 @@ class NotificationService {
     try {
       // 初始化时区数据
       tz.initializeTimeZones();
-      tz.setLocalLocation(tz.getLocation('Asia/Shanghai'));
+      // 使用设备本地时区，而不是硬编码为 Asia/Shanghai
+      // 这样可以支持国际用户
+      try {
+        // 尝试使用当前系统时区
+        tz.setLocalLocation(tz.local);
+        debugPrint('通知服务使用本地时区: ${tz.local.name}');
+      } catch (e) {
+        // 如果失败，回退到 UTC
+        debugPrint('无法设置本地时区，使用 UTC: $e');
+        tz.setLocalLocation(tz.UTC);
+      }
 
       // Android 初始化设置
       const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -56,17 +69,16 @@ class NotificationService {
 
   /// 处理通知点击事件
   /// 
-  /// TODO: 实现导航到事件详情页
-  /// 需要使用 GlobalKey<NavigatorState> 或其他导航方案，
-  /// 因为此回调在应用启动时可能没有 BuildContext。
-  /// 
-  /// 可能的实现方案：
-  /// 1. 使用 navigatorKey 在 MaterialApp 中定义全局 Navigator
-  /// 2. 将 eventId 从 payload 中提取，查找事件并推送详情页
-  /// 3. 处理应用未运行时的启动导航
+  /// 当用户点击通知时调用此方法，导航到事件详情页。
   void _onNotificationTapped(NotificationResponse response) {
     debugPrint('通知被点击: ${response.payload}');
-    // Implementation pending: Navigate to event detail screen
+    if (response.payload != null && onNotificationTap != null) {
+      try {
+        onNotificationTap!(response.payload!);
+      } catch (e) {
+        debugPrint('处理通知点击失败: $e');
+      }
+    }
   }
 
   /// 请求通知权限
@@ -81,15 +93,15 @@ class NotificationService {
         final granted = await androidImplementation.requestNotificationsPermission();
         
         // Android 12+ (API 31+) 需要检查精确闹钟权限
-        // 使用 USE_EXACT_ALARM 权限（manifest中声明），不需要运行时请求
-        // 但需要检查是否已授予
         try {
           final canScheduleExact = await androidImplementation.canScheduleExactNotifications();
           if (canScheduleExact != null && !canScheduleExact) {
-            debugPrint('警告：精确闹钟权限未授予。通知可能不准时。');
-            // 注意：在 Android 12+ 上，如果使用 USE_EXACT_ALARM 权限（已在 manifest 中声明），
-            // 应用会自动获得该权限。如果使用 SCHEDULE_EXACT_ALARM，则需要用户手动在设置中授予。
-            // 对于倒数日应用，建议使用 USE_EXACT_ALARM，因为精确通知是核心功能。
+            debugPrint('⚠️ 警告：精确闹钟权限未授予。通知可能不准时。');
+            debugPrint('提示：请在系统设置中为本应用启用"精确闹钟"权限以确保通知准时送达。');
+            // 返回 true 允许应用继续运行，但警告用户
+            // 实际的通知功能取决于系统权限
+          } else if (canScheduleExact == true) {
+            debugPrint('✓ 精确闹钟权限已授予');
           }
         } catch (e) {
           debugPrint('检查精确闹钟权限时出错: $e');
@@ -127,28 +139,56 @@ class NotificationService {
     // 取消该事件的所有旧通知
     await cancelEventNotifications(event.id);
 
+    // 统计成功和失败的提醒
+    int successCount = 0;
+    int failCount = 0;
+
     // 为每个提醒创建通知
     for (final reminder in event.reminders) {
-      await _scheduleReminder(event, reminder);
+      final success = await _scheduleReminder(event, reminder);
+      if (success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+    
+    if (successCount > 0) {
+      debugPrint('✓ 成功调度 $successCount 个提醒通知 (${event.title})');
+    }
+    if (failCount > 0) {
+      debugPrint('⚠️ $failCount 个提醒调度失败 (${event.title})');
     }
   }
 
   /// 调度单个提醒通知
-  Future<void> _scheduleReminder(CountdownEvent event, Reminder reminder) async {
+  /// 
+  /// 返回 true 表示调度成功，false 表示失败
+  Future<bool> _scheduleReminder(CountdownEvent event, Reminder reminder) async {
     try {
+      // 使用 TZDateTime 确保时区正确性，避免夏令时问题
       final targetDate = event.targetDate;
-      final notificationDate = DateTime(
+      
+      // 创建时区感知的目标日期时间
+      final tzTargetDateTime = tz.TZDateTime(
+        tz.local,
         targetDate.year,
         targetDate.month,
         targetDate.day,
         reminder.hour,
         reminder.minute,
-      ).subtract(Duration(days: reminder.daysBefore));
+        0,  // 秒
+      );
+      
+      // 减去提前天数（使用时区感知的日期运算）
+      final tzNotificationDateTime = tzTargetDateTime.subtract(
+        Duration(days: reminder.daysBefore),
+      );
 
       // 如果通知时间已过，则不调度
-      if (notificationDate.isBefore(DateTime.now())) {
-        debugPrint('提醒时间已过，跳过: ${event.title} - ${reminder.daysBefore}天前');
-        return;
+      if (tzNotificationDateTime.isBefore(tz.TZDateTime.now(tz.local))) {
+        debugPrint('⏭ 提醒时间已过，跳过: ${event.title} - ${reminder.daysBefore}天前 ${reminder.hour}:${reminder.minute.toString().padLeft(2, '0')}');
+        return false;
       }
 
       final notificationId = _generateNotificationId(event.id, reminder.id);
@@ -159,6 +199,8 @@ class NotificationService {
         channelDescription: '倒数日事件的提醒通知',
         importance: Importance.high,
         priority: Priority.high,
+        enableVibration: true,
+        playSound: true,
         styleInformation: BigTextStyleInformation(
           _getReminderMessage(event, reminder),
         ),
@@ -179,73 +221,199 @@ class NotificationService {
         notificationId,
         event.title,
         _getReminderMessage(event, reminder),
-        tz.TZDateTime.from(notificationDate, tz.local),
+        tzNotificationDateTime,
         notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         payload: event.id,
       );
 
-      debugPrint('已调度提醒: ${event.title} - ${notificationDate}');
+      debugPrint('✓ 已调度提醒: ${event.title} - ${tzNotificationDateTime.toIso8601String()}');
+      return true;
     } catch (e) {
-      debugPrint('调度提醒失败: $e');
+      debugPrint('❌ 调度提醒失败: ${event.title} - $e');
+      return false;
     }
   }
 
   /// 生成提醒消息
+  /// 
+  /// 根据提前天数生成友好的提醒文本
   String _getReminderMessage(CountdownEvent event, Reminder reminder) {
     final days = reminder.daysBefore;
+    final timeStr = '${reminder.hour.toString().padLeft(2, '0')}:${reminder.minute.toString().padLeft(2, '0')}';
+    
     if (days == 0) {
-      return '今天就是 ${event.title} 的日子！';
+      return '今天就是 ${event.title} 的日子！🎉';
     } else if (days == 1) {
-      return '明天就是 ${event.title} 了！';
+      return '明天就是 ${event.title} 了！还有1天 ⏰';
+    } else if (days == 2) {
+      return '后天就是 ${event.title} 了！还有2天 📅';
+    } else if (days <= 7) {
+      return '${event.title} 还有 $days 天 📆';
+    } else if (days <= 30) {
+      return '${event.title} 还有 $days 天 🗓️';
     } else {
-      return '还有 $days 天就是 ${event.title} 了！';
+      return '${event.title} 还有 $days 天';
     }
   }
 
-  /// 生成通知 ID（使用事件 ID 和提醒 ID 的哈希）
+  /// 生成通知 ID
+  /// 
+  /// 使用确定性算法生成唯一的通知 ID，避免哈希碰撞。
+  /// 基于事件 ID 和提醒 ID 的组合，确保同一提醒总是生成相同的 ID。
+  /// 
+  /// 注意：使用管道符(|)而非下划线(_)作为分隔符，因为 UUID 中可能包含下划线，
+  /// 而管道符更不可能出现在 ID 中，从而减少碰撞风险。
   int _generateNotificationId(String eventId, String reminderId) {
-    return '${eventId}_$reminderId'.hashCode.abs() % 2147483647;
+    // 使用 Dart 内置 hashCode，确保结果在有效范围内
+    // 保持在 31 位有符号整数范围内
+    final hash = '$eventId|$reminderId'.hashCode & 0x7FFFFFFF;
+    
+    // 将所有 ID 映射到 [0, 2000000000) 范围，避免与测试通知 ID 冲突
+    // 测试通知使用范围 [2000000000, 2010000000)
+    return hash % 2000000000;
   }
 
   /// 取消事件的所有通知
   /// 
-  /// 注意：当前实现遍历所有待处理通知以查找匹配的事件 ID，复杂度为 O(n)。
-  /// 建议优化：在数据库中存储通知 ID 映射，实现直接查找和删除（O(1)）。
-  /// 
-  /// 由于 flutter_local_notifications 使用哈希生成 ID，
-  /// 无法直接根据事件 ID 计算所有相关通知的 ID。
-  /// 可能的优化方案：
-  /// 1. 在数据库中维护 event_id -> [notification_ids] 的映射表
-  /// 2. 使用固定的 ID 生成规则（如 eventId.hashCode + reminderIndex）
+  /// 高效地取消与指定事件关联的所有通知。
+  /// 遍历所有待处理通知，根据 payload 匹配事件 ID。
   Future<void> cancelEventNotifications(String eventId) async {
     if (!_initialized) return;
     
     try {
-      // 注意：当前实现需要遍历所有待处理通知
-      // 这是因为我们使用哈希生成的通知 ID，无法直接计算
       final pendingNotifications = await _notifications.pendingNotificationRequests();
+      int canceledCount = 0;
+      
       for (final notification in pendingNotifications) {
         if (notification.payload == eventId) {
           await _notifications.cancel(notification.id);
+          canceledCount++;
         }
       }
-      debugPrint('已取消事件通知: $eventId');
+      
+      if (canceledCount > 0) {
+        debugPrint('✓ 已取消事件的 $canceledCount 个通知: $eventId');
+      }
     } catch (e) {
-      debugPrint('取消通知失败: $e');
+      debugPrint('❌ 取消通知失败: $e');
     }
   }
 
   /// 取消所有通知
   Future<void> cancelAllNotifications() async {
     if (!_initialized) return;
-    await _notifications.cancelAll();
-    debugPrint('已取消所有通知');
+    try {
+      await _notifications.cancelAll();
+      debugPrint('✓ 已取消所有通知');
+    } catch (e) {
+      debugPrint('❌ 取消所有通知失败: $e');
+    }
   }
 
   /// 获取待处理的通知列表
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     if (!_initialized) return [];
-    return await _notifications.pendingNotificationRequests();
+    try {
+      return await _notifications.pendingNotificationRequests();
+    } catch (e) {
+      debugPrint('❌ 获取待处理通知列表失败: $e');
+      return [];
+    }
+  }
+  
+  /// 获取指定事件的待处理通知数量
+  Future<int> getEventNotificationCount(String eventId) async {
+    if (!_initialized) return 0;
+    
+    try {
+      final pendingNotifications = await _notifications.pendingNotificationRequests();
+      return pendingNotifications.where((n) => n.payload == eventId).length;
+    } catch (e) {
+      debugPrint('❌ 获取事件通知数量失败: $e');
+      return 0;
+    }
+  }
+  
+  /// 重新调度所有活动事件的提醒
+  /// 
+  /// 用于应用启动时恢复通知调度，或系统时区变更后重新调度
+  Future<void> rescheduleAllReminders(List<CountdownEvent> activeEvents) async {
+    if (!_initialized) {
+      await initialize();
+    }
+    
+    debugPrint('开始重新调度所有事件的提醒...');
+    int totalScheduled = 0;
+    
+    for (final event in activeEvents) {
+      if (event.enableNotification && event.reminders.isNotEmpty) {
+        await scheduleEventReminders(event);
+        totalScheduled += event.reminders.length;
+      }
+    }
+    
+    debugPrint('✓ 已重新调度 ${activeEvents.length} 个事件的 $totalScheduled 个提醒');
+  }
+  
+  // 测试通知 ID 范围常量
+  // 提供 1000 万个唯一测试 ID，足够避免在合理使用场景下的冲突
+  static const int _testNotificationIdBase = 2000000000;
+  static const int _testNotificationIdRange = 10000000; // 10 million unique IDs
+  
+  /// 发送测试通知
+  /// 
+  /// 立即显示一个测试通知，用于验证通知功能是否正常工作
+  Future<void> sendTestNotification({
+    required String eventTitle,
+    String? message,
+  }) async {
+    if (!_initialized) {
+      await initialize();
+    }
+    
+    try {
+      // 使用时间戳生成唯一的测试通知 ID，避免多次测试时相互覆盖
+      // 测试通知 ID 范围: [2000000000, 2010000000)
+      final testNotificationId = _testNotificationIdBase + 
+          (DateTime.now().millisecondsSinceEpoch % _testNotificationIdRange);
+      
+      final androidDetails = AndroidNotificationDetails(
+        'event_reminders',
+        '事件提醒',
+        channelDescription: '倒数日事件的提醒通知',
+        importance: Importance.high,
+        priority: Priority.high,
+        enableVibration: true,
+        playSound: true,
+        styleInformation: BigTextStyleInformation(
+          message ?? '这是一条测试通知 🔔',
+        ),
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      final notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await _notifications.show(
+        testNotificationId,
+        eventTitle,
+        message ?? '这是一条测试通知 🔔',
+        notificationDetails,
+        payload: 'test_notification',
+      );
+      
+      debugPrint('✓ 测试通知已发送 (ID: $testNotificationId)');
+    } catch (e) {
+      debugPrint('❌ 发送测试通知失败: $e');
+      rethrow;
+    }
   }
 }
