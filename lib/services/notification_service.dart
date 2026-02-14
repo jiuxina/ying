@@ -28,16 +28,22 @@ class NotificationService {
     try {
       // 初始化时区数据
       tz.initializeTimeZones();
-      // 使用设备本地时区，而不是硬编码为 Asia/Shanghai
-      // 这样可以支持国际用户
+      // 设置为中国时区 (Asia/Shanghai)
+      // 这确保通知在正确的本地时间触发
       try {
-        // 尝试使用当前系统时区
-        tz.setLocalLocation(tz.local);
-        debugPrint('通知服务使用本地时区: ${tz.local.name}');
+        tz.setLocalLocation(tz.getLocation('Asia/Shanghai'));
+        debugPrint('通知服务使用时区: Asia/Shanghai (UTC+8)');
       } catch (e) {
-        // 如果失败，回退到 UTC
-        debugPrint('无法设置本地时区，使用 UTC: $e');
-        tz.setLocalLocation(tz.UTC);
+        // 如果失败，尝试使用其他中国时区
+        debugPrint('无法设置 Asia/Shanghai，尝试备选时区: $e');
+        try {
+          tz.setLocalLocation(tz.getLocation('Asia/Chongqing'));
+          debugPrint('通知服务使用备选时区: Asia/Chongqing');
+        } catch (e2) {
+          // 最后回退到 UTC
+          debugPrint('无法设置本地时区，使用 UTC: $e2');
+          tz.setLocalLocation(tz.UTC);
+        }
       }
 
       // Android 初始化设置

@@ -388,6 +388,17 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     
                     // 倒计时主体
                     if (_event.daysRemaining == 0) ...[
+                      // 添加占位符以保持垂直对齐
+                      Text(
+                        '就是',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: ResponsiveFontSize.lg(context),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: ResponsiveSpacing.xs(context)),
                       Text(
                         '今天',
                         style: TextStyle(
