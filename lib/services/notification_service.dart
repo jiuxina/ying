@@ -26,11 +26,16 @@ class NotificationService {
   Function(String eventId)? onNotificationTap;
   
   // 通知配置常量
-  static const _vibrationPattern = [0, 500, 200, 500];  // 振动模式：静止-振动-暂停-振动
+  static const _vibrationPatternMs = [0, 500, 200, 500];  // 振动模式（毫秒）：静止-振动-暂停-振动
   static const _ledColor = Color(0xFF2196F3);  // LED颜色：蓝色
-  static const _ledOnMs = 1000;  // LED亮起时长
-  static const _ledOffMs = 500;  // LED熄灭时长
+  static const _ledOnMs = 1000;  // LED亮起时长（毫秒）
+  static const _ledOffMs = 500;  // LED熄灭时长（毫秒）
   static const _initTimeoutSeconds = 30;  // 初始化超时时间（秒）
+  
+  // 时间常量
+  static const _midnightHour = 0;
+  static const _midnightMinute = 0;
+  static const _midnightSecond = 0;
 
   /// 初始化通知服务
   Future<void> initialize() async {
@@ -63,12 +68,14 @@ class NotificationService {
         debugPrint('✓ 通知服务使用时区: Asia/Shanghai (UTC+8)');
       } catch (e) {
         try {
-          // 备选：亚洲/重庆（与上海相同时区）
+          // 备选：亚洲/重庆（已弃用但仍可用作别名，与上海相同时区）
+          // 注意：Asia/Chongqing 在 IANA 时区数据库中已被弃用（2014年后）
+          // 但作为 Asia/Shanghai 的别名仍然可用
           final location = tz.getLocation('Asia/Chongqing');
           tz.setLocalLocation(location);
           debugPrint('✓ 通知服务使用时区: Asia/Chongqing (UTC+8)');
         } catch (e2) {
-          // 最后备选：UTC
+          // 最后备选：UTC（确保初始化总能成功）
           debugPrint('⚠️ 无法设置中国时区，使用 UTC: $e');
           tz.setLocalLocation(tz.UTC);
         }
@@ -242,7 +249,9 @@ class NotificationService {
         targetDate.year,
         targetDate.month,
         targetDate.day,
-        0, 0, 0,  // 午夜
+        _midnightHour,
+        _midnightMinute,
+        _midnightSecond,
       );
       
       // 减去提前天数（使用天数计算，避免DST问题）
@@ -259,7 +268,7 @@ class NotificationService {
         tzReminderDay.day,
         reminder.hour,
         reminder.minute,
-        0,  // 秒
+        _midnightSecond,
       );
 
       // 如果通知时间已过，则不调度
@@ -278,13 +287,15 @@ class NotificationService {
         importance: Importance.high,
         priority: Priority.high,
         enableVibration: true,
-        vibrationPattern: Int64List.fromList(_vibrationPattern),
+        vibrationPattern: Int64List.fromList(_vibrationPatternMs),
         enableLights: true,
         ledColor: _ledColor,
         ledOnMs: _ledOnMs,
         ledOffMs: _ledOffMs,
         playSound: true,
-        sound: const RawResourceAndroidNotificationSound('notification'),  // 使用默认通知音
+        // 注意：'notification' 是系统默认通知声音的资源名
+        // 如需自定义声音，需在 android/app/src/main/res/raw/ 目录添加音频文件
+        sound: const RawResourceAndroidNotificationSound('notification'),
         channelShowBadge: true,
         styleInformation: BigTextStyleInformation(
           _getReminderMessage(event, reminder),
@@ -470,12 +481,14 @@ class NotificationService {
         importance: Importance.high,
         priority: Priority.high,
         enableVibration: true,
-        vibrationPattern: Int64List.fromList(_vibrationPattern),
+        vibrationPattern: Int64List.fromList(_vibrationPatternMs),
         enableLights: true,
         ledColor: _ledColor,
         ledOnMs: _ledOnMs,
         ledOffMs: _ledOffMs,
         playSound: true,
+        // 注意：'notification' 是系统默认通知声音的资源名
+        // 如需自定义声音，需在 android/app/src/main/res/raw/ 目录添加音频文件
         sound: const RawResourceAndroidNotificationSound('notification'),
         channelShowBadge: true,
         styleInformation: BigTextStyleInformation(
