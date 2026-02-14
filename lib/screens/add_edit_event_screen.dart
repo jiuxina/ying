@@ -1286,9 +1286,6 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
       },
     );
   }
-      },
-    );
-  }
 
   // Removed unused _selectTime method
   
