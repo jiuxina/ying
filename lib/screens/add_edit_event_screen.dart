@@ -10,7 +10,7 @@ import '../utils/lunar_utils.dart';
 import '../utils/responsive_utils.dart';
 import '../widgets/common/app_background.dart';
 import '../widgets/common/ui_helpers.dart';
-import '../widgets/common/segmented_date_input.dart';
+import '../widgets/common/date_picker_sheet.dart';
 import '../widgets/common/time_picker_sheet.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -993,7 +993,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
 
   Future<void> _selectDate() async {
     HapticFeedback.selectionClick();
-    final picked = await showSegmentedDatePicker(
+    final picked = await showDatePickerSheet(
       context: context,
       initialDate: _targetDate,
       firstDate: DateTime(1900),
@@ -1081,7 +1081,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                         ),
                         onTap: () async {
                           HapticFeedback.selectionClick();
-                          final picked = await showDatePicker(
+                          final picked = await showDatePickerSheet(
                             context: context,
                             initialDate: selectedDateTime,
                             firstDate: DateTime(1900),
