@@ -24,6 +24,9 @@ class _DebugOverlayWidgetState extends State<DebugOverlayWidget>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     
+    // Log overlay initialization
+    _debugService.info('Debug overlay widget initialized', source: 'DebugOverlay');
+    
     // 监听调试服务更新
     _debugService.addListener(_onDebugUpdate);
     
@@ -39,6 +42,7 @@ class _DebugOverlayWidgetState extends State<DebugOverlayWidget>
 
   @override
   void dispose() {
+    _debugService.info('Debug overlay widget disposed', source: 'DebugOverlay');
     _tabController.dispose();
     _updateTimer?.cancel();
     _debugService.removeListener(_onDebugUpdate);
