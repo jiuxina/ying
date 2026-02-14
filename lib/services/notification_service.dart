@@ -295,11 +295,9 @@ class NotificationService {
         ledOnMs: _ledOnMs,
         ledOffMs: _ledOffMs,
         playSound: true,
-        // 注意：'notification' 指向系统默认通知声音资源
-        // Android会在 android/app/src/main/res/raw/notification.* 中查找
-        // 如果文件不存在，Android会使用系统默认铃声
-        // 自定义声音：在 res/raw/ 目录添加音频文件（.mp3, .wav等）
-        sound: const RawResourceAndroidNotificationSound('notification'),
+        // 使用系统默认通知声音（不指定sound参数）
+        // 如需自定义声音：创建 android/app/src/main/res/raw/ 目录
+        // 并添加音频文件，然后使用 RawResourceAndroidNotificationSound('文件名')
         channelShowBadge: true,
         styleInformation: BigTextStyleInformation(
           _getReminderMessage(event, reminder),
@@ -491,11 +489,9 @@ class NotificationService {
         ledOnMs: _ledOnMs,
         ledOffMs: _ledOffMs,
         playSound: true,
-        // 注意：'notification' 指向系统默认通知声音资源
-        // Android会在 android/app/src/main/res/raw/notification.* 中查找
-        // 如果文件不存在，Android会使用系统默认铃声
-        // 自定义声音：在 res/raw/ 目录添加音频文件（.mp3, .wav等）
-        sound: const RawResourceAndroidNotificationSound('notification'),
+        // 使用系统默认通知声音（不指定sound参数）
+        // 如需自定义声音：创建 android/app/src/main/res/raw/ 目录
+        // 并添加音频文件，然后使用 RawResourceAndroidNotificationSound('文件名')
         channelShowBadge: true,
         styleInformation: BigTextStyleInformation(
           message ?? '这是一条测试通知 🔔',
