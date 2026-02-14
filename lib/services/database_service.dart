@@ -375,7 +375,7 @@ class DatabaseService {
       _remindersTable,
       where: 'eventId = ?',
       whereArgs: [eventId],
-      orderBy: 'daysBefore DESC, hour ASC',
+      orderBy: 'reminderDateTime ASC',
     );
   }
 
@@ -413,7 +413,7 @@ class DatabaseService {
   /// 解决 N+1 查询问题
   Future<Map<String, List<Map<String, dynamic>>>> getAllRemindersGrouped() async {
     final db = await database;
-    final results = await db.query(_remindersTable, orderBy: 'daysBefore DESC, hour ASC');
+    final results = await db.query(_remindersTable, orderBy: 'reminderDateTime ASC');
     
     final grouped = <String, List<Map<String, dynamic>>>{};
     for (final row in results) {

@@ -1452,9 +1452,23 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
     final autoIsCountUp = targetDay.isBefore(today);
 
     // Sync legacy fields with first reminder if available
-    int legacyDays = _reminders.isNotEmpty ? _reminders.first.daysBefore : 1;
-    int legacyHour = _reminders.isNotEmpty ? _reminders.first.hour : 9;
-    int legacyMinute = _reminders.isNotEmpty ? _reminders.first.minute : 0;
+    // These are for backward compatibility with the old notification fields
+    int legacyDays = 1;
+    int legacyHour = 9;
+    int legacyMinute = 0;
+    
+    if (_reminders.isNotEmpty) {
+      final firstReminder = _reminders.first;
+      // Calculate days before from the reminderDateTime
+      final reminderDay = DateTime(
+        firstReminder.reminderDateTime.year,
+        firstReminder.reminderDateTime.month,
+        firstReminder.reminderDateTime.day,
+      );
+      legacyDays = targetDay.difference(reminderDay).inDays;
+      legacyHour = firstReminder.reminderDateTime.hour;
+      legacyMinute = firstReminder.reminderDateTime.minute;
+    }
 
     // Ensure `categoryId` is passed correctly (it was `category: _category` in previous file view, but `categoryId` is the correct param name in model)
     // Wait, the file uses `category: _category` which I suspected was an error or legacy var name.
