@@ -528,4 +528,111 @@ class NotificationService {
       rethrow;
     }
   }
+  
+  /// 检查通知权限状态并提供用户指导
+  /// 
+  /// 返回包含权限状态和用户指导信息的 Map
+  Future<Map<String, dynamic>> checkNotificationStatus() async {
+    final result = <String, dynamic>{
+      'initialized': _initialized,
+      'hasNotificationPermission': false,
+      'hasExactAlarmPermission': false,
+      'warnings': <String>[],
+      'recommendations': <String>[],
+    };
+    
+    if (!_initialized) {
+      result['warnings'].add('通知服务未初始化');
+      return result;
+    }
+    
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      final androidImplementation =
+          _notifications.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      
+      if (androidImplementation != null) {
+        // 检查通知权限
+        try {
+          final hasPermission = await androidImplementation.areNotificationsEnabled();
+          result['hasNotificationPermission'] = hasPermission ?? false;
+          
+          if (!(hasPermission ?? false)) {
+            result['warnings'].add('通知权限未开启');
+            result['recommendations'].add('请在系统设置中开启通知权限：\n设置 → 应用 → 萤 → 通知');
+          }
+        } catch (e) {
+          debugPrint('检查通知权限失败: $e');
+        }
+        
+        // 检查精确闹钟权限
+        try {
+          final canScheduleExact = await androidImplementation.canScheduleExactNotifications();
+          result['hasExactAlarmPermission'] = canScheduleExact ?? false;
+          
+          if (!(canScheduleExact ?? false)) {
+            result['warnings'].add('精确闹钟权限未授予');
+            result['recommendations'].add(
+              '请在系统设置中开启精确闹钟权限以确保通知准时送达：\n'
+              '设置 → 应用 → 特殊访问权限 → 闹钟和提醒 → 萤 → 允许'
+            );
+          }
+        } catch (e) {
+          debugPrint('检查精确闹钟权限失败: $e');
+        }
+        
+        // 电池优化建议
+        result['recommendations'].add(
+          '为确保后台通知正常工作，请关闭电池优化：\n'
+          '设置 → 应用 → 萤 → 电池 → 不限制\n'
+          '或 设置 → 电池 → 应用耗电管理 → 萤 → 允许后台活动'
+        );
+        
+        // 自启动建议（针对国产手机）
+        result['recommendations'].add(
+          '部分手机需要开启自启动权限：\n'
+          '设置 → 应用 → 萤 → 自启动 → 允许\n'
+          '（小米、华为、OPPO、vivo 等品牌手机）'
+        );
+      }
+    }
+    
+    return result;
+  }
+  
+  /// 打印通知状态诊断信息
+  Future<void> printNotificationDiagnostics() async {
+    debugPrint('═══ 通知状态诊断 ═══');
+    
+    final status = await checkNotificationStatus();
+    debugPrint('✓ 通知服务初始化: ${status['initialized']}');
+    debugPrint('✓ 通知权限: ${status['hasNotificationPermission']}');
+    debugPrint('✓ 精确闹钟权限: ${status['hasExactAlarmPermission']}');
+    
+    if ((status['warnings'] as List).isNotEmpty) {
+      debugPrint('\n⚠️  警告:');
+      for (final warning in status['warnings']) {
+        debugPrint('  - $warning');
+      }
+    }
+    
+    if ((status['recommendations'] as List).isNotEmpty) {
+      debugPrint('\n💡 建议:');
+      for (int i = 0; i < (status['recommendations'] as List).length; i++) {
+        debugPrint('  ${i + 1}. ${status['recommendations'][i]}');
+      }
+    }
+    
+    // 显示待处理的通知数量
+    final pending = await getPendingNotifications();
+    debugPrint('\n📋 待处理通知数量: ${pending.length}');
+    if (pending.isNotEmpty && pending.length <= 10) {
+      debugPrint('待处理通知列表:');
+      for (final notification in pending) {
+        debugPrint('  - ID: ${notification.id}, Title: ${notification.title}');
+      }
+    }
+    
+    debugPrint('═══════════════════');
+  }
 }

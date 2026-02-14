@@ -80,6 +80,9 @@ void main() async {
   
   // 重新调度所有活动事件的提醒（应用启动时恢复）
   await notificationService.rescheduleAllReminders(eventsProvider.events);
+  
+  // 打印通知诊断信息（帮助用户排查问题）
+  await notificationService.printNotificationDiagnostics();
 
   // 设置系统 UI 样式 - 沉浸式状态栏
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
