@@ -1199,6 +1199,8 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                               
                               // 检查提醒时间是否已过
                               if (selectedDateTime.isBefore(DateTime.now())) {
+                                customMessageController.dispose();
+                                Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
