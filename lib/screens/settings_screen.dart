@@ -5,6 +5,7 @@ import '../utils/constants.dart';
 import '../widgets/common/app_background.dart';
 import '../widgets/common/ui_helpers.dart';
 import 'settings/appearance_settings_screen.dart';
+import 'settings/notification_settings_screen.dart';
 import 'settings/widget_settings_screen.dart';
 import 'settings/cloud_sync_screen.dart';
 import 'settings/import_screen.dart';
@@ -67,6 +68,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const AppearanceSettingsScreen()),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 通知设置
+                    const SectionHeader(title: '通知', icon: Icons.notifications),
+                    const SizedBox(height: 8),
+                    GlassCard(
+                      child: _buildSettingsTile(
+                        context,
+                        icon: Icons.notifications_active,
+                        iconColor: Colors.deepPurple,
+                        title: '通知设置',
+                        subtitle: '检查通知权限和配置指南',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
                         ),
                       ),
                     ),
