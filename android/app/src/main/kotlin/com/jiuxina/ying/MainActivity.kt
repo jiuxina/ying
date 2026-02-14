@@ -1,7 +1,10 @@
 package com.jiuxina.ying
 
 import android.app.Activity
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -16,6 +19,9 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        
+        // 创建通知渠道（Android 8.0+）
+        createNotificationChannel()
         
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
@@ -86,6 +92,31 @@ class MainActivity : FlutterActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
             false
+        }
+    }
+    
+    /**
+     * 创建通知渠道（Android 8.0+）
+     * 确保后台通知能正常工作
+     */
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelId = "event_reminders"
+            val channelName = "事件提醒"
+            val channelDescription = "倒数日事件的提醒通知"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            
+            val channel = NotificationChannel(channelId, channelName, importance).apply {
+                description = channelDescription
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 200, 500)
+                enableLights(true)
+                lightColor = 0xFF2196F3.toInt()
+                setShowBadge(true)
+            }
+            
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
     }
 }
