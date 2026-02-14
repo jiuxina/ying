@@ -46,7 +46,9 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
 
   Future<void> _checkOverlayStatus() async {
     try {
+      _debugService.info('Checking overlay status...', source: 'DebugSettings');
       final status = await FlutterOverlayWindow.isActive();
+      _debugService.info('Overlay status result: $status', source: 'DebugSettings');
       if (mounted) {
         setState(() {
           _isOverlayActive = status ?? false;
@@ -59,11 +61,14 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
 
   Future<void> _requestOverlayPermission() async {
     try {
+      _debugService.info('Checking overlay permission...', source: 'DebugSettings');
       final hasPermission = await FlutterOverlayWindow.isPermissionGranted();
+      _debugService.info('Has permission: $hasPermission', source: 'DebugSettings');
       
       if (hasPermission != true) {
         _debugService.info('Requesting overlay permission', source: 'DebugSettings');
         final granted = await FlutterOverlayWindow.requestPermission();
+        _debugService.info('Permission granted: $granted', source: 'DebugSettings');
         
         if (granted != true && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -77,6 +82,7 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
       }
 
       // 显示悬浮窗
+      _debugService.info('Attempting to show overlay...', source: 'DebugSettings');
       await _showOverlay();
     } catch (e) {
       _debugService.error('Failed to request overlay permission: $e', source: 'DebugSettings');
@@ -364,6 +370,11 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
       subtitle: Text(
         _isOverlayActive ? '悬浮窗已启动' : '悬浮窗未启动',
         style: const TextStyle(fontSize: 12),
+      ),
+      trailing: IconButton(
+        icon: const Icon(Icons.refresh),
+        onPressed: _checkOverlayStatus,
+        tooltip: '刷新状态',
       ),
     );
   }
