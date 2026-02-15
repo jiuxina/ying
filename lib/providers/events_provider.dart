@@ -268,7 +268,14 @@ class EventsProvider extends ChangeNotifier {
   /// 删除事件
   Future<void> deleteEvent(String id) async {
     // Get event title before deleting for logging
-    final event = _events.firstWhere((e) => e.id == id, orElse: () => _archivedEvents.firstWhere((e) => e.id == id));
+    String? eventTitle;
+    try {
+      final event = _events.firstWhere((e) => e.id == id, orElse: () => _archivedEvents.firstWhere((e) => e.id == id));
+      eventTitle = event.title;
+    } catch (_) {
+      // Event not found in either list, use ID as fallback
+      eventTitle = id;
+    }
     
     await _dbService.deleteEvent(id);
     
@@ -277,7 +284,7 @@ class EventsProvider extends ChangeNotifier {
     
     _events.removeWhere((e) => e.id == id);
     _archivedEvents.removeWhere((e) => e.id == id);
-    _debugService.info('Event deleted: ${event.title}', source: 'Events');
+    _debugService.info('Event deleted: $eventTitle', source: 'Events');
     await _updateWidget();
     notifyListeners();
   }
