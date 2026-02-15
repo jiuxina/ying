@@ -31,6 +31,8 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
   }
 
   void _onDebugServiceUpdate() {
+    // Rebuild the entire widget when DebugService notifies listeners of data changes
+    // (e.g., logs cleared, route history cleared, system info refreshed)
     if (mounted) {
       setState(() {});
     }
