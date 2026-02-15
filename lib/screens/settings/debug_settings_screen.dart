@@ -99,8 +99,10 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
 
   Future<void> _showOverlay() async {
     try {
+      _debugService.info('Attempting to show overlay...', source: 'DebugSettings');
+      
       // Show the overlay
-      final result = await FlutterOverlayWindow.showOverlay(
+      await FlutterOverlayWindow.showOverlay(
         height: 600,
         width: 350,
         alignment: OverlayAlignment.centerRight,
@@ -109,7 +111,7 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
         enableDrag: true,
       );
 
-      _debugService.info('Debug overlay show result: $result', source: 'DebugSettings');
+      _debugService.info('Overlay show command executed', source: 'DebugSettings');
       
       // Wait a bit for the overlay to actually start
       await Future.delayed(const Duration(milliseconds: 500));
@@ -149,8 +151,11 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
 
   Future<void> _closeOverlay() async {
     try {
-      final result = await FlutterOverlayWindow.closeOverlay();
-      _debugService.info('Debug overlay close result: $result', source: 'DebugSettings');
+      _debugService.info('Attempting to close overlay...', source: 'DebugSettings');
+      
+      await FlutterOverlayWindow.closeOverlay();
+      
+      _debugService.info('Overlay close command executed', source: 'DebugSettings');
       
       // Wait a bit for the overlay to actually close
       await Future.delayed(const Duration(milliseconds: 300));
