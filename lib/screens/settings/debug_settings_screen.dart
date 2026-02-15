@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/debug_service.dart';
 import '../../utils/constants.dart';
 import '../../widgets/common/app_background.dart';
 import '../../widgets/common/ui_helpers.dart';
+import 'debug_console_screen.dart';
 
 /// ============================================================================
 /// 调试设置页面
@@ -18,16 +18,13 @@ class DebugSettingsScreen extends StatefulWidget {
   State<DebugSettingsScreen> createState() => _DebugSettingsScreenState();
 }
 
-class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsBindingObserver {
+class _DebugSettingsScreenState extends State<DebugSettingsScreen> {
   final DebugService _debugService = DebugService();
-  bool _isOverlayActive = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _debugService.addListener(_onDebugServiceUpdate);
-    _checkOverlayStatus();
   }
 
   void _onDebugServiceUpdate() {
@@ -40,176 +37,16 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _debugService.removeListener(_onDebugServiceUpdate);
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    // Check overlay status when app resumes
-    if (state == AppLifecycleState.resumed) {
-      _checkOverlayStatus();
-    }
-  }
-
-  Future<void> _checkOverlayStatus() async {
-    try {
-      _debugService.info('Checking overlay status...', source: 'DebugSettings');
-      final status = await FlutterOverlayWindow.isActive();
-      _debugService.info('Overlay status result: $status', source: 'DebugSettings');
-      if (mounted) {
-        setState(() {
-          _isOverlayActive = status ?? false;
-        });
-      }
-    } catch (e) {
-      _debugService.error('Failed to check overlay status: $e', source: 'DebugSettings');
-    }
-  }
-
-  Future<void> _requestOverlayPermission() async {
-    try {
-      _debugService.info('Checking overlay permission...', source: 'DebugSettings');
-      final hasPermission = await FlutterOverlayWindow.isPermissionGranted();
-      _debugService.info('Has permission: $hasPermission', source: 'DebugSettings');
-      
-      if (hasPermission != true) {
-        _debugService.info('Requesting overlay permission', source: 'DebugSettings');
-        final granted = await FlutterOverlayWindow.requestPermission();
-        _debugService.info('Permission granted: $granted', source: 'DebugSettings');
-        
-        if (granted != true && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('需要悬浮窗权限才能使用调试功能'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          return;
-        }
-      }
-
-      // 显示悬浮窗
-      _debugService.info('Attempting to show overlay...', source: 'DebugSettings');
-      await _showOverlay();
-    } catch (e) {
-      _debugService.error('Failed to request overlay permission: $e', source: 'DebugSettings');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('请求悬浮窗权限失败: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _showOverlay() async {
-    try {
-      _debugService.info('Attempting to show overlay...', source: 'DebugSettings');
-      
-      // Check if overlay is already active
-      final alreadyActive = await FlutterOverlayWindow.isActive();
-      if (alreadyActive == true) {
-        _debugService.info('Overlay already active, skipping show', source: 'DebugSettings');
-        if (mounted) {
-          setState(() {
-            _isOverlayActive = true;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('调试悬浮窗已经在运行中'),
-              backgroundColor: Colors.blue,
-            ),
-          );
-        }
-        return;
-      }
-      
-      // Show the overlay
-      await FlutterOverlayWindow.showOverlay(
-        height: 600,
-        width: 350,
-        alignment: OverlayAlignment.centerRight,
-        visibility: NotificationVisibility.visibilityPublic,
-        flag: OverlayFlag.defaultFlag,
-        enableDrag: true,
-      );
-
-      _debugService.info('Overlay show command executed', source: 'DebugSettings');
-      
-      // Wait a bit for the overlay to actually start
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      // Check if overlay is actually active
-      await _checkOverlayStatus();
-      
-      if (mounted) {
-        if (_isOverlayActive) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('调试悬浮窗已启动'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('悬浮窗启动失败，请检查权限设置'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      _debugService.error('Failed to show overlay: $e', source: 'DebugSettings');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('显示悬浮窗失败: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _closeOverlay() async {
-    try {
-      _debugService.info('Attempting to close overlay...', source: 'DebugSettings');
-      
-      await FlutterOverlayWindow.closeOverlay();
-      
-      _debugService.info('Overlay close command executed', source: 'DebugSettings');
-      
-      // Wait a bit for the overlay to actually close
-      await Future.delayed(const Duration(milliseconds: 300));
-      
-      // Check if overlay is actually closed
-      await _checkOverlayStatus();
-      
-      if (mounted && !_isOverlayActive) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('调试悬浮窗已关闭'),
-            backgroundColor: Colors.blue,
-          ),
-        );
-      }
-    } catch (e) {
-      _debugService.error('Failed to close overlay: $e', source: 'DebugSettings');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('关闭悬浮窗失败: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+  void _openDebugConsole() {
+    _debugService.info('Opening debug console', source: 'DebugSettings');
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DebugConsoleScreen()),
+    );
   }
 
   @override
@@ -234,9 +71,7 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
                         children: [
                           _buildDebugModeTile(context),
                           const Divider(height: 1),
-                          _buildOverlayStatusTile(),
-                          const Divider(height: 1),
-                          _buildOverlayControlTile(),
+                          _buildConsoleControlTile(),
                         ],
                       ),
                     ),
@@ -371,9 +206,6 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
               await _debugService.initialize();
             } else {
               _debugService.info('Debug mode disabled', source: 'Settings');
-              if (_isOverlayActive) {
-                await _closeOverlay();
-              }
             }
           },
         );
@@ -381,38 +213,7 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
     );
   }
 
-  Widget _buildOverlayStatusTile() {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: (_isOverlayActive ? Colors.green : Colors.grey).withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          _isOverlayActive ? Icons.check_circle : Icons.radio_button_unchecked,
-          size: 22,
-          color: _isOverlayActive ? Colors.green : Colors.grey,
-        ),
-      ),
-      title: const Text(
-        '悬浮窗状态',
-        style: TextStyle(fontWeight: FontWeight.w600),
-      ),
-      subtitle: Text(
-        _isOverlayActive ? '悬浮窗已启动' : '悬浮窗未启动',
-        style: const TextStyle(fontSize: 12),
-      ),
-      trailing: IconButton(
-        icon: const Icon(Icons.refresh),
-        onPressed: _checkOverlayStatus,
-        tooltip: '刷新状态',
-      ),
-    );
-  }
-
-  Widget _buildOverlayControlTile() {
+  Widget _buildConsoleControlTile() {
     return Consumer<SettingsProvider>(
       builder: (context, settings, _) {
         final enabled = settings.debugModeEnabled;
@@ -427,28 +228,26 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              _isOverlayActive ? Icons.close : Icons.open_in_new,
+              Icons.terminal,
               size: 22,
               color: enabled ? Colors.blue : Colors.grey,
             ),
           ),
           title: Text(
-            _isOverlayActive ? '关闭悬浮窗' : '打开悬浮窗',
+            '调试控制台',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               color: enabled ? null : Colors.grey,
             ),
           ),
           subtitle: Text(
-            _isOverlayActive ? '点击关闭调试悬浮窗' : '点击打开调试悬浮窗',
+            '查看详细的日志信息和系统状态',
             style: TextStyle(
               fontSize: 12,
               color: enabled ? null : Colors.grey,
             ),
           ),
-          onTap: enabled
-              ? (_isOverlayActive ? _closeOverlay : _requestOverlayPermission)
-              : null,
+          onTap: enabled ? _openDebugConsole : null,
           trailing: Icon(
             Icons.chevron_right,
             size: 20,
