@@ -80,6 +80,42 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     }
   }
 
+  Future<void> _requestBatteryOptimization() async {
+    HapticFeedback.mediumImpact();
+    
+    try {
+      final requested = await _notificationService.requestBatteryOptimization();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              requested 
+                ? '✓ 已打开设置页面，请手动授予电池优化豁免' 
+                : '❌ 请求失败，请手动在系统设置中配置'
+            ),
+            backgroundColor: requested ? Colors.blue : Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        
+        // 等待用户返回后重新加载状态
+        await Future.delayed(const Duration(seconds: 2));
+        await _loadStatus();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('请求电池优化豁免失败: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -164,6 +200,13 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 '未授予',
               ),
               const Divider(height: 1),
+              _buildStatusItem(
+                '电池优化豁免',
+                _status!['hasBatteryOptimization'] == true,
+                '已豁免',
+                '受限制',
+              ),
+              const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.schedule, color: Colors.blue),
                 title: const Text('待处理通知'),
@@ -184,7 +227,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         if (_status!['hasNotificationPermission'] != true ||
             _status!['hasExactAlarmPermission'] != true)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.only(bottom: 8),
             child: ElevatedButton.icon(
               onPressed: _requestPermissions,
               icon: const Icon(Icons.security),
@@ -192,6 +235,22 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.all(16),
                 backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ),
+
+        // 电池优化豁免按钮
+        if (_status!['hasBatteryOptimization'] != true)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ElevatedButton.icon(
+              onPressed: _requestBatteryOptimization,
+              icon: const Icon(Icons.battery_saver),
+              label: const Text('请求电池优化豁免'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.all(16),
+                backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -310,7 +369,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   '• Android 系统为了省电，会限制后台应用的活动\n'
                   '• 定时通知需要在后台运行，因此需要特殊权限\n'
                   '• 完成上述配置后，即使应用关闭，通知也能正常工作\n'
-                  '• 国产手机（小米、华为、OPPO、vivo）需要额外设置',
+                  '• 国产手机（小米、华为、OPPO、vivo）需要额外设置\n'
+                  '• 系统重启后会自动恢复通知调度',
                   style: TextStyle(
                     fontSize: 14,
                     height: 1.6,

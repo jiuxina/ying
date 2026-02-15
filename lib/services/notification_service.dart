@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/countdown_event.dart';
 import '../models/reminder.dart';
 import 'debug_service.dart';
@@ -13,6 +15,7 @@ import 'debug_service.dart';
 /// 
 /// 负责管理本地通知的初始化、调度和取消。
 /// 支持 Android 和 iOS 平台的通知功能。
+/// 包含电池优化和开机自启动支持。
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -23,6 +26,10 @@ class NotificationService {
   final DebugService _debugService = DebugService();
   bool _initialized = false;
   bool _initializing = false;  // 防止并发初始化
+  
+  // MethodChannel for battery optimization and boot restore
+  static const MethodChannel _notificationChannel =
+      MethodChannel('com.jiuxina.ying/notifications');
   
   // 通知点击回调 - 将由外部设置
   Function(String eventId)? onNotificationTap;
@@ -582,6 +589,7 @@ class NotificationService {
       'initialized': _initialized,
       'hasNotificationPermission': false,
       'hasExactAlarmPermission': false,
+      'hasBatteryOptimization': false,
       'warnings': <String>[],
       'recommendations': <String>[],
     };
@@ -626,12 +634,22 @@ class NotificationService {
           debugPrint('检查精确闹钟权限失败: $e');
         }
         
-        // 电池优化建议
-        result['recommendations'].add(
-          '为确保后台通知正常工作，请关闭电池优化：\n'
-          '设置 → 应用 → 萤 → 电池 → 不限制\n'
-          '或 设置 → 电池 → 应用耗电管理 → 萤 → 允许后台活动'
-        );
+        // 检查电池优化状态
+        try {
+          final isIgnoring = await checkBatteryOptimization();
+          result['hasBatteryOptimization'] = isIgnoring;
+          
+          if (!isIgnoring) {
+            result['warnings'].add('应用受电池优化限制');
+            result['recommendations'].add(
+              '为确保后台通知正常工作，请关闭电池优化：\n'
+              '设置 → 应用 → 萤 → 电池 → 不限制\n'
+              '或 设置 → 电池 → 应用耗电管理 → 萤 → 允许后台活动'
+            );
+          }
+        } catch (e) {
+          debugPrint('检查电池优化失败: $e');
+        }
         
         // 自启动建议（针对国产手机）
         result['recommendations'].add(
@@ -643,6 +661,105 @@ class NotificationService {
     }
     
     return result;
+  }
+  
+  /// 检查是否已忽略电池优化
+  /// 
+  /// 返回 true 表示应用已被允许忽略电池优化，后台运行不受限制
+  Future<bool> checkBatteryOptimization() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return true; // iOS 不需要此权限
+    }
+    
+    try {
+      final isIgnoring = await _notificationChannel.invokeMethod<bool>('checkBatteryOptimization');
+      return isIgnoring ?? false;
+    } catch (e) {
+      debugPrint('检查电池优化状态失败: $e');
+      return false;
+    }
+  }
+  
+  /// 请求忽略电池优化权限
+  /// 
+  /// 打开系统设置页面让用户授予电池优化豁免权限
+  Future<bool> requestBatteryOptimization() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return true; // iOS 不需要此权限
+    }
+    
+    try {
+      final requested = await _notificationChannel.invokeMethod<bool>('requestBatteryOptimization');
+      _debugService.info(
+        'Battery optimization exemption requested',
+        source: 'Notification',
+      );
+      return requested ?? false;
+    } catch (e) {
+      debugPrint('请求电池优化豁免失败: $e');
+      _debugService.error(
+        'Failed to request battery optimization: $e',
+        source: 'Notification',
+      );
+      return false;
+    }
+  }
+  
+  /// 打开电池优化设置页面
+  Future<void> openBatterySettings() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+    
+    try {
+      await _notificationChannel.invokeMethod('openBatterySettings');
+      _debugService.info(
+        'Opened battery settings',
+        source: 'Notification',
+      );
+    } catch (e) {
+      debugPrint('打开电池设置失败: $e');
+      _debugService.error(
+        'Failed to open battery settings: $e',
+        source: 'Notification',
+      );
+    }
+  }
+  
+  /// 检查是否需要在开机后恢复通知
+  /// 
+  /// 由 BootReceiver 设置标记，应用启动时检查
+  Future<bool> checkBootRestoreNeeded() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return false;
+    }
+    
+    try {
+      final needsRestore = await _notificationChannel.invokeMethod<bool>('checkBootRestoreNeeded');
+      return needsRestore ?? false;
+    } catch (e) {
+      debugPrint('检查开机恢复标记失败: $e');
+      return false;
+    }
+  }
+  
+  /// 清除开机恢复标记
+  /// 
+  /// 在成功恢复通知后调用
+  Future<void> clearBootRestoreFlag() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+    
+    try {
+      await _notificationChannel.invokeMethod('clearBootRestoreFlag');
+      _debugService.info(
+        'Cleared boot restore flag',
+        source: 'Notification',
+      );
+    } catch (e) {
+      debugPrint('清除开机恢复标记失败: $e');
+    }
   }
   
   /// 打印通知状态诊断信息
