@@ -64,6 +64,17 @@ class _DebugConsoleScreenState extends State<DebugConsoleScreen>
     return logs;
   }
 
+  String _formatTime(DateTime dateTime) {
+    return '${dateTime.hour.toString().padLeft(2, '0')}:'
+        '${dateTime.minute.toString().padLeft(2, '0')}:'
+        '${dateTime.second.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-'
+        '${dateTime.day.toString().padLeft(2, '0')} ${_formatTime(dateTime)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -367,9 +378,7 @@ class _DebugConsoleScreenState extends State<DebugConsoleScreen>
         levelIcon = Icons.info;
     }
 
-    final time = '${log.timestamp.hour.toString().padLeft(2, '0')}:'
-        '${log.timestamp.minute.toString().padLeft(2, '0')}:'
-        '${log.timestamp.second.toString().padLeft(2, '0')}';
+    final time = _formatTime(log.timestamp);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -488,10 +497,7 @@ class _DebugConsoleScreenState extends State<DebugConsoleScreen>
 
   String _formatDateTime(DateTime dateTime) {
     return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-'
-        '${dateTime.day.toString().padLeft(2, '0')} '
-        '${dateTime.hour.toString().padLeft(2, '0')}:'
-        '${dateTime.minute.toString().padLeft(2, '0')}:'
-        '${dateTime.second.toString().padLeft(2, '0')}';
+        '${dateTime.day.toString().padLeft(2, '0')} ${_formatTime(dateTime)}';
   }
 
   Widget _buildRoutesTab() {
@@ -570,8 +576,8 @@ class _DebugConsoleScreenState extends State<DebugConsoleScreen>
                   itemBuilder: (context, index) {
                     final route = routes[index];
                     final parts = route.split(' -> ');
-                    final time = parts.length > 0 ? parts[0] : '';
-                    final path = parts.length > 1 ? parts[1] : route;
+                    final time = parts.isNotEmpty ? parts[0] : '';
+                    final path = parts.length >= 2 ? parts[1] : route;
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 8),
