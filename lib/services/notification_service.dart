@@ -245,6 +245,31 @@ class NotificationService {
       debugPrint('⚠️ $failCount 个提醒调度失败 (${event.title})');
       _debugService.warning('Failed to schedule $failCount reminders for: ${event.title}', source: 'Notification');
     }
+
+    // 验证通知是否成功添加到系统队列
+    // 延迟一小段时间以确保系统已处理调度请求
+    if (successCount > 0) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      try {
+        final actualCount = await getEventNotificationCount(event.id);
+        if (actualCount != successCount) {
+          debugPrint('⚠️ 通知队列验证失败: 预期 $successCount 个，实际 $actualCount 个');
+          _debugService.warning(
+            'Notification queue verification failed: expected $successCount, found $actualCount',
+            source: 'Notification',
+          );
+        } else {
+          debugPrint('✓ 通知队列验证成功: $actualCount 个通知已在系统队列中');
+          _debugService.info(
+            'Notification queue verified: $actualCount notifications in system queue',
+            source: 'Notification',
+          );
+        }
+      } catch (e) {
+        debugPrint('⚠️ 通知队列验证异常: $e');
+        _debugService.warning('Notification queue verification error: $e', source: 'Notification');
+      }
+    }
   }
 
   /// 调度单个提醒通知
@@ -533,10 +558,18 @@ class NotificationService {
         notificationDetails,
         payload: 'test_notification',
       );
-      
+
       debugPrint('✓ 测试通知已发送 (ID: $testNotificationId)');
+      _debugService.info(
+        'Test notification sent: $eventTitle (ID: $testNotificationId)',
+        source: 'Notification',
+      );
     } catch (e) {
       debugPrint('❌ 发送测试通知失败: $e');
+      _debugService.error(
+        'Failed to send test notification: $e',
+        source: 'Notification',
+      );
       rethrow;
     }
   }
