@@ -7,6 +7,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
 import '../models/countdown_event.dart';
 import '../models/reminder.dart';
+import 'debug_service.dart';
 
 /// 通知服务
 /// 
@@ -19,6 +20,7 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
+  final DebugService _debugService = DebugService();
   bool _initialized = false;
   bool _initializing = false;  // 防止并发初始化
   
@@ -105,8 +107,10 @@ class NotificationService {
 
       _initialized = true;
       debugPrint('✓ 通知服务初始化成功');
+      _debugService.info('Notification service initialized', source: 'Notification');
     } catch (e) {
       debugPrint('❌ 通知服务初始化失败: $e');
+      _debugService.error('Notification service init failed: $e', source: 'Notification');
       rethrow;
     } finally {
       _initializing = false;
@@ -118,11 +122,13 @@ class NotificationService {
   /// 当用户点击通知时调用此方法，导航到事件详情页。
   void _onNotificationTapped(NotificationResponse response) {
     debugPrint('通知被点击: ${response.payload}');
+    _debugService.info('Notification tapped: ${response.payload}', source: 'Notification');
     if (response.payload != null && onNotificationTap != null) {
       try {
         onNotificationTap!(response.payload!);
       } catch (e) {
         debugPrint('处理通知点击失败: $e');
+        _debugService.error('Failed to handle notification tap: $e', source: 'Notification');
       }
     }
   }
@@ -142,6 +148,7 @@ class NotificationService {
         
         if (!granted) {
           debugPrint('❌ 通知权限被拒绝');
+          _debugService.warning('Notification permission denied', source: 'Notification');
           return false;
         }
         
@@ -232,9 +239,11 @@ class NotificationService {
     
     if (successCount > 0) {
       debugPrint('✓ 成功调度 $successCount 个提醒通知 (${event.title})');
+      _debugService.info('Scheduled $successCount reminders for event: ${event.title}', source: 'Notification');
     }
     if (failCount > 0) {
       debugPrint('⚠️ $failCount 个提醒调度失败 (${event.title})');
+      _debugService.warning('Failed to schedule $failCount reminders for: ${event.title}', source: 'Notification');
     }
   }
 
@@ -396,9 +405,11 @@ class NotificationService {
       
       if (canceledCount > 0) {
         debugPrint('✓ 已取消事件的 $canceledCount 个通知: $eventId');
+        _debugService.info('Canceled $canceledCount notifications for event: $eventId', source: 'Notification');
       }
     } catch (e) {
       debugPrint('❌ 取消通知失败: $e');
+      _debugService.error('Failed to cancel notifications: $e', source: 'Notification');
     }
   }
 
@@ -408,8 +419,10 @@ class NotificationService {
     try {
       await _notifications.cancelAll();
       debugPrint('✓ 已取消所有通知');
+      _debugService.info('All notifications canceled', source: 'Notification');
     } catch (e) {
       debugPrint('❌ 取消所有通知失败: $e');
+      _debugService.error('Failed to cancel all notifications: $e', source: 'Notification');
     }
   }
 

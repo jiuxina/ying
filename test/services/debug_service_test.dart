@@ -64,7 +64,7 @@ void main() {
     });
 
     test('should update app state', () {
-      expect(debugService.appState, 'Unknown');
+      expect(debugService.appState, 'Initializing');
       
       debugService.updateAppState('Resumed');
       expect(debugService.appState, 'Resumed');

@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../utils/constants.dart';
 import '../models/widget_config.dart';
 import '../services/widget_service.dart';
+import '../services/debug_service.dart';
 
 /// ============================================================================
 /// 设置状态管理器
@@ -24,6 +25,10 @@ import '../services/widget_service.dart';
 /// ============================================================================
 
 class SettingsProvider extends ChangeNotifier {
+  // ==================== Debug Service ====================
+  
+  final DebugService _debugService = DebugService();
+  
   // ==================== 主题设置 ====================
   
   /// 安全存储（用于敏感信息如密码）
@@ -323,6 +328,7 @@ class SettingsProvider extends ChangeNotifier {
     _themeMode = mode;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('theme_mode', mode.index);
+    _debugService.info('Theme mode changed: ${mode.name}', source: 'Settings');
     notifyListeners();
   }
 
@@ -331,6 +337,7 @@ class SettingsProvider extends ChangeNotifier {
       _themeColorIndex = index;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('theme_color_index', index);
+      _debugService.info('Theme color changed: index=$index', source: 'Settings');
       notifyListeners();
     }
   }
@@ -341,6 +348,7 @@ class SettingsProvider extends ChangeNotifier {
     _fontSize = size;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('font_size', size);
+    _debugService.info('Font size changed: $size', source: 'Settings');
     notifyListeners();
   }
 
@@ -348,6 +356,7 @@ class SettingsProvider extends ChangeNotifier {
     _dateFormat = format;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('date_format', format);
+    _debugService.info('Date format changed: $format', source: 'Settings');
     notifyListeners();
   }
 
@@ -355,6 +364,7 @@ class SettingsProvider extends ChangeNotifier {
     _cardDisplayFormat = format;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('card_display_format', format);
+    _debugService.info('Card display format changed: $format', source: 'Settings');
     notifyListeners();
   }
 
@@ -362,6 +372,7 @@ class SettingsProvider extends ChangeNotifier {
     _fontSizePx = size.clamp(12.0, 24.0);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('font_size_px', _fontSizePx);
+    _debugService.info('Font size (px) changed: ${_fontSizePx}', source: 'Settings');
     notifyListeners();
   }
 
@@ -373,6 +384,7 @@ class SettingsProvider extends ChangeNotifier {
     } else {
       await prefs.remove('font_family');
     }
+    _debugService.info('Font family changed: ${family ?? "system default"}', source: 'Settings');
     notifyListeners();
   }
 
@@ -396,6 +408,7 @@ class SettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('font_family', name);
     await prefs.setString('custom_font_path', path);
+    _debugService.info('Custom font set: $name', source: 'Settings');
     notifyListeners();
   }
 
@@ -409,6 +422,7 @@ class SettingsProvider extends ChangeNotifier {
     } else {
       await prefs.remove('background_image_path');
     }
+    _debugService.info('Background image ${path != null ? "set" : "cleared"}', source: 'Settings');
     notifyListeners();
   }
 
@@ -416,6 +430,7 @@ class SettingsProvider extends ChangeNotifier {
     _backgroundEffect = effect;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('background_effect', effect);
+    _debugService.info('Background effect changed: $effect', source: 'Settings');
     notifyListeners();
   }
 
@@ -423,6 +438,7 @@ class SettingsProvider extends ChangeNotifier {
     _backgroundBlur = blur;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('background_blur', blur);
+    _debugService.info('Background blur changed: $blur', source: 'Settings');
     notifyListeners();
   }
 
@@ -432,6 +448,7 @@ class SettingsProvider extends ChangeNotifier {
     _particleType = type;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('particle_type', type);
+    _debugService.info('Particle type changed: $type', source: 'Settings');
     notifyListeners();
   }
 
@@ -439,6 +456,7 @@ class SettingsProvider extends ChangeNotifier {
     _particleSpeed = speed.clamp(0.1, 1.0);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('particle_speed', _particleSpeed);
+    _debugService.info('Particle speed changed: $_particleSpeed', source: 'Settings');
     notifyListeners();
   }
 
@@ -446,6 +464,7 @@ class SettingsProvider extends ChangeNotifier {
     _particleGlobal = global;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('particle_global', global);
+    _debugService.info('Particle global scope: ${global ? "enabled" : "disabled"}', source: 'Settings');
     notifyListeners();
   }
 
@@ -455,6 +474,7 @@ class SettingsProvider extends ChangeNotifier {
     _cardsExpanded = expanded;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('cards_expanded', expanded);
+    _debugService.info('Cards ${expanded ? "expanded" : "collapsed"}', source: 'Settings');
     notifyListeners();
   }
 
@@ -468,6 +488,7 @@ class SettingsProvider extends ChangeNotifier {
     _progressStyle = style;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('progress_style', style);
+    _debugService.info('Progress bar style changed: $style', source: 'Settings');
     notifyListeners();
   }
 
@@ -475,6 +496,7 @@ class SettingsProvider extends ChangeNotifier {
     _progressColorValue = color.toARGB32();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('progress_color', color.toARGB32());
+    _debugService.info('Progress bar color changed', source: 'Settings');
     notifyListeners();
   }
 
@@ -482,6 +504,7 @@ class SettingsProvider extends ChangeNotifier {
     _progressCalculation = calculation;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('progress_calculation', calculation);
+    _debugService.info('Progress calculation method: $calculation', source: 'Settings');
     notifyListeners();
   }
 
@@ -489,6 +512,7 @@ class SettingsProvider extends ChangeNotifier {
     _progressFixedDays = days;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('progress_fixed_days', days);
+    _debugService.info('Progress fixed days: $days', source: 'Settings');
     notifyListeners();
   }
 
@@ -498,6 +522,7 @@ class SettingsProvider extends ChangeNotifier {
     _sortOrder = order;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('sort_order', order);
+    _debugService.info('Sort order changed: $order', source: 'Settings');
     notifyListeners();
   }
 
@@ -505,6 +530,7 @@ class SettingsProvider extends ChangeNotifier {
     _customSortOrder = order;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('custom_sort_order', jsonEncode(order));
+    _debugService.info('Custom sort order updated (${order.length} items)', source: 'Settings');
     notifyListeners();
   }
 
@@ -515,6 +541,7 @@ class SettingsProvider extends ChangeNotifier {
     _currentWidgetType = type;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('widget_current_type', type.name);
+    _debugService.info('Widget type changed: ${type.name}', source: 'Settings');
     notifyListeners();
   }
 
@@ -528,6 +555,7 @@ class SettingsProvider extends ChangeNotifier {
     // 更新原生小部件
     await WidgetService.updateWidgetConfig(config);
     
+    _debugService.info('Widget config updated: ${type.name}', source: 'Settings');
     notifyListeners();
   }
 
@@ -572,6 +600,7 @@ class SettingsProvider extends ChangeNotifier {
     _darkThemeIndex = index;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('dark_theme_index', index);
+    _debugService.info('Dark theme index: $index', source: 'Settings');
     notifyListeners();
   }
 
@@ -580,6 +609,7 @@ class SettingsProvider extends ChangeNotifier {
     _lightThemeIndex = index;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('light_theme_index', index);
+    _debugService.info('Light theme index: $index', source: 'Settings');
     notifyListeners();
   }
 
@@ -590,6 +620,7 @@ class SettingsProvider extends ChangeNotifier {
     _locale = locale;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('locale', locale.languageCode);
+    _debugService.info('Language changed: ${locale.languageCode}', source: 'Settings');
     notifyListeners();
   }
 
@@ -659,6 +690,7 @@ class SettingsProvider extends ChangeNotifier {
     _webdavUrl = url;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('webdav_url', url);
+    _debugService.info('WebDAV URL configured', source: 'Settings');
     notifyListeners();
   }
 
@@ -667,6 +699,7 @@ class SettingsProvider extends ChangeNotifier {
     _webdavUsername = username;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('webdav_username', username);
+    _debugService.info('WebDAV username configured', source: 'Settings');
     notifyListeners();
   }
 
@@ -674,6 +707,7 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setWebdavPassword(String password) async {
     _webdavPassword = password;
     await _secureStorage.write(key: 'webdav_password', value: password);
+    _debugService.info('WebDAV password updated', source: 'Settings');
     notifyListeners();
   }
 
@@ -682,6 +716,7 @@ class SettingsProvider extends ChangeNotifier {
     _autoSyncEnabled = enabled;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('auto_sync_enabled', enabled);
+    _debugService.info('Auto sync ${enabled ? "enabled" : "disabled"}', source: 'Settings');
     notifyListeners();
   }
 
@@ -690,6 +725,7 @@ class SettingsProvider extends ChangeNotifier {
     _lastSyncTime = DateTime.now();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('last_sync_time', _lastSyncTime!.millisecondsSinceEpoch);
+    _debugService.info('Cloud sync completed', source: 'Settings');
     notifyListeners();
   }
 
@@ -717,6 +753,7 @@ class SettingsProvider extends ChangeNotifier {
     _debugModeEnabled = enabled;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('debug_mode_enabled', enabled);
+    _debugService.info('Debug mode ${enabled ? "enabled" : "disabled"}', source: 'Settings');
     notifyListeners();
   }
 }
