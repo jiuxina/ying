@@ -268,13 +268,18 @@ class EventsProvider extends ChangeNotifier {
   /// 删除事件
   Future<void> deleteEvent(String id) async {
     // Get event title before deleting for logging
-    String? eventTitle;
-    try {
-      final event = _events.firstWhere((e) => e.id == id, orElse: () => _archivedEvents.firstWhere((e) => e.id == id));
-      eventTitle = event.title;
-    } catch (_) {
-      // Event not found in either list, use ID as fallback
-      eventTitle = id;
+    String eventTitle = id; // Default to ID if event not found
+    
+    // Try to find event in active list first
+    final activeEvent = _events.where((e) => e.id == id).firstOrNull;
+    if (activeEvent != null) {
+      eventTitle = activeEvent.title;
+    } else {
+      // Try archived events
+      final archivedEvent = _archivedEvents.where((e) => e.id == id).firstOrNull;
+      if (archivedEvent != null) {
+        eventTitle = archivedEvent.title;
+      }
     }
     
     await _dbService.deleteEvent(id);
