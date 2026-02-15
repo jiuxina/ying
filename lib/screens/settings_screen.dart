@@ -13,6 +13,7 @@ import 'settings/group_management_screen.dart';
 import 'settings/category_management_screen.dart';
 import 'settings/data_backup_screen.dart';
 import 'settings/about_screen.dart';
+import 'settings/debug_settings_screen.dart';
 
 /// ============================================================================
 /// 设置页面 - 导航式布局
@@ -193,16 +194,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SectionHeader(title: '其他', icon: Icons.info),
                     const SizedBox(height: 8),
                     GlassCard(
-                      child: _buildSettingsTile(
-                        context,
-                        icon: Icons.info,
-                        iconColor: Colors.blueGrey,
-                        title: '关于',
-                        subtitle: _version,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => AboutScreen(version: _version)),
-                        ),
+                      child: Column(
+                        children: [
+                          _buildSettingsTile(
+                            context,
+                            icon: Icons.bug_report,
+                            iconColor: Colors.red,
+                            title: '调试功能',
+                            subtitle: '查看应用行为和系统信息',
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const DebugSettingsScreen()),
+                            ),
+                          ),
+                          const Divider(height: 1),
+                          _buildSettingsTile(
+                            context,
+                            icon: Icons.info,
+                            iconColor: Colors.blueGrey,
+                            title: '关于',
+                            subtitle: _version,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => AboutScreen(version: _version)),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 40),

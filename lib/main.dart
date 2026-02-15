@@ -3,15 +3,18 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 import 'providers/events_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/notification_service.dart';
+import 'services/debug_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/event_detail_screen.dart';
 import 'theme/app_theme.dart';
 import 'utils/constants.dart';
 import 'widgets/particle_background.dart';
+import 'widgets/debug/debug_overlay_widget.dart';
 
 import 'utils/route_observer.dart'; // import for globalRouteObserver
 
@@ -19,6 +22,18 @@ import 'pages/widget_config_page.dart';
 
 // 全局导航器键，用于在没有 BuildContext 的情况下导航
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+/// 悬浮窗入口点
+@pragma("vm:entry-point")
+void overlayMain() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: DebugOverlayWidget(),
+    ),
+  );
+}
 
 /// 应用入口
 ///
@@ -43,6 +58,13 @@ void main() async {
   // Initialize notification service
   final notificationService = NotificationService();
   await notificationService.initialize();
+  
+  // Initialize debug service
+  final debugService = DebugService();
+  if (settingsProvider.debugModeEnabled) {
+    await debugService.initialize();
+    debugService.info('App started', source: 'Main');
+  }
   
   // Request notification permissions
   final permissionGranted = await notificationService.requestPermissions();
@@ -107,8 +129,49 @@ void main() async {
 /// 萤 - 倒数日应用
 ///
 /// 使用 MaterialApp 作为根组件，配置主题、路由和全局装饰。
-class YingApp extends StatelessWidget {
+class YingApp extends StatefulWidget {
   const YingApp({super.key});
+
+  @override
+  State<YingApp> createState() => _YingAppState();
+}
+
+class _YingAppState extends State<YingApp> with WidgetsBindingObserver {
+  final DebugService _debugService = DebugService();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _debugService.updateAppState('Resumed');
+        break;
+      case AppLifecycleState.inactive:
+        _debugService.updateAppState('Inactive');
+        break;
+      case AppLifecycleState.paused:
+        _debugService.updateAppState('Paused');
+        break;
+      case AppLifecycleState.detached:
+        _debugService.updateAppState('Detached');
+        break;
+      case AppLifecycleState.hidden:
+        _debugService.updateAppState('Hidden');
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
