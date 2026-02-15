@@ -495,11 +495,6 @@ class _DebugConsoleScreenState extends State<DebugConsoleScreen>
     );
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-'
-        '${dateTime.day.toString().padLeft(2, '0')} ${_formatTime(dateTime)}';
-  }
-
   Widget _buildRoutesTab() {
     final routes = _debugService.routeHistory.reversed.toList();
 
