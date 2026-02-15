@@ -241,6 +241,17 @@ class NotificationService {
     if (successCount > 0) {
       debugPrint('✓ 成功调度 $successCount 个提醒通知 (${event.title})');
       _debugService.info('Scheduled $successCount reminders for event: ${event.title}', source: 'Notification');
+      
+      // 验证调度是否成功 - 检查待处理队列
+      await Future.delayed(const Duration(milliseconds: 500)); // 等待系统处理
+      final actualCount = await getEventNotificationCount(event.id);
+      if (actualCount != successCount) {
+        debugPrint('⚠️ 警告: 预期调度 $successCount 个通知，但只有 $actualCount 个在队列中');
+        _debugService.warning('Mismatch: expected $successCount notifications, but only $actualCount in queue for: ${event.title}', source: 'Notification');
+      } else {
+        debugPrint('✓ 验证成功: $actualCount 个通知已在系统队列中');
+        _debugService.info('Verified: $actualCount notifications confirmed in system queue for: ${event.title}', source: 'Notification');
+      }
     }
     if (failCount > 0) {
       debugPrint('⚠️ $failCount 个提醒调度失败 (${event.title})');
@@ -658,5 +669,61 @@ class NotificationService {
     }
     
     debugPrint('═══════════════════');
+  }
+  
+  /// 获取指定事件的详细通知诊断信息
+  /// 
+  /// 返回该事件的所有待处理通知的详细信息，帮助排查问题
+  Future<Map<String, dynamic>> getEventNotificationDiagnostics(String eventId, String eventTitle) async {
+    if (!_initialized) {
+      await initialize();
+    }
+    
+    final result = <String, dynamic>{
+      'eventId': eventId,
+      'eventTitle': eventTitle,
+      'pendingNotifications': <Map<String, dynamic>>[],
+      'count': 0,
+      'hasIssues': false,
+      'issues': <String>[],
+    };
+    
+    try {
+      final pending = await getPendingNotifications();
+      final eventNotifications = pending.where((n) => n.payload == eventId).toList();
+      
+      result['count'] = eventNotifications.length;
+      
+      for (final notification in eventNotifications) {
+        result['pendingNotifications'].add({
+          'id': notification.id,
+          'title': notification.title,
+          'body': notification.body,
+          'payload': notification.payload,
+        });
+      }
+      
+      if (eventNotifications.isEmpty) {
+        result['hasIssues'] = true;
+        result['issues'].add('没有待处理的通知。可能通知时间已过，或系统清除了通知。');
+      }
+      
+      debugPrint('事件 "$eventTitle" 的通知诊断:');
+      debugPrint('  待处理通知数量: ${result['count']}');
+      if (result['hasIssues']) {
+        debugPrint('  ⚠️ 发现问题:');
+        for (final issue in result['issues']) {
+          debugPrint('    - $issue');
+        }
+      }
+      
+      _debugService.info('Event notification diagnostics: ${result['count']} pending for $eventTitle', source: 'Notification');
+      
+    } catch (e) {
+      debugPrint('❌ 获取事件通知诊断信息失败: $e');
+      _debugService.error('Failed to get event notification diagnostics: $e', source: 'Notification');
+    }
+    
+    return result;
   }
 }
