@@ -26,12 +26,20 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _debugService.addListener(_onDebugServiceUpdate);
     _checkOverlayStatus();
+  }
+
+  void _onDebugServiceUpdate() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _debugService.removeListener(_onDebugServiceUpdate);
     super.dispose();
   }
 
@@ -100,6 +108,24 @@ class _DebugSettingsScreenState extends State<DebugSettingsScreen> with WidgetsB
   Future<void> _showOverlay() async {
     try {
       _debugService.info('Attempting to show overlay...', source: 'DebugSettings');
+      
+      // Check if overlay is already active
+      final alreadyActive = await FlutterOverlayWindow.isActive();
+      if (alreadyActive == true) {
+        _debugService.info('Overlay already active, skipping show', source: 'DebugSettings');
+        if (mounted) {
+          setState(() {
+            _isOverlayActive = true;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('调试悬浮窗已经在运行中'),
+              backgroundColor: Colors.blue,
+            ),
+          );
+        }
+        return;
+      }
       
       // Show the overlay
       await FlutterOverlayWindow.showOverlay(
