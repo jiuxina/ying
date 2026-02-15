@@ -75,6 +75,13 @@ void main() async {
     debugPrint('✓ 通知权限已授予');
   }
   
+  // 检查是否需要在开机后恢复通知
+  final needsBootRestore = await notificationService.checkBootRestoreNeeded();
+  if (needsBootRestore) {
+    debugPrint('检测到系统重启，正在恢复通知调度...');
+    debugService.info('Boot restore detected, restoring notifications', source: 'Main');
+  }
+  
   // 设置通知点击回调 - 导航到事件详情页
   notificationService.onNotificationTap = (String eventId) {
     try {
@@ -102,6 +109,13 @@ void main() async {
   
   // 重新调度所有活动事件的提醒（应用启动时恢复）
   await notificationService.rescheduleAllReminders(eventsProvider.events);
+  
+  // 清除开机恢复标记
+  if (needsBootRestore) {
+    await notificationService.clearBootRestoreFlag();
+    debugPrint('✓ 通知调度已恢复');
+    debugService.info('Notifications restored after boot', source: 'Main');
+  }
   
   // 打印通知诊断信息（帮助用户排查问题）
   await notificationService.printNotificationDiagnostics();
