@@ -103,6 +103,7 @@ class NotificationService {
       await _notifications.initialize(
         initSettings,
         onDidReceiveNotificationResponse: _onNotificationTapped,
+        onDidReceiveBackgroundNotificationResponse: _onNotificationTapped,
       );
 
       _initialized = true;
@@ -269,6 +270,7 @@ class NotificationService {
       final now = tz.TZDateTime.now(tz.local);
       if (tzNotificationDateTime.isBefore(now)) {
         debugPrint('⏭ 提醒时间已过，跳过: ${event.title} - ${tzNotificationDateTime.toIso8601String()}');
+        _debugService.warning('Reminder time has passed, skipped: ${event.title} at ${tzNotificationDateTime.toIso8601String()}', source: 'Notification');
         return false;
       }
 
@@ -318,9 +320,11 @@ class NotificationService {
       );
 
       debugPrint('✓ 已调度提醒: ${event.title} - ${tzNotificationDateTime.toIso8601String()}');
+      _debugService.info('Scheduled reminder: ${event.title} at ${tzNotificationDateTime.toIso8601String()} (ID: $notificationId)', source: 'Notification');
       return true;
     } catch (e) {
       debugPrint('❌ 调度提醒失败: ${event.title} - $e');
+      _debugService.error('Failed to schedule reminder for ${event.title}: $e', source: 'Notification');
       return false;
     }
   }
@@ -459,6 +463,7 @@ class NotificationService {
     }
     
     debugPrint('开始重新调度所有事件的提醒...');
+    _debugService.info('Starting to reschedule all reminders for ${activeEvents.length} events', source: 'Notification');
     int totalScheduled = 0;
     
     for (final event in activeEvents) {
@@ -469,6 +474,7 @@ class NotificationService {
     }
     
     debugPrint('✓ 已重新调度 ${activeEvents.length} 个事件的 $totalScheduled 个提醒');
+    _debugService.info('Rescheduled $totalScheduled reminders for ${activeEvents.length} events', source: 'Notification');
   }
   
   // 测试通知 ID 范围常量
@@ -535,6 +541,7 @@ class NotificationService {
       );
       
       debugPrint('✓ 测试通知已发送 (ID: $testNotificationId)');
+      _debugService.info('Test notification sent: $eventTitle (ID: $testNotificationId)', source: 'Notification');
     } catch (e) {
       debugPrint('❌ 发送测试通知失败: $e');
       rethrow;
@@ -615,16 +622,19 @@ class NotificationService {
   /// 打印通知状态诊断信息
   Future<void> printNotificationDiagnostics() async {
     debugPrint('═══ 通知状态诊断 ═══');
+    _debugService.info('Starting notification diagnostics', source: 'Notification');
     
     final status = await checkNotificationStatus();
     debugPrint('✓ 通知服务初始化: ${status['initialized']}');
     debugPrint('✓ 通知权限: ${status['hasNotificationPermission']}');
     debugPrint('✓ 精确闹钟权限: ${status['hasExactAlarmPermission']}');
+    _debugService.info('Service: ${status['initialized']}, NotifPerm: ${status['hasNotificationPermission']}, ExactAlarm: ${status['hasExactAlarmPermission']}', source: 'Notification');
     
     if ((status['warnings'] as List).isNotEmpty) {
       debugPrint('\n⚠️  警告:');
       for (final warning in status['warnings']) {
         debugPrint('  - $warning');
+        _debugService.warning(warning, source: 'Notification');
       }
     }
     
@@ -638,10 +648,12 @@ class NotificationService {
     // 显示待处理的通知数量
     final pending = await getPendingNotifications();
     debugPrint('\n📋 待处理通知数量: ${pending.length}');
+    _debugService.info('Pending notifications count: ${pending.length}', source: 'Notification');
     if (pending.isNotEmpty && pending.length <= 10) {
       debugPrint('待处理通知列表:');
       for (final notification in pending) {
         debugPrint('  - ID: ${notification.id}, Title: ${notification.title}');
+        _debugService.info('Pending: ID=${notification.id}, Title=${notification.title}, Payload=${notification.payload}', source: 'Notification');
       }
     }
     
