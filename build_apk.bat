@@ -32,11 +32,11 @@ if %errorlevel% neq 0 (
 )
 
 REM ------------------------------------------------------------------
-REM Rename Output Files
+REM Rename Output Files (Using move /y to overwrite)
 REM ------------------------------------------------------------------
 set OUTPUT_DIR=build\app\outputs\flutter-apk
 echo.
-echo Renaming APK files in %OUTPUT_DIR%...
+echo Moving and Renaming APK files in %OUTPUT_DIR%...
 
 REM Check if output directory exists
 if not exist "%OUTPUT_DIR%" (
@@ -46,23 +46,23 @@ if not exist "%OUTPUT_DIR%" (
 
 pushd "%OUTPUT_DIR%"
 
-REM Rename standard split APKs
+REM 使用 move /y 替代 ren，实现重名时自动覆盖
 REM app-armeabi-v7a-release.apk -> ying-v%VERSION%-armeabi-v7a.apk
 if exist "app-armeabi-v7a-release.apk" (
-    ren "app-armeabi-v7a-release.apk" "ying-v%VERSION%-armeabi-v7a.apk"
-    echo Renamed app-armeabi-v7a-release.apk to ying-v%VERSION%-armeabi-v7a.apk
+    move /y "app-armeabi-v7a-release.apk" "ying-v%VERSION%-armeabi-v7a.apk" >nul
+    echo Processed: ying-v%VERSION%-armeabi-v7a.apk
 )
 
 REM app-arm64-v8a-release.apk -> ying-v%VERSION%-arm64-v8a.apk
 if exist "app-arm64-v8a-release.apk" (
-    ren "app-arm64-v8a-release.apk" "ying-v%VERSION%-arm64-v8a.apk"
-    echo Renamed app-arm64-v8a-release.apk to ying-v%VERSION%-arm64-v8a.apk
+    move /y "app-arm64-v8a-release.apk" "ying-v%VERSION%-arm64-v8a.apk" >nul
+    echo Processed: ying-v%VERSION%-arm64-v8a.apk
 )
 
 REM app-x86_64-release.apk -> ying-v%VERSION%-x86_64.apk
 if exist "app-x86_64-release.apk" (
-    ren "app-x86_64-release.apk" "ying-v%VERSION%-x86_64.apk"
-    echo Renamed app-x86_64-release.apk to ying-v%VERSION%-x86_64.apk
+    move /y "app-x86_64-release.apk" "ying-v%VERSION%-x86_64.apk" >nul
+    echo Processed: ying-v%VERSION%-x86_64.apk
 )
 
 popd
