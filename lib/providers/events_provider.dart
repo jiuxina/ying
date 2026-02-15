@@ -7,6 +7,7 @@ import '../models/reminder.dart';
 import '../services/database_service.dart';
 import '../services/widget_service.dart';
 import '../services/notification_service.dart';
+import '../services/debug_service.dart';
 
 /// 事件状态管理 Provider
 ///
@@ -20,6 +21,7 @@ import '../services/notification_service.dart';
 class EventsProvider extends ChangeNotifier {
   final DatabaseService _dbService;
   final NotificationService _notificationService;
+  final DebugService _debugService = DebugService();
   final Uuid _uuid = const Uuid();
 
   EventsProvider({
@@ -223,6 +225,7 @@ class EventsProvider extends ChangeNotifier {
     // Schedule notifications
     await _notificationService.scheduleEventReminders(event);
     
+    _debugService.info('Event created: $title', source: 'Events');
     notifyListeners();
   }
 
@@ -257,12 +260,16 @@ class EventsProvider extends ChangeNotifier {
     // Update notifications
     await _notificationService.scheduleEventReminders(updatedEvent);
 
+    _debugService.info('Event updated: ${event.title}', source: 'Events');
     await _updateWidget();
     notifyListeners();
   }
 
   /// 删除事件
   Future<void> deleteEvent(String id) async {
+    // Get event title before deleting for logging
+    final event = _events.firstWhere((e) => e.id == id, orElse: () => _archivedEvents.firstWhere((e) => e.id == id));
+    
     await _dbService.deleteEvent(id);
     
     // Cancel notifications
@@ -270,6 +277,7 @@ class EventsProvider extends ChangeNotifier {
     
     _events.removeWhere((e) => e.id == id);
     _archivedEvents.removeWhere((e) => e.id == id);
+    _debugService.info('Event deleted: ${event.title}', source: 'Events');
     await _updateWidget();
     notifyListeners();
   }

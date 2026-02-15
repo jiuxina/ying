@@ -42,7 +42,7 @@ class DebugService {
   final int _maxRoutes = 50;
 
   // 应用状态
-  String _appState = 'Unknown';
+  String _appState = 'Initializing';
   final Map<String, dynamic> _systemInfo = {};
   
   // 监听器
