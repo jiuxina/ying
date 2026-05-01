@@ -374,7 +374,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> with TickerProvid
             ),
             SizedBox(height: ResponsiveSpacing.lg(context)),
             Text(
-              '还没有任何记忆',
+              '还没有记忆',
               style: TextStyle(
                 fontSize: ResponsiveFontSize.lg(context),
                 fontWeight: FontWeight.w600,
@@ -385,7 +385,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> with TickerProvid
             ),
             SizedBox(height: ResponsiveSpacing.sm(context)),
             Text(
-              '记录这个重要时刻的照片和故事',
+              '记录此刻的照片和故事',
               style: TextStyle(
                 fontSize: ResponsiveFontSize.base(context),
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -398,7 +398,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> with TickerProvid
             FilledButton.icon(
               onPressed: _addMemory,
               icon: const Icon(Icons.add_photo_alternate),
-              label: const Text('添加第一张照片'),
+              label: const Text('添加照片'),
             ),
           ],
         ),
@@ -881,11 +881,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> with TickerProvid
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                subtitle: Text(
-                  _event.enableNotification
-                      ? '提前 ${_event.notifyDaysBefore} 天，${_event.notifyHour.toString().padLeft(2, '0')}:${_event.notifyMinute.toString().padLeft(2, '0')} 提醒'
-                      : '已关闭',
-                  style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
+                 subtitle: Text(
+                   _event.enableNotification
+                       ? '提前 ${_event.notifyDaysBefore} 天，${_event.notifyHour.toString().padLeft(2, '0')}:${_event.notifyMinute.toString().padLeft(2, '0')}'
+                       : '已关闭',
+                   style: TextStyle(fontSize: ResponsiveFontSize.sm(context)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1011,7 +1011,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> with TickerProvid
           overflow: TextOverflow.ellipsis,
         ),
         content: Text(
-          '确定要删除"${_event.title}"吗？',
+          '确定删除"${_event.title}"？',
           style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
@@ -1061,8 +1061,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> with TickerProvid
         ),
         content: Text(
           _event.isPinned
-              ? '确定要取消置顶"${_event.title}"吗？'
-              : '确定要置顶"${_event.title}"吗？置顶的事件将显示在列表顶部。',
+              ? '取消置顶"${_event.title}"？'
+              : '置顶"${_event.title}"？置顶后显示在列表顶部。',
           style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
@@ -1121,7 +1121,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> with TickerProvid
           overflow: TextOverflow.ellipsis,
         ),
         content: Text(
-          '确定要归档"${_event.title}"吗？归档后可在归档页面查看。',
+          '归档"${_event.title}"？归档后可在归档页查看。',
           style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
@@ -1417,7 +1417,7 @@ class _MemoryAddSheetState extends State<MemoryAddSheet> {
                 maxLines: _selectedTab == 0 ? 2 : 5,
                 decoration: InputDecoration(
                   hintText: _selectedTab == 0 
-                      ? '添加照片描述（可选）'
+                      ? '描述（可选）'
                       : (_selectedTab == 1 ? '记录这个特别的日子...' : '写下你的想法...'),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(ResponsiveBorderRadius.base(context)),

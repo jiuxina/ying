@@ -93,7 +93,7 @@ class _AboutCardState extends State<AboutCard> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('v${info.latestVersion} 已发布，是否立即更新？'),
+              Text('v${info.latestVersion} 已发布，是否更新？'),
               const SizedBox(height: 12),
               ConstrainedBox(
                  constraints: const BoxConstraints(maxHeight: 200),
@@ -159,7 +159,7 @@ class _AboutCardState extends State<AboutCard> {
                 },
               ),
               const SizedBox(height: 12),
-              const Text('优先使用镜像加速下载...', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const Text('使用镜像加速下载...', style: TextStyle(fontSize: 12, color: Colors.grey)),
             ],
           ),
         ),
@@ -263,7 +263,7 @@ class _AboutCardState extends State<AboutCard> {
                       : const Icon(Icons.update, color: Colors.green),
                 ),
                 title: const Text('检查更新'),
-                subtitle: const Text('检查是否有新版本'),
+                subtitle: const Text('检查新版本'),
                 trailing: TextButton(
                   onPressed: _isCheckingUpdate ? null : _checkForUpdates,
                   child: const Text('检查'),
@@ -278,16 +278,16 @@ class _AboutCardState extends State<AboutCard> {
               const Divider(height: 1),
               ListTile(
                 leading: const IconBox(icon: Icons.code, color: Colors.blue),
-                title: const Text('GitHub 开源仓库'),
-                subtitle: const Text('查看源代码和提交反馈'),
+                title: const Text('GitHub 仓库'),
+                subtitle: const Text('源码与反馈'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _launchUrl(AppConstants.githubUrl),
               ),
               const Divider(height: 1),
               ListTile(
                 leading: const IconBox(icon: Icons.description, color: Colors.purple),
-                title: const Text('开放源代码许可'),
-                subtitle: const Text('查看第三方开源库许可'),
+                title: const Text('开源许可'),
+                subtitle: const Text('第三方库许可'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.push(
                   context,

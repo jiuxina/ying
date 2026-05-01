@@ -238,5 +238,189 @@
   "moveToCategory": "Move selected events to:",
   "@moveToCategory": {
     "description": "Move selected events to"
+  },
+  "appearanceSettings": "Appearance",
+  "@appearanceSettings": {
+    "description": "Appearance settings"
+  },
+  "themeSettings": "Theme Settings",
+  "@themeSettings": {
+    "description": "Theme settings"
+  },
+  "backgroundSettings": "Background Settings",
+  "@backgroundSettings": {
+    "description": "Background settings"
+  },
+  "otherSettings": "Other Settings",
+  "@otherSettings": {
+    "description": "Other settings"
+  },
+  "themeMode": "Theme Mode",
+  "@themeMode": {
+    "description": "Theme mode"
+  },
+  "lightTheme": "Light Theme",
+  "@lightTheme": {
+    "description": "Light theme"
+  },
+  "darkTheme": "Dark Theme",
+  "@darkTheme": {
+    "description": "Dark theme"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language"
+  },
+  "uiFontColor": "UI Font Color",
+  "@uiFontColor": {
+    "description": "UI font color"
+  },
+  "customColor": "Custom Color",
+  "@customColor": {
+    "description": "Custom color"
+  },
+  "adaptiveGradient": "Adaptive Gradient",
+  "@adaptiveGradient": {
+    "description": "Adaptive gradient"
+  },
+  "adaptiveGradientDesc": "Automatically adjust text color based on background",
+  "@adaptiveGradientDesc": {
+    "description": "Adaptive gradient description"
+  },
+  "buttonStyle": "Button Style",
+  "@buttonStyle": {
+    "description": "Button style"
+  },
+  "buttonStyleClassic": "Classic",
+  "@buttonStyleClassic": {
+    "description": "Classic button style"
+  },
+  "buttonStyleModern": "Modern",
+  "@buttonStyleModern": {
+    "description": "Modern button style"
+  },
+  "buttonStyleClassicDesc": "Classic bordered button style",
+  "@buttonStyleClassicDesc": {
+    "description": "Classic button style description"
+  },
+  "buttonStyleModernDesc": "Modern shadow button style",
+  "@buttonStyleModernDesc": {
+    "description": "Modern button style description"
+  },
+  "cardOpacity": "Card Opacity",
+  "@cardOpacity": {
+    "description": "Card opacity"
+  },
+  "bottomNavOpacity": "Bottom Navigation Opacity",
+  "@bottomNavOpacity": {
+    "description": "Bottom navigation opacity"
+  },
+  "opacity": "Opacity",
+  "@opacity": {
+    "description": "Opacity"
+  },
+  "background": "Background",
+  "@background": {
+    "description": "Background"
+  },
+  "selectImage": "Select Image",
+  "@selectImage": {
+    "description": "Select image"
+  },
+  "clearBackground": "Remove Background",
+  "@clearBackground": {
+    "description": "Remove background"
+  },
+  "blurEffect": "Blur Effect",
+  "@blurEffect": {
+    "description": "Blur effect"
+  },
+  "blurStrength": "Blur Strength",
+  "@blurStrength": {
+    "description": "Blur strength"
+  },
+  "brightness": "Brightness",
+  "@brightness": {
+    "description": "Brightness"
+  },
+  "particleEffect": "Particle Effect",
+  "@particleEffect": {
+    "description": "Particle effect"
+  },
+  "particleType": "Particle Type",
+  "@particleType": {
+    "description": "Particle type"
+  },
+  "particleSpeed": "Particle Speed",
+  "@particleSpeed": {
+    "description": "Particle speed"
+  },
+  "off": "Off",
+  "@off": {
+    "description": "Off"
+  },
+  "particleSakura": "Sakura",
+  "@particleSakura": {
+    "description": "Sakura particle"
+  },
+  "particleRain": "Rain",
+  "@particleRain": {
+    "description": "Rain particle"
+  },
+  "particleFirefly": "Firefly",
+  "@particleFirefly": {
+    "description": "Firefly particle"
+  },
+  "particleSnow": "Snow",
+  "@particleSnow": {
+    "description": "Snow particle"
+  },
+  "preview": "Preview",
+  "@preview": {
+    "description": "Preview"
+  },
+  "previewText": "Preview Text",
+  "@previewText": {
+    "description": "Preview text"
+  },
+  "selectColor": "Select Color",
+  "@selectColor": {
+    "description": "Select color"
+  },
+  "alreadySet": "Set",
+  "@alreadySet": {
+    "description": "Already set"
+  },
+  "useDefaultGradient": "Use Default Gradient",
+  "@useDefaultGradient": {
+    "description": "Use default gradient"
+  },
+  "light": "Light",
+  "@light": {
+    "description": "Light"
+  },
+  "dark": "Dark",
+  "@dark": {
+    "description": "Dark"
+  },
+  "followSystem": "Follow System",
+  "@followSystem": {
+    "description": "Follow system"
+  },
+  "themeSettingsSubtitle": "Theme mode, theme color, UI font color, button style",
+  "@themeSettingsSubtitle": {
+    "description": "Theme settings subtitle"
+  },
+  "backgroundSettingsSubtitle": "Background image, blur effect, particle effect",
+  "@backgroundSettingsSubtitle": {
+    "description": "Background settings subtitle"
+  },
+  "otherSettingsSubtitle": "Bottom navigation opacity, card opacity",
+  "@otherSettingsSubtitle": {
+    "description": "Other settings subtitle"
+  },
+  "orUseClassicView": "Or use classic view",
+  "@orUseClassicView": {
+    "description": "Or use classic view"
   }
 }

@@ -95,6 +95,32 @@ class SettingsProvider extends ChangeNotifier {
   /// 全局显示（包含编辑器区域）
   bool _particleGlobal = false;
 
+  // ==================== 外观设置（迁移自mdreader） ====================
+  
+  /// 按钮样式模式（经典描边 / 简洁立体）
+  AppButtonStyleMode _buttonStyleMode = AppButtonStyleMode.softShadow;
+  
+  /// 界面字体颜色索引（对应 uiFontColors 列表）
+  int _uiFontColorIndex = 0;
+  
+  /// 是否使用自定义界面字体颜色
+  bool _useCustomUiFontColor = false;
+  
+  /// 自定义界面字体颜色
+  Color? _customUiFontColor;
+  
+  /// 界面字体颜色是否启用自适应渐变色
+  bool _uiFontAdaptiveGradientEnabled = true;
+  
+  /// 卡片透明度（0.4–1.0）
+  double _cardOpacity = 1.0;
+  
+  /// 背景亮度（0.2-1.8，1.0 为原始亮度）
+  double _backgroundBrightness = 1.0;
+  
+  /// 底部导航栏透明度（0.1–1.0）
+  double _bottomNavOpacity = 0.95;
+
   // ==================== 卡片设置 ====================
   
   /// 事件卡片是否展开
@@ -198,6 +224,20 @@ class SettingsProvider extends ChangeNotifier {
   bool get particleEnabled => _particleType != 'none';
   double get particleSpeed => _particleSpeed;
   bool get particleGlobal => _particleGlobal;
+  
+  // 外观设置 getters
+  AppButtonStyleMode get buttonStyleMode => _buttonStyleMode;
+  bool get useBorderlessButtons => _buttonStyleMode == AppButtonStyleMode.softShadow;
+  int get uiFontColorIndex => _uiFontColorIndex;
+  Color get uiFontColor => _useCustomUiFontColor && _customUiFontColor != null
+      ? _customUiFontColor!
+      : AppConstants.uiFontColors[_uiFontColorIndex];
+  bool get useCustomUiFontColor => _useCustomUiFontColor;
+  Color? get customUiFontColor => _customUiFontColor;
+  bool get uiFontAdaptiveGradientEnabled => _uiFontAdaptiveGradientEnabled;
+  double get cardOpacity => _cardOpacity;
+  double get backgroundBrightness => _backgroundBrightness;
+  double get bottomNavOpacity => _bottomNavOpacity;
   bool get cardsExpanded => _cardsExpanded;
   String get progressStyle => _progressStyle;
   Color get progressColor => Color(_progressColorValue);
@@ -322,6 +362,23 @@ class SettingsProvider extends ChangeNotifier {
     _particleType = prefs.getString('particle_type') ?? 'none';
     _particleSpeed = prefs.getDouble('particle_speed') ?? 0.5;
     _particleGlobal = prefs.getBool('particle_global') ?? false;
+    
+    // 外观设置（迁移自mdreader）
+    final buttonStyleName = prefs.getString('button_style_mode');
+    _buttonStyleMode = AppButtonStyleMode.values.firstWhere(
+      (mode) => mode.name == buttonStyleName,
+      orElse: () => AppButtonStyleMode.softShadow,
+    );
+    _uiFontColorIndex = prefs.getInt('ui_font_color_index') ?? 0;
+    _useCustomUiFontColor = prefs.getBool('use_custom_ui_font_color') ?? false;
+    final customUiFontColorValue = prefs.getInt('custom_ui_font_color');
+    if (customUiFontColorValue != null) {
+      _customUiFontColor = Color(customUiFontColorValue);
+    }
+    _uiFontAdaptiveGradientEnabled = prefs.getBool('ui_font_adaptive_gradient_enabled') ?? true;
+    _cardOpacity = prefs.getDouble('card_opacity') ?? 1.0;
+    _backgroundBrightness = prefs.getDouble('background_brightness') ?? 1.0;
+    _bottomNavOpacity = prefs.getDouble('bottom_nav_opacity') ?? 0.95;
     
     // 卡片设置
     _cardsExpanded = prefs.getBool('cards_expanded') ?? true;
@@ -524,6 +581,96 @@ class SettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('particle_global', global);
     _debugService.info('Particle global scope: ${global ? "enabled" : "disabled"}', source: 'Settings');
+    notifyListeners();
+  }
+
+  // ==================== 外观设置方法（迁移自mdreader） ====================
+
+  /// 设置按钮样式模式
+  Future<void> setButtonStyleMode(AppButtonStyleMode mode) async {
+    _buttonStyleMode = mode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('button_style_mode', mode.name);
+    _debugService.info('Button style changed: ${mode.name}', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置界面字体颜色索引
+  Future<void> setUiFontColorIndex(int index) async {
+    _uiFontColorIndex = index;
+    _useCustomUiFontColor = false; // 切换到预设颜色时禁用自定义
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('ui_font_color_index', index);
+    await prefs.setBool('use_custom_ui_font_color', false);
+    _debugService.info('UI font color index changed: $index', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置是否使用自定义界面字体颜色
+  Future<void> setUseCustomUiFontColor(bool use) async {
+    _useCustomUiFontColor = use;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('use_custom_ui_font_color', use);
+    _debugService.info('Use custom UI font color: $use', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置自定义界面字体颜色
+  Future<void> setCustomUiFontColor(Color? color) async {
+    _customUiFontColor = color;
+    if (color != null) {
+      _useCustomUiFontColor = true;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    if (color != null) {
+      await prefs.setInt('custom_ui_font_color', color.toARGB32());
+      await prefs.setBool('use_custom_ui_font_color', true);
+    } else {
+      await prefs.remove('custom_ui_font_color');
+    }
+    _debugService.info('Custom UI font color changed', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置界面字体颜色的自适应渐变色开关
+  Future<void> setUiFontAdaptiveGradientEnabled(bool enabled) async {
+    _uiFontAdaptiveGradientEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('ui_font_adaptive_gradient_enabled', enabled);
+    _debugService.info('UI font adaptive gradient: $enabled', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置卡片透明度
+  Future<void> setCardOpacity(double opacity) async {
+    _cardOpacity = opacity.clamp(0.4, 1.0);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('card_opacity', _cardOpacity);
+    _debugService.info('Card opacity changed: $_cardOpacity', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置背景亮度
+  Future<void> setBackgroundBrightness(double brightness) async {
+    _backgroundBrightness = brightness.clamp(0.2, 1.8);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('background_brightness', _backgroundBrightness);
+    _debugService.info('Background brightness changed: $_backgroundBrightness', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 仅在内存中更新背景亮度（不持久化），用于 Slider 拖动时实时预览
+  void updateBackgroundBrightnessInMemory(double brightness) {
+    _backgroundBrightness = brightness.clamp(0.2, 1.8);
+    notifyListeners();
+  }
+
+  /// 设置底部导航栏透明度
+  Future<void> setBottomNavOpacity(double opacity) async {
+    _bottomNavOpacity = opacity.clamp(0.1, 1.0);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('bottom_nav_opacity', _bottomNavOpacity);
+    _debugService.info('Bottom nav opacity changed: $_bottomNavOpacity', source: 'Settings');
     notifyListeners();
   }
 

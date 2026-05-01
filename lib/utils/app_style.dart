@@ -1,12 +1,9 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'constants.dart';
 
-/// 应用按钮风格模式。
-enum AppButtonStyleMode {
-  classic,
-  softShadow,
-}
+// AppButtonStyleMode 已在 constants.dart 中定义
 
 /// 统一管理按钮与边框风格的主题扩展。
 class AppStyleTheme extends ThemeExtension<AppStyleTheme> {

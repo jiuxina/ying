@@ -433,6 +433,282 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'将选中的事件移至：'**
   String get moveToCategory;
+
+  /// 外观设置
+  ///
+  /// In zh, this message translates to:
+  /// **'外观设置'**
+  String get appearanceSettings;
+
+  /// 主题设置
+  ///
+  /// In zh, this message translates to:
+  /// **'主题设置'**
+  String get themeSettings;
+
+  /// 背景设置
+  ///
+  /// In zh, this message translates to:
+  /// **'背景设置'**
+  String get backgroundSettings;
+
+  /// 其他设置
+  ///
+  /// In zh, this message translates to:
+  /// **'其他设置'**
+  String get otherSettings;
+
+  /// 主题模式
+  ///
+  /// In zh, this message translates to:
+  /// **'主题模式'**
+  String get themeMode;
+
+  /// 浅色主题
+  ///
+  /// In zh, this message translates to:
+  /// **'浅色主题'**
+  String get lightTheme;
+
+  /// 深色主题
+  ///
+  /// In zh, this message translates to:
+  /// **'深色主题'**
+  String get darkTheme;
+
+  /// 语言
+  ///
+  /// In zh, this message translates to:
+  /// **'语言'**
+  String get language;
+
+  /// 界面字体颜色
+  ///
+  /// In zh, this message translates to:
+  /// **'界面字体颜色'**
+  String get uiFontColor;
+
+  /// 自定义颜色
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义颜色'**
+  String get customColor;
+
+  /// 自适应渐变色
+  ///
+  /// In zh, this message translates to:
+  /// **'自适应渐变色'**
+  String get adaptiveGradient;
+
+  /// 根据背景自动调整文字颜色
+  ///
+  /// In zh, this message translates to:
+  /// **'根据背景自动调整文字颜色'**
+  String get adaptiveGradientDesc;
+
+  /// 按钮样式
+  ///
+  /// In zh, this message translates to:
+  /// **'按钮样式'**
+  String get buttonStyle;
+
+  /// 经典描边
+  ///
+  /// In zh, this message translates to:
+  /// **'经典描边'**
+  String get buttonStyleClassic;
+
+  /// 简洁立体
+  ///
+  /// In zh, this message translates to:
+  /// **'简洁立体'**
+  String get buttonStyleModern;
+
+  /// 经典的边框按钮风格
+  ///
+  /// In zh, this message translates to:
+  /// **'经典的边框按钮风格'**
+  String get buttonStyleClassicDesc;
+
+  /// 现代的阴影按钮风格
+  ///
+  /// In zh, this message translates to:
+  /// **'现代的阴影按钮风格'**
+  String get buttonStyleModernDesc;
+
+  /// 卡片透明度
+  ///
+  /// In zh, this message translates to:
+  /// **'卡片透明度'**
+  String get cardOpacity;
+
+  /// 底部导航栏透明度
+  ///
+  /// In zh, this message translates to:
+  /// **'底部导航栏透明度'**
+  String get bottomNavOpacity;
+
+  /// 透明度
+  ///
+  /// In zh, this message translates to:
+  /// **'透明度'**
+  String get opacity;
+
+  /// 背景
+  ///
+  /// In zh, this message translates to:
+  /// **'背景'**
+  String get background;
+
+  /// 选择图片
+  ///
+  /// In zh, this message translates to:
+  /// **'选择图片'**
+  String get selectImage;
+
+  /// 移除背景
+  ///
+  /// In zh, this message translates to:
+  /// **'移除背景'**
+  String get clearBackground;
+
+  /// 模糊效果
+  ///
+  /// In zh, this message translates to:
+  /// **'模糊效果'**
+  String get blurEffect;
+
+  /// 模糊强度
+  ///
+  /// In zh, this message translates to:
+  /// **'模糊强度'**
+  String get blurStrength;
+
+  /// 亮度
+  ///
+  /// In zh, this message translates to:
+  /// **'亮度'**
+  String get brightness;
+
+  /// 粒子效果
+  ///
+  /// In zh, this message translates to:
+  /// **'粒子效果'**
+  String get particleEffect;
+
+  /// 粒子类型
+  ///
+  /// In zh, this message translates to:
+  /// **'粒子类型'**
+  String get particleType;
+
+  /// 粒子速率
+  ///
+  /// In zh, this message translates to:
+  /// **'粒子速率'**
+  String get particleSpeed;
+
+  /// 关闭
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭'**
+  String get off;
+
+  /// 樱花
+  ///
+  /// In zh, this message translates to:
+  /// **'樱花'**
+  String get particleSakura;
+
+  /// 雨滴
+  ///
+  /// In zh, this message translates to:
+  /// **'雨滴'**
+  String get particleRain;
+
+  /// 萤火虫
+  ///
+  /// In zh, this message translates to:
+  /// **'萤火虫'**
+  String get particleFirefly;
+
+  /// 雪花
+  ///
+  /// In zh, this message translates to:
+  /// **'雪花'**
+  String get particleSnow;
+
+  /// 预览
+  ///
+  /// In zh, this message translates to:
+  /// **'预览'**
+  String get preview;
+
+  /// 预览文字
+  ///
+  /// In zh, this message translates to:
+  /// **'预览文字'**
+  String get previewText;
+
+  /// 选择颜色
+  ///
+  /// In zh, this message translates to:
+  /// **'选择颜色'**
+  String get selectColor;
+
+  /// 已设置
+  ///
+  /// In zh, this message translates to:
+  /// **'已设置'**
+  String get alreadySet;
+
+  /// 使用默认渐变
+  ///
+  /// In zh, this message translates to:
+  /// **'使用默认渐变'**
+  String get useDefaultGradient;
+
+  /// 浅色
+  ///
+  /// In zh, this message translates to:
+  /// **'浅色'**
+  String get light;
+
+  /// 深色
+  ///
+  /// In zh, this message translates to:
+  /// **'深色'**
+  String get dark;
+
+  /// 跟随系统
+  ///
+  /// In zh, this message translates to:
+  /// **'跟随系统'**
+  String get followSystem;
+
+  /// 主题设置副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'主题模式、主题色、界面字体颜色、按钮样式'**
+  String get themeSettingsSubtitle;
+
+  /// 背景设置副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'背景图片、模糊效果、粒子特效'**
+  String get backgroundSettingsSubtitle;
+
+  /// 其他外观设置副标题
+  ///
+  /// In zh, this message translates to:
+  /// **'底部导航栏透明度、卡片透明度'**
+  String get otherSettingsSubtitle;
+
+  /// 或使用传统视图
+  ///
+  /// In zh, this message translates to:
+  /// **'或使用传统视图'**
+  String get orUseClassicView;
 }
 
 class _AppLocalizationsDelegate

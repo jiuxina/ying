@@ -70,7 +70,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          '左滑删除，右滑取消归档',
+                          '左滑删除，右滑恢复',
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onPrimaryContainer,
                             fontSize: 14,
@@ -97,8 +97,8 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                     if (archivedEvents.isEmpty) {
                       return const EmptyState(
                         icon: Icons.archive_outlined,
-                        title: '没有归档事件',
-                        description: '归档的事件会显示在这里',
+                        title: '暂无归档',
+                        description: '归档的事件显示在这里',
                       );
                     }
                     
@@ -218,7 +218,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('确认删除'),
-        content: Text('确定要永久删除"${event.title}"吗？此操作不可撤销。'),
+        content: Text('永久删除"${event.title}"？不可撤销。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

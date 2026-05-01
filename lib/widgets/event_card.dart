@@ -7,6 +7,7 @@ import '../models/countdown_event.dart';
 import '../providers/events_provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/responsive_utils.dart';
+import '../utils/constants.dart';
 
 /// 事件卡片组件
 class EventCard extends StatefulWidget {
@@ -81,6 +82,8 @@ class _EventCardState extends State<EventCard>
     final categoryColor = Color(category.color);
     
     final settings = context.watch<SettingsProvider>();
+    final isDark = theme.brightness == Brightness.dark;
+    final useSoftShadow = settings.buttonStyleMode == AppButtonStyleMode.softShadow;
 
     return AnimatedBuilder(
       animation: _scaleAnimation,
@@ -128,13 +131,9 @@ class _EventCardState extends State<EventCard>
                       width: 3,
                     )
                   : null,
-              boxShadow: [
-                BoxShadow(
-                  color: categoryColor.withAlpha(widget.isSelected ? 60 : 30),
-                  blurRadius: ResponsiveUtils.scaledSize(context, 20),
-                  offset: Offset(0, ResponsiveUtils.scaledSpacing(context, 8)),
-                ),
-              ],
+              boxShadow: useSoftShadow
+                  ? _buildSoftShadow(categoryColor, isDark)
+                  : _buildClassicShadow(categoryColor, isDark),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
@@ -160,6 +159,35 @@ class _EventCardState extends State<EventCard>
         ),
       ),
     );
+  }
+  
+  /// 构建 softShadow 模式阴影
+  List<BoxShadow> _buildSoftShadow(Color categoryColor, bool isDark) {
+    return [
+      BoxShadow(
+        color: categoryColor.withValues(alpha: widget.isSelected ? 0.40 : (isDark ? 0.30 : 0.20)),
+        blurRadius: 20,
+        offset: const Offset(0, 8),
+        spreadRadius: -10,
+      ),
+      BoxShadow(
+        color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.10),
+        blurRadius: isDark ? 20 : 24,
+        offset: Offset(0, isDark ? 10 : 10),
+        spreadRadius: isDark ? -12 : -14,
+      ),
+    ];
+  }
+  
+  /// 构建 classic 模式阴影
+  List<BoxShadow> _buildClassicShadow(Color categoryColor, bool isDark) {
+    return [
+      BoxShadow(
+        color: categoryColor.withValues(alpha: widget.isSelected ? 60 : 30),
+        blurRadius: ResponsiveUtils.scaledSize(context, 20),
+        offset: Offset(0, ResponsiveUtils.scaledSpacing(context, 8)),
+      ),
+    ];
   }
 
   Widget _buildBackground(Color categoryColor, SettingsProvider settings) {

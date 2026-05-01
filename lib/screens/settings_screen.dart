@@ -67,7 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         icon: Icons.palette,
                         iconColor: Colors.purple,
                         title: '外观设置',
-                        subtitle: '主题、进度条、字体、背景等',
+                        subtitle: '主题、背景、字体',
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const AppearanceSettingsScreen()),
@@ -85,7 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         icon: Icons.fingerprint,
                         iconColor: Colors.deepPurple,
                         title: '安全设置',
-                        subtitle: '生物识别、PIN码、私密事件',
+                        subtitle: '生物识别、PIN码',
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const SecuritySettingsScreen()),
@@ -103,7 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         icon: Icons.notifications_active,
                         iconColor: Colors.deepPurple,
                         title: '通知设置',
-                        subtitle: '检查通知权限和配置指南',
+                        subtitle: '权限和配置指南',
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
@@ -121,7 +121,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         icon: Icons.widgets,
                         iconColor: Colors.teal,
                         title: '小部件设置',
-                        subtitle: '自定义桌面小部件样式',
+                        subtitle: '自定义小部件样式',
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const WidgetSettingsScreen()),
@@ -140,9 +140,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             context,
                             icon: Icons.cloud_sync,
                             iconColor: Colors.blue,
-                            title: '云同步',
-                            subtitle: '备份和恢复事件数据',
-                            onTap: () => Navigator.push(
+                        title: '云同步',
+                        subtitle: '备份和恢复数据',
+                        onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const CloudSyncScreen()),
                             ),
@@ -152,9 +152,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             context,
                             icon: Icons.import_export,
                             iconColor: Colors.green,
-                            title: '导入日历事件',
-                            subtitle: '支持导入 .ics 格式的日程文件',
-                            onTap: () => Navigator.push(
+                        title: '导入日历',
+                        subtitle: '支持 .ics 格式',
+                        onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const ImportScreen()),
                             ),
@@ -164,9 +164,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             context,
                             icon: Icons.backup,
                             iconColor: Colors.indigo,
-                            title: '数据备份与恢复',
-                            subtitle: '备份应用数据或从文件恢复',
-                            onTap: () => Navigator.push(
+                        title: '备份恢复',
+                        subtitle: '备份或从文件恢复',
+                        onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const DataBackupScreen()),
                             ),
@@ -186,9 +186,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             context,
                             icon: Icons.folder,
                             iconColor: Colors.orange,
-                            title: '事件分组管理',
-                            subtitle: '管理首页事件分组',
-                            onTap: () => Navigator.push(
+                        title: '分组管理',
+                        subtitle: '管理首页分组',
+                        onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const GroupManagementScreen()),
                             ),
@@ -198,9 +198,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             context,
                             icon: Icons.category,
                             iconColor: Colors.pink,
-                            title: '分类管理',
-                            subtitle: '添加和编辑自定义分类',
-                            onTap: () => Navigator.push(
+                        title: '分类管理',
+                        subtitle: '添加编辑分类',
+                        onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const CategoryManagementScreen()),
                             ),
@@ -220,9 +220,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             context,
                             icon: Icons.analytics,
                             iconColor: Colors.cyan,
-                            title: '数据分析',
-                            subtitle: '查看事件统计和可视化图表',
-                            onTap: () => Navigator.push(
+                        title: '数据分析',
+                        subtitle: '统计和图表',
+                        onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const StatisticsScreen()),
                             ),
@@ -232,9 +232,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             context,
                             icon: Icons.bug_report,
                             iconColor: Colors.red,
-                            title: '调试功能',
-                            subtitle: '查看应用行为和系统信息',
-                            onTap: () => Navigator.push(
+                        title: '调试功能',
+                        subtitle: '应用行为和系统信息',
+                        onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const DebugSettingsScreen()),
                             ),

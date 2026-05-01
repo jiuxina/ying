@@ -181,4 +181,142 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get moveToCategory => '将选中的事件移至：';
+
+  @override
+  String get appearanceSettings => '外观设置';
+
+  @override
+  String get themeSettings => '主题设置';
+
+  @override
+  String get backgroundSettings => '背景设置';
+
+  @override
+  String get otherSettings => '其他设置';
+
+  @override
+  String get themeMode => '主题模式';
+
+  @override
+  String get lightTheme => '浅色主题';
+
+  @override
+  String get darkTheme => '深色主题';
+
+  @override
+  String get language => '语言';
+
+  @override
+  String get uiFontColor => '界面字体颜色';
+
+  @override
+  String get customColor => '自定义颜色';
+
+  @override
+  String get adaptiveGradient => '自适应渐变色';
+
+  @override
+  String get adaptiveGradientDesc => '根据背景自动调整文字颜色';
+
+  @override
+  String get buttonStyle => '按钮样式';
+
+  @override
+  String get buttonStyleClassic => '经典描边';
+
+  @override
+  String get buttonStyleModern => '简洁立体';
+
+  @override
+  String get buttonStyleClassicDesc => '经典的边框按钮风格';
+
+  @override
+  String get buttonStyleModernDesc => '现代的阴影按钮风格';
+
+  @override
+  String get cardOpacity => '卡片透明度';
+
+  @override
+  String get bottomNavOpacity => '底部导航栏透明度';
+
+  @override
+  String get opacity => '透明度';
+
+  @override
+  String get background => '背景';
+
+  @override
+  String get selectImage => '选择图片';
+
+  @override
+  String get clearBackground => '移除背景';
+
+  @override
+  String get blurEffect => '模糊效果';
+
+  @override
+  String get blurStrength => '模糊强度';
+
+  @override
+  String get brightness => '亮度';
+
+  @override
+  String get particleEffect => '粒子效果';
+
+  @override
+  String get particleType => '粒子类型';
+
+  @override
+  String get particleSpeed => '粒子速率';
+
+  @override
+  String get off => '关闭';
+
+  @override
+  String get particleSakura => '樱花';
+
+  @override
+  String get particleRain => '雨滴';
+
+  @override
+  String get particleFirefly => '萤火虫';
+
+  @override
+  String get particleSnow => '雪花';
+
+  @override
+  String get preview => '预览';
+
+  @override
+  String get previewText => '预览文字';
+
+  @override
+  String get selectColor => '选择颜色';
+
+  @override
+  String get alreadySet => '已设置';
+
+  @override
+  String get useDefaultGradient => '使用默认渐变';
+
+  @override
+  String get light => '浅色';
+
+  @override
+  String get dark => '深色';
+
+  @override
+  String get followSystem => '跟随系统';
+
+  @override
+  String get themeSettingsSubtitle => '主题模式、主题色、界面字体颜色、按钮样式';
+
+  @override
+  String get backgroundSettingsSubtitle => '背景图片、模糊效果、粒子特效';
+
+  @override
+  String get otherSettingsSubtitle => '底部导航栏透明度、卡片透明度';
+
+  @override
+  String get orUseClassicView => '或使用传统视图';
 }

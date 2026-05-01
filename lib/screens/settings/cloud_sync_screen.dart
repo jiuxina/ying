@@ -76,7 +76,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   Future<void> _testConnection() async {
     if (_urlController.text.isEmpty || _usernameController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请填写完整的连接信息')),
+        const SnackBar(content: Text('请填写完整连接信息')),
       );
       return;
     }
@@ -245,7 +245,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('本地和云端数据都有更新，请选择要保留的数据：'),
+            const Text('本地和云端都有更新，选择保留：'),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -300,7 +300,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
             ),
             const SizedBox(height: 16),
             const Text(
-              '建议：选择时间较新的数据版本',
+              '建议：选择较新的版本',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
@@ -388,14 +388,14 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              '当前无网络连接',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '同步功能需要网络连接才能使用',
-                              style: TextStyle(fontSize: 12, color: Colors.orange.withValues(alpha: 0.8)),
+                             const Text(
+                               '无网络连接',
+                               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                             ),
+                             const SizedBox(height: 2),
+                             Text(
+                               '同步需要网络',
+                               style: TextStyle(fontSize: 12, color: Colors.orange.withValues(alpha: 0.8)),
                             ),
                           ],
                         ),
@@ -565,11 +565,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                       const Text('帮助', style: TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       Text(
-                        '支持标准 WebDAV 协议的云存储服务，如：\n'
-                        '• 坚果云\n'
-                        '• Nextcloud\n'
-                        '• Alist\n'
-                        '• 其他 WebDAV 服务',
+                        '支持 WebDAV：坚果云、Nextcloud、Alist 等',
                         style: TextStyle(color: Theme.of(context).colorScheme.secondary),
                       ),
                     ],

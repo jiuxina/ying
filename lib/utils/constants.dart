@@ -4,6 +4,14 @@ import 'package:flutter/material.dart';
 /// 应用常量配置
 /// ============================================================================
 
+/// 按钮样式模式
+enum AppButtonStyleMode {
+  /// 经典描边风格
+  classic,
+  /// 简洁立体风格（无描边，带阴影）
+  softShadow,
+}
+
 /// 夜间主题配色方案
 class DarkThemeScheme {
   final String name;
@@ -105,6 +113,20 @@ class AppConstants {
     Color(0xFF84CC16),  // 青柠
     Color(0xFF06B6D4),  // 天蓝
     Color(0xFFD946EF),  // 洋红
+  ];
+
+  // ==================== 预设界面字体颜色 ====================
+
+  /// 8种精选界面字体颜色（适合阅读的颜色）
+  static const List<Color> uiFontColors = [
+    Color(0xFF1F2937), // 深灰（默认）- 近黑色，适合阅读
+    Color(0xFF374151), // 灰色 - 中等深度
+    Color(0xFF1E3A5F), // 深蓝 - 沉稳
+    Color(0xFF1B4332), // 深绿 - 自然
+    Color(0xFF4A1D1D), // 深红 - 温暖
+    Color(0xFF3B2D5F), // 深紫 - 优雅
+    Color(0xFF3D3D3D), // 中灰 - 中性
+    Color(0xFF2D3748), // 蓝灰 - 柔和
   ];
 
   // ==================== 浅色主题色 ====================
@@ -260,12 +282,106 @@ class AppConstants {
   /// 大内边距
   static const double paddingLarge = 24.0;
 
-  /// 标准圆角
+  // ==================== 圆角系统 ====================
+  
+  /// 标准圆角 - 卡片、按钮、FAB
   static const double borderRadius = 16.0;
-  /// 小圆角
+  /// 小圆角 - 图标容器、输入框
   static const double borderRadiusSmall = 12.0;
-  /// 大圆角
+  /// 大圆角 - 快捷操作容器
   static const double borderRadiusLarge = 20.0;
+  /// 对话框圆角
+  static const double borderRadiusDialog = 24.0;
+  /// 文字按钮圆角
+  static const double borderRadiusTextButton = 14.0;
+  /// 图标按钮圆角
+  static const double borderRadiusIconButton = 14.0;
+  /// 小元素圆角
+  static const double borderRadiusXs = 8.0;
+  /// 迷你圆角
+  static const double borderRadiusMini = 10.0;
+
+  // ==================== 阴影系统 (softShadow 模式) ====================
+  
+  /// 卡片阴影 - 亮色模式
+  static List<BoxShadow> cardShadowLight(bool softShadow) {
+    if (!softShadow) return [];
+    return [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.10),
+        blurRadius: 24,
+        offset: const Offset(0, 10),
+        spreadRadius: -14,
+      ),
+      BoxShadow(
+        color: Colors.white.withValues(alpha: 0.7),
+        blurRadius: 12,
+        offset: const Offset(0, -1),
+        spreadRadius: -10,
+      ),
+    ];
+  }
+  
+  /// 卡片阴影 - 暗色模式
+  static List<BoxShadow> cardShadowDark(bool softShadow) {
+    if (!softShadow) return [];
+    return [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.24),
+        blurRadius: 20,
+        offset: const Offset(0, 10),
+        spreadRadius: -12,
+      ),
+      BoxShadow(
+        color: Colors.white.withValues(alpha: 0.02),
+        blurRadius: 12,
+        offset: const Offset(0, -1),
+        spreadRadius: -10,
+      ),
+    ];
+  }
+  
+  /// 强调阴影 - 用于重要卡片
+  static List<BoxShadow> prominentShadow(Color primaryColor, bool isDark) {
+    return [
+      BoxShadow(
+        color: primaryColor.withValues(alpha: isDark ? 0.24 : 0.18),
+        blurRadius: 20,
+        offset: const Offset(0, 8),
+        spreadRadius: -10,
+      ),
+    ];
+  }
+  
+  /// 按钮阴影
+  static List<BoxShadow> buttonShadow(bool isDark) {
+    return [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.10),
+        blurRadius: 12,
+        offset: const Offset(0, 4),
+      ),
+    ];
+  }
+
+  // ==================== 边框透明度 ====================
+  
+  /// classic 模式边框透明度 - 亮色
+  static const double borderOpacityLight = 0.16;
+  /// classic 模式边框透明度 - 暗色
+  static const double borderOpacityDark = 0.28;
+
+  // ==================== 表面颜色透明度 ====================
+  
+  /// 卡片表面透明度 - 亮色模式 (muted)
+  static double cardSurfaceOpacityLight(bool strong) {
+    return strong ? 0.90 : 0.76;
+  }
+  
+  /// 卡片表面透明度 - 暗色模式 (muted)
+  static double cardSurfaceOpacityDark(bool strong) {
+    return strong ? 0.94 : 0.82;
+  }
 
   // ==================== 动画配置 ====================
   

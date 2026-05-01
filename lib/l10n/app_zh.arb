@@ -238,5 +238,189 @@
   "moveToCategory": "将选中的事件移至：",
   "@moveToCategory": {
     "description": "将选中的事件移至"
+  },
+  "appearanceSettings": "外观设置",
+  "@appearanceSettings": {
+    "description": "外观设置"
+  },
+  "themeSettings": "主题设置",
+  "@themeSettings": {
+    "description": "主题设置"
+  },
+  "backgroundSettings": "背景设置",
+  "@backgroundSettings": {
+    "description": "背景设置"
+  },
+  "otherSettings": "其他设置",
+  "@otherSettings": {
+    "description": "其他设置"
+  },
+  "themeMode": "主题模式",
+  "@themeMode": {
+    "description": "主题模式"
+  },
+  "lightTheme": "浅色主题",
+  "@lightTheme": {
+    "description": "浅色主题"
+  },
+  "darkTheme": "深色主题",
+  "@darkTheme": {
+    "description": "深色主题"
+  },
+  "language": "语言",
+  "@language": {
+    "description": "语言"
+  },
+  "uiFontColor": "界面字体颜色",
+  "@uiFontColor": {
+    "description": "界面字体颜色"
+  },
+  "customColor": "自定义颜色",
+  "@customColor": {
+    "description": "自定义颜色"
+  },
+  "adaptiveGradient": "自适应渐变色",
+  "@adaptiveGradient": {
+    "description": "自适应渐变色"
+  },
+  "adaptiveGradientDesc": "根据背景自动调整文字颜色",
+  "@adaptiveGradientDesc": {
+    "description": "根据背景自动调整文字颜色"
+  },
+  "buttonStyle": "按钮样式",
+  "@buttonStyle": {
+    "description": "按钮样式"
+  },
+  "buttonStyleClassic": "经典描边",
+  "@buttonStyleClassic": {
+    "description": "经典描边"
+  },
+  "buttonStyleModern": "简洁立体",
+  "@buttonStyleModern": {
+    "description": "简洁立体"
+  },
+  "buttonStyleClassicDesc": "经典的边框按钮风格",
+  "@buttonStyleClassicDesc": {
+    "description": "经典的边框按钮风格"
+  },
+  "buttonStyleModernDesc": "现代的阴影按钮风格",
+  "@buttonStyleModernDesc": {
+    "description": "现代的阴影按钮风格"
+  },
+  "cardOpacity": "卡片透明度",
+  "@cardOpacity": {
+    "description": "卡片透明度"
+  },
+  "bottomNavOpacity": "底部导航栏透明度",
+  "@bottomNavOpacity": {
+    "description": "底部导航栏透明度"
+  },
+  "opacity": "透明度",
+  "@opacity": {
+    "description": "透明度"
+  },
+  "background": "背景",
+  "@background": {
+    "description": "背景"
+  },
+  "selectImage": "选择图片",
+  "@selectImage": {
+    "description": "选择图片"
+  },
+  "clearBackground": "移除背景",
+  "@clearBackground": {
+    "description": "移除背景"
+  },
+  "blurEffect": "模糊效果",
+  "@blurEffect": {
+    "description": "模糊效果"
+  },
+  "blurStrength": "模糊强度",
+  "@blurStrength": {
+    "description": "模糊强度"
+  },
+  "brightness": "亮度",
+  "@brightness": {
+    "description": "亮度"
+  },
+  "particleEffect": "粒子效果",
+  "@particleEffect": {
+    "description": "粒子效果"
+  },
+  "particleType": "粒子类型",
+  "@particleType": {
+    "description": "粒子类型"
+  },
+  "particleSpeed": "粒子速率",
+  "@particleSpeed": {
+    "description": "粒子速率"
+  },
+  "off": "关闭",
+  "@off": {
+    "description": "关闭"
+  },
+  "particleSakura": "樱花",
+  "@particleSakura": {
+    "description": "樱花"
+  },
+  "particleRain": "雨滴",
+  "@particleRain": {
+    "description": "雨滴"
+  },
+  "particleFirefly": "萤火虫",
+  "@particleFirefly": {
+    "description": "萤火虫"
+  },
+  "particleSnow": "雪花",
+  "@particleSnow": {
+    "description": "雪花"
+  },
+  "preview": "预览",
+  "@preview": {
+    "description": "预览"
+  },
+  "previewText": "预览文字",
+  "@previewText": {
+    "description": "预览文字"
+  },
+  "selectColor": "选择颜色",
+  "@selectColor": {
+    "description": "选择颜色"
+  },
+  "alreadySet": "已设置",
+  "@alreadySet": {
+    "description": "已设置"
+  },
+  "useDefaultGradient": "使用默认渐变",
+  "@useDefaultGradient": {
+    "description": "使用默认渐变"
+  },
+  "light": "浅色",
+  "@light": {
+    "description": "浅色"
+  },
+  "dark": "深色",
+  "@dark": {
+    "description": "深色"
+  },
+  "followSystem": "跟随系统",
+  "@followSystem": {
+    "description": "跟随系统"
+  },
+  "themeSettingsSubtitle": "主题模式、主题色、界面字体颜色、按钮样式",
+  "@themeSettingsSubtitle": {
+    "description": "主题设置副标题"
+  },
+  "backgroundSettingsSubtitle": "背景图片、模糊效果、粒子特效",
+  "@backgroundSettingsSubtitle": {
+    "description": "背景设置副标题"
+  },
+  "otherSettingsSubtitle": "底部导航栏透明度、卡片透明度",
+  "@otherSettingsSubtitle": {
+    "description": "其他外观设置副标题"
+  },
+  "orUseClassicView": "或使用传统视图",
+  "@orUseClassicView": {
+    "description": "或使用传统视图"
   }
 }

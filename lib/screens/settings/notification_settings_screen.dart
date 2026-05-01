@@ -358,7 +358,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '为什么需要这些配置？',
+                  '为什么需要配置？',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -366,11 +366,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '• Android 系统为了省电，会限制后台应用的活动\n'
-                  '• 定时通知需要在后台运行，因此需要特殊权限\n'
-                  '• 完成上述配置后，即使应用关闭，通知也能正常工作\n'
-                  '• 国产手机（小米、华为、OPPO、vivo）需要额外设置\n'
-                  '• 系统重启后会自动恢复通知调度',
+                  '• Android 为省电会限制后台活动\n'
+                  '• 定时通知需要特殊权限\n'
+                  '• 完成配置后通知才能正常工作\n'
+                  '• 国产手机需额外设置\n'
+                  '• 重启后自动恢复通知调度',
                   style: TextStyle(
                     fontSize: 14,
                     height: 1.6,

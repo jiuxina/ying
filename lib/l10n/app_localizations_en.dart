@@ -181,4 +181,145 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get moveToCategory => 'Move selected events to:';
+
+  @override
+  String get appearanceSettings => 'Appearance';
+
+  @override
+  String get themeSettings => 'Theme Settings';
+
+  @override
+  String get backgroundSettings => 'Background Settings';
+
+  @override
+  String get otherSettings => 'Other Settings';
+
+  @override
+  String get themeMode => 'Theme Mode';
+
+  @override
+  String get lightTheme => 'Light Theme';
+
+  @override
+  String get darkTheme => 'Dark Theme';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get uiFontColor => 'UI Font Color';
+
+  @override
+  String get customColor => 'Custom Color';
+
+  @override
+  String get adaptiveGradient => 'Adaptive Gradient';
+
+  @override
+  String get adaptiveGradientDesc =>
+      'Automatically adjust text color based on background';
+
+  @override
+  String get buttonStyle => 'Button Style';
+
+  @override
+  String get buttonStyleClassic => 'Classic';
+
+  @override
+  String get buttonStyleModern => 'Modern';
+
+  @override
+  String get buttonStyleClassicDesc => 'Classic bordered button style';
+
+  @override
+  String get buttonStyleModernDesc => 'Modern shadow button style';
+
+  @override
+  String get cardOpacity => 'Card Opacity';
+
+  @override
+  String get bottomNavOpacity => 'Bottom Navigation Opacity';
+
+  @override
+  String get opacity => 'Opacity';
+
+  @override
+  String get background => 'Background';
+
+  @override
+  String get selectImage => 'Select Image';
+
+  @override
+  String get clearBackground => 'Remove Background';
+
+  @override
+  String get blurEffect => 'Blur Effect';
+
+  @override
+  String get blurStrength => 'Blur Strength';
+
+  @override
+  String get brightness => 'Brightness';
+
+  @override
+  String get particleEffect => 'Particle Effect';
+
+  @override
+  String get particleType => 'Particle Type';
+
+  @override
+  String get particleSpeed => 'Particle Speed';
+
+  @override
+  String get off => 'Off';
+
+  @override
+  String get particleSakura => 'Sakura';
+
+  @override
+  String get particleRain => 'Rain';
+
+  @override
+  String get particleFirefly => 'Firefly';
+
+  @override
+  String get particleSnow => 'Snow';
+
+  @override
+  String get preview => 'Preview';
+
+  @override
+  String get previewText => 'Preview Text';
+
+  @override
+  String get selectColor => 'Select Color';
+
+  @override
+  String get alreadySet => 'Set';
+
+  @override
+  String get useDefaultGradient => 'Use Default Gradient';
+
+  @override
+  String get light => 'Light';
+
+  @override
+  String get dark => 'Dark';
+
+  @override
+  String get followSystem => 'Follow System';
+
+  @override
+  String get themeSettingsSubtitle =>
+      'Theme mode, theme color, UI font color, button style';
+
+  @override
+  String get backgroundSettingsSubtitle =>
+      'Background image, blur effect, particle effect';
+
+  @override
+  String get otherSettingsSubtitle => 'Bottom navigation opacity, card opacity';
+
+  @override
+  String get orUseClassicView => 'Or use classic view';
 }

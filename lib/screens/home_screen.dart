@@ -341,9 +341,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             },
           ),
           Expanded(
-            child: Text(
-              '已选择 $selectedCount 个事件',
-              style: TextStyle(
+              child: Text(
+                '已选 $selectedCount 个',
+                style: TextStyle(
                 fontSize: ResponsiveFontSize.lg(context),
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface,
@@ -485,10 +485,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             );
           },
         ),
-        ExpandableFabItem(
-          icon: Icons.dashboard_customize,
-          label: '从模板创建',
-          color: Colors.indigo,
+          ExpandableFabItem(
+            icon: Icons.dashboard_customize,
+            label: '模板创建',
+            color: Colors.indigo,
           onPressed: () {
             HapticFeedback.mediumImpact();
             Navigator.push(
@@ -529,7 +529,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('批量删除'),
-        content: Text('确定要删除选中的 $selectedCount 个事件吗？\n此操作可以撤销。'),
+        content: Text('删除选中的 $selectedCount 个事件？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -551,7 +551,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         if (result.success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('已删除 ${result.successCount} 个事件'),
+              content: Text('已删除 ${result.successCount} 个'),
               action: SnackBarAction(
                 label: '撤销',
                 onPressed: () async {
@@ -569,7 +569,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('删除完成：成功 ${result.successCount} 个，失败 ${result.failureCount} 个'),
+              content: Text('删除：成功 ${result.successCount}，失败 ${result.failureCount}'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -589,7 +589,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('批量归档'),
-        content: Text('确定要归档选中的 $selectedCount 个事件吗？'),
+        content: Text('归档选中的 $selectedCount 个事件？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -610,14 +610,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         if (result.success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('已归档 ${result.successCount} 个事件'),
+              content: Text('已归档 ${result.successCount} 个'),
               duration: const Duration(seconds: 2),
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('归档完成：成功 ${result.successCount} 个，失败 ${result.failureCount} 个'),
+              content: Text('归档：成功 ${result.successCount}，失败 ${result.failureCount}'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -647,7 +647,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '将选中的 ${batchOps.selectedCount} 个事件移至：',
+                  '移至：',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
                   ),
@@ -715,7 +715,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         if (result.success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('已更改 ${result.successCount} 个事件的分类'),
+              content: Text('已更改 ${result.successCount} 个分类'),
               action: SnackBarAction(
                 label: '撤销',
                 onPressed: () async {
@@ -733,7 +733,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('更改完成：成功 ${result.successCount} 个，失败 ${result.failureCount} 个'),
+              content: Text('更改：成功 ${result.successCount}，失败 ${result.failureCount}'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -751,7 +751,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     if (exportedData.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('没有选中任何事件')),
+        const SnackBar(content: Text('未选中任何事件')),
       );
       return;
     }
@@ -759,7 +759,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // 显示导出成功提示
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('已选择 ${exportedData.length} 个事件，导出功能开发中...'),
+        content: Text('已选 ${exportedData.length} 个，导出功能开发中...'),
         duration: const Duration(seconds: 2),
       ),
     );

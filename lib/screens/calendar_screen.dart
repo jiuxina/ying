@@ -174,7 +174,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              '当天没有事件',
+              '当天无事件',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.outline,
               ),

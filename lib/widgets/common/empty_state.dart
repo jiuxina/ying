@@ -11,8 +11,8 @@ class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
     this.icon = Icons.event_available,
-    this.title = '还没有事件',
-    this.description = '点击右下角按钮添加第一个倒数日',
+    this.title = '暂无事件',
+    this.description = '点击右下角添加',
     this.onAction,
     this.actionLabel,
   });

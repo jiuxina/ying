@@ -192,7 +192,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('移除 PIN 码'),
-        content: const Text('确定要移除 PIN 码吗？移除后需要重新设置。'),
+        content: const Text('移除 PIN 码？移除后需重新设置。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -357,8 +357,8 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                               : '生物识别解锁'),
                             subtitle: Text(
                               _isBiometricAvailable 
-                                ? '使用 $_biometricType 解锁应用' 
-                                : '设备不支持或未设置生物识别',
+                                ? '用 $_biometricType 解锁' 
+                                : '设备不支持或未设置',
                             ),
                             secondary: Container(
                               padding: const EdgeInsets.all(10),
@@ -402,8 +402,8 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                             title: Text(_pinEnabled ? 'PIN 码已设置' : '设置 PIN 码'),
                             subtitle: Text(
                               _pinEnabled 
-                                ? '点击更改或移除 PIN 码' 
-                                : '作为生物识别的备用方案',
+                                ? '点击更改或移除' 
+                                : '作为生物识别备用',
                             ),
                             trailing: _pinEnabled 
                               ? const Icon(Icons.chevron_right) 
@@ -439,7 +439,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                             ),
                           ),
                           title: const Text('验证超时'),
-                          subtitle: Text('$_authTimeoutMinutes 分钟后需要重新验证'),
+                          subtitle: Text('$_authTimeoutMinutes 分钟后需重新验证'),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: _showTimeoutOptions,
                         ),
@@ -473,10 +473,10 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                             ),
                             const SizedBox(height: 12),
                             const Text(
-                              '• 私密事件在主列表和小部件中隐藏\n'
-                              '• 需要验证身份才能查看私密事件\n'
-                              '• 搜索结果中不包含私密事件\n'
-                              '• 导出数据时可选择是否包含私密事件',
+                              '• 私密事件在列表和小部件隐藏\n'
+                              '• 需验证身份才能查看\n'
+                              '• 搜索不包含私密事件\n'
+                              '• 导出时可选择是否包含',
                               style: TextStyle(height: 1.6),
                             ),
                           ],

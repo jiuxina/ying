@@ -279,7 +279,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         content: Text(
-          '您有未保存的更改，确定要离开吗？',
+          '有未保存的更改，确定离开？',
           style: TextStyle(fontSize: ResponsiveFontSize.base(context)),
           overflow: TextOverflow.ellipsis,
           maxLines: 2,
@@ -351,12 +351,12 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                               children: [
                                 _buildTextField(
                                   controller: _titleController,
-                                  label: '事件名称',
-                                  hint: '请输入事件名称',
+                                  label: '名称',
+                                  hint: '输入事件名称',
                                   icon: Icons.title,
                                   validator: (v) =>
                                       (v == null || v.trim().isEmpty)
-                                      ? '请输入事件名称'
+                                      ? '请输入名称'
                                       : null,
                                   key: const Key('event_title_input'),
                                 ),
@@ -457,7 +457,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                 _buildTextField(
                                   controller: _noteController,
                                   label: '备注',
-                                  hint: '可选备注信息',
+                                  hint: '可选',
                                   icon: Icons.notes,
                                   maxLines: 3,
                                 ),
@@ -560,7 +560,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                   subtitle: Text(
                                     _useExactTime
                                         ? '${_targetHour.toString().padLeft(2, '0')}:${_targetMinute.toString().padLeft(2, '0')}:${_targetSecond.toString().padLeft(2, '0')}'
-                                        : '默认 00:00:00',
+                                        : '默认',
                                     style: TextStyle(
                                       fontSize: ResponsiveFontSize.sm(context),
                                     ),
@@ -765,7 +765,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                     ),
                                     subtitle: _reminders.length >= 10
                                         ? Text(
-                                            '最多可添加10个提醒',
+                                            '最多10个',
                                             style: TextStyle(
                                               fontSize: ResponsiveFontSize.sm(
                                                 context,
@@ -800,7 +800,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       subtitle: Text(
-                                        '立即发送一条测试通知',
+                                        '发送测试通知',
                                         style: TextStyle(
                                           fontSize: ResponsiveFontSize.sm(
                                             context,
@@ -842,10 +842,10 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  subtitle: Text(
+                                   subtitle: Text(
                                     _isPickingImage
                                         ? '选择中...'
-                                        : (_backgroundImage != null ? '已设置' : '默认背景'),
+                                        : (_backgroundImage != null ? '已设置' : '默认'),
                                     style: TextStyle(
                                       fontSize: ResponsiveFontSize.sm(context),
                                     ),
@@ -969,26 +969,26 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
             ),
             SizedBox(width: ResponsiveSpacing.base(context)),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '从模板快速创建',
-                    style: TextStyle(
-                      fontSize: ResponsiveFontSize.base(context),
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '从模板创建',
+                        style: TextStyle(
+                          fontSize: ResponsiveFontSize.base(context),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        '生日、纪念日、考试等',
+                        style: TextStyle(
+                          fontSize: ResponsiveFontSize.sm(context),
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 2),
-                  Text(
-                    '生日、纪念日、考试等常用模板',
-                    style: TextStyle(
-                      fontSize: ResponsiveFontSize.sm(context),
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-                  ),
-                ],
-              ),
             ),
             Icon(
               Icons.chevron_right,
@@ -1108,9 +1108,9 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
-                subtitle: Text(
-                  '多阶段提醒和智能提醒模式',
-                  style: TextStyle(
+                 subtitle: Text(
+                   '多阶段和智能提醒',
+                   style: TextStyle(
                     fontSize: ResponsiveFontSize.sm(context),
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -1159,7 +1159,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '提醒时间节点',
+            '提醒节点',
             style: TextStyle(
               fontSize: ResponsiveFontSize.base(context),
               fontWeight: FontWeight.w500,
