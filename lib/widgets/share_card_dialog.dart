@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:gal/gal.dart';
 
 import 'package:provider/provider.dart';
 import '../models/countdown_event.dart';
@@ -30,6 +33,7 @@ class ShareCardDialog extends StatefulWidget {
 class _ShareCardDialogState extends State<ShareCardDialog> {
   final GlobalKey _cardKey = GlobalKey();
   bool _isSharing = false;
+  bool _isSaving = false;  // 保存状态
   int _selectedTemplateIndex = 0;
   ShareTemplateAspectRatio _selectedRatio = ShareTemplateAspectRatio.square;
   
@@ -479,25 +483,53 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
   }
 
   Widget _buildActionButtons(BuildContext context, ThemeData theme) {
-    return Row(
+    return Column(
       children: [
-        // 复制链接按钮
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: _copyLink,
-            icon: Icon(Icons.link, size: ResponsiveIconSize.sm(context)),
-            label: const Text('复制链接', maxLines: 1, overflow: TextOverflow.ellipsis),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: const BorderSide(color: Colors.white54),
-              padding: EdgeInsets.symmetric(vertical: ResponsiveSpacing.md(context)),
+        // 主操作按钮行
+        Row(
+          children: [
+            // 复制链接按钮
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _copyLink,
+                icon: Icon(Icons.link, size: ResponsiveIconSize.sm(context)),
+                label: const Text('复制链接', maxLines: 1, overflow: TextOverflow.ellipsis),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white54),
+                  padding: EdgeInsets.symmetric(vertical: ResponsiveSpacing.md(context)),
+                ),
+              ),
             ),
-          ),
+            SizedBox(width: ResponsiveSpacing.md(context)),
+            // 保存按钮
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isSaving ? null : _saveToGallery,
+                icon: _isSaving
+                    ? SizedBox(
+                        width: ResponsiveIconSize.sm(context),
+                        height: ResponsiveIconSize.sm(context),
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Icon(Icons.download, size: ResponsiveIconSize.sm(context)),
+                label: Text(_isSaving ? '保存中' : '保存', maxLines: 1, overflow: TextOverflow.ellipsis),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white54),
+                  padding: EdgeInsets.symmetric(vertical: ResponsiveSpacing.md(context)),
+                ),
+              ),
+            ),
+          ],
         ),
-        SizedBox(width: ResponsiveSpacing.md(context)),
+        SizedBox(height: ResponsiveSpacing.base(context)),
         // 分享按钮
-        Expanded(
-          flex: 2,
+        SizedBox(
+          width: double.infinity,
           child: FilledButton.icon(
             onPressed: _isSharing ? null : _share,
             icon: _isSharing
@@ -550,6 +582,75 @@ class _ShareCardDialogState extends State<ShareCardDialog> {
     if (mounted) {
       setState(() => _isSharing = false);
       Navigator.pop(context);
+    }
+  }
+
+  /// 保存分享卡片到相册
+  Future<void> _saveToGallery() async {
+    setState(() => _isSaving = true);
+
+    try {
+      // 1. 请求相册权限
+      bool hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        hasAccess = await Gal.requestAccess();
+        if (!hasAccess) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('需要相册权限才能保存图片')),
+            );
+          }
+          return;
+        }
+      }
+
+      // 2. 等待一帧以确保UI渲染完成
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // 3. 捕获图片
+      final boundary = _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('无法生成图片')),
+          );
+        }
+        return;
+      }
+
+      // 提高像素密度以获得更高质量的图片
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      
+      if (byteData != null) {
+        final pngBytes = byteData.buffer.asUint8List();
+
+        // 4. 保存到相册
+        await Gal.putImageBytes(
+          pngBytes,
+          name: "ying_share_${widget.event.id}_${DateTime.now().millisecondsSinceEpoch}",
+        );
+
+        if (mounted) {
+          HapticFeedback.mediumImpact();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('图片已保存到相册'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('保存失败: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 }

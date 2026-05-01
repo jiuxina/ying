@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:ying/models/countdown_event.dart';
 import 'package:ying/models/event_group.dart';
+import 'package:ying/models/event_memory.dart';
 import 'package:ying/providers/events_provider.dart';
 import 'package:ying/providers/settings_provider.dart';
 import 'package:ying/services/database_service.dart';
@@ -52,6 +53,26 @@ class MockDatabaseService implements DatabaseService {
   // Backup
   @override Future<Map<String, dynamic>> exportAllData() async => {};
   @override Future<void> importAllData(Map<String, dynamic> data) async {}
+
+  // Memories
+  @override Future<List<EventMemory>> getMemories(String eventId) async => [];
+  @override Future<List<EventMemory>> getAllMemories() async => [];
+  @override Future<List<EventMemory>> getMemoriesByType(String eventId, MemoryType type) async => [];
+  @override Future<void> insertMemory(EventMemory memory) async {}
+  @override Future<void> updateMemory(EventMemory memory) async {}
+  @override Future<void> deleteMemory(String id) async {}
+  @override Future<void> deleteEventMemories(String eventId) async {}
+  @override Future<Map<String, List<EventMemory>>> getAllMemoriesGrouped() async => {};
+  @override Future<int> getMemoryCount(String eventId) async => 0;
+  @override Future<int> getPhotoCount(String eventId) async => 0;
+
+  // Templates
+  @override Future<List<Map<String, dynamic>>> getAllTemplates() async => [];
+  @override Future<List<Map<String, dynamic>>> getCustomTemplates() async => [];
+  @override Future<void> insertTemplate(Map<String, dynamic> template) async {}
+  @override Future<void> updateTemplate(Map<String, dynamic> template) async {}
+  @override Future<void> deleteTemplate(String id) async {}
+  @override Future<List<Map<String, dynamic>>> getTemplatesByCategory(String category) async => [];
 }
 
 void main() {

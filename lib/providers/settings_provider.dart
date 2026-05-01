@@ -7,8 +7,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
 import '../utils/constants.dart';
 import '../models/widget_config.dart';
+import '../models/intelligence_models.dart';
 import '../services/widget_service.dart';
 import '../services/debug_service.dart';
+import '../services/intelligence_service.dart';
 
 /// ============================================================================
 /// 设置状态管理器
@@ -153,6 +155,32 @@ class SettingsProvider extends ChangeNotifier {
   /// 是否启用调试模式
   bool _debugModeEnabled = false;
 
+  // ==================== 智能功能设置 ====================
+  
+  /// 智能功能是否启用
+  bool _intelligenceEnabled = true;
+  
+  /// 智能提醒
+  bool _smartRemindersEnabled = true;
+  
+  /// 智能分类
+  bool _smartCategorizationEnabled = true;
+  
+  /// 自然语言输入
+  bool _naturalLanguageInputEnabled = true;
+  
+  /// 重复事件检测
+  bool _duplicateDetectionEnabled = true;
+  
+  /// 节假日检测
+  bool _holidayDetectionEnabled = true;
+  
+  /// 季节性建议
+  bool _seasonalSuggestionsEnabled = true;
+  
+  /// 学习用户行为
+  bool _learnFromBehaviorEnabled = true;
+
   // ==================== Getters ====================
   
   ThemeMode get themeMode => _themeMode;
@@ -193,6 +221,27 @@ class SettingsProvider extends ChangeNotifier {
   
   // 调试 getters
   bool get debugModeEnabled => _debugModeEnabled;
+  
+  // 智能功能 getters
+  bool get intelligenceEnabled => _intelligenceEnabled;
+  bool get smartRemindersEnabled => _smartRemindersEnabled;
+  bool get smartCategorizationEnabled => _smartCategorizationEnabled;
+  bool get naturalLanguageInputEnabled => _naturalLanguageInputEnabled;
+  bool get duplicateDetectionEnabled => _duplicateDetectionEnabled;
+  bool get holidayDetectionEnabled => _holidayDetectionEnabled;
+  bool get seasonalSuggestionsEnabled => _seasonalSuggestionsEnabled;
+  bool get learnFromBehaviorEnabled => _learnFromBehaviorEnabled;
+  
+  IntelligenceSettings get intelligenceSettings => IntelligenceSettings(
+    enabled: _intelligenceEnabled,
+    smartReminders: _smartRemindersEnabled,
+    smartCategorization: _smartCategorizationEnabled,
+    naturalLanguageInput: _naturalLanguageInputEnabled,
+    duplicateDetection: _duplicateDetectionEnabled,
+    holidayDetection: _holidayDetectionEnabled,
+    seasonalSuggestions: _seasonalSuggestionsEnabled,
+    learnFromBehavior: _learnFromBehaviorEnabled,
+  );
   
   // 小部件设置 getters
   WidgetType get currentWidgetType => _currentWidgetType;
@@ -318,6 +367,16 @@ class SettingsProvider extends ChangeNotifier {
 
     // 调试设置
     _debugModeEnabled = prefs.getBool('debug_mode_enabled') ?? false;
+
+    // 智能功能设置
+    _intelligenceEnabled = prefs.getBool('intelligence_enabled') ?? true;
+    _smartRemindersEnabled = prefs.getBool('smart_reminders_enabled') ?? true;
+    _smartCategorizationEnabled = prefs.getBool('smart_categorization_enabled') ?? true;
+    _naturalLanguageInputEnabled = prefs.getBool('natural_language_input_enabled') ?? true;
+    _duplicateDetectionEnabled = prefs.getBool('duplicate_detection_enabled') ?? true;
+    _holidayDetectionEnabled = prefs.getBool('holiday_detection_enabled') ?? true;
+    _seasonalSuggestionsEnabled = prefs.getBool('seasonal_suggestions_enabled') ?? true;
+    _learnFromBehaviorEnabled = prefs.getBool('learn_from_behavior_enabled') ?? true;
 
     notifyListeners();
   }
@@ -754,6 +813,118 @@ class SettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('debug_mode_enabled', enabled);
     _debugService.info('Debug mode ${enabled ? "enabled" : "disabled"}', source: 'Settings');
+    notifyListeners();
+  }
+
+  // ==================== 智能功能设置方法 ====================
+
+  /// 设置智能功能总开关
+  Future<void> setIntelligenceEnabled(bool enabled) async {
+    _intelligenceEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('intelligence_enabled', enabled);
+    
+    // 同步到智能服务
+    await IntelligenceService().updateSettings(intelligenceSettings);
+    
+    _debugService.info('Intelligence ${enabled ? "enabled" : "disabled"}', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置智能提醒开关
+  Future<void> setSmartRemindersEnabled(bool enabled) async {
+    _smartRemindersEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('smart_reminders_enabled', enabled);
+    await IntelligenceService().updateSettings(intelligenceSettings);
+    _debugService.info('Smart reminders ${enabled ? "enabled" : "disabled"}', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置智能分类开关
+  Future<void> setSmartCategorizationEnabled(bool enabled) async {
+    _smartCategorizationEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('smart_categorization_enabled', enabled);
+    await IntelligenceService().updateSettings(intelligenceSettings);
+    _debugService.info('Smart categorization ${enabled ? "enabled" : "disabled"}', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置自然语言输入开关
+  Future<void> setNaturalLanguageInputEnabled(bool enabled) async {
+    _naturalLanguageInputEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('natural_language_input_enabled', enabled);
+    await IntelligenceService().updateSettings(intelligenceSettings);
+    _debugService.info('Natural language input ${enabled ? "enabled" : "disabled"}', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置重复事件检测开关
+  Future<void> setDuplicateDetectionEnabled(bool enabled) async {
+    _duplicateDetectionEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('duplicate_detection_enabled', enabled);
+    await IntelligenceService().updateSettings(intelligenceSettings);
+    _debugService.info('Duplicate detection ${enabled ? "enabled" : "disabled"}', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置节假日检测开关
+  Future<void> setHolidayDetectionEnabled(bool enabled) async {
+    _holidayDetectionEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('holiday_detection_enabled', enabled);
+    await IntelligenceService().updateSettings(intelligenceSettings);
+    _debugService.info('Holiday detection ${enabled ? "enabled" : "disabled"}', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置季节性建议开关
+  Future<void> setSeasonalSuggestionsEnabled(bool enabled) async {
+    _seasonalSuggestionsEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('seasonal_suggestions_enabled', enabled);
+    await IntelligenceService().updateSettings(intelligenceSettings);
+    _debugService.info('Seasonal suggestions ${enabled ? "enabled" : "disabled"}', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置学习用户行为开关
+  Future<void> setLearnFromBehaviorEnabled(bool enabled) async {
+    _learnFromBehaviorEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('learn_from_behavior_enabled', enabled);
+    await IntelligenceService().updateSettings(intelligenceSettings);
+    _debugService.info('Learn from behavior ${enabled ? "enabled" : "disabled"}', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 批量更新智能功能设置
+  Future<void> updateIntelligenceSettings(IntelligenceSettings settings) async {
+    _intelligenceEnabled = settings.enabled;
+    _smartRemindersEnabled = settings.smartReminders;
+    _smartCategorizationEnabled = settings.smartCategorization;
+    _naturalLanguageInputEnabled = settings.naturalLanguageInput;
+    _duplicateDetectionEnabled = settings.duplicateDetection;
+    _holidayDetectionEnabled = settings.holidayDetection;
+    _seasonalSuggestionsEnabled = settings.seasonalSuggestions;
+    _learnFromBehaviorEnabled = settings.learnFromBehavior;
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('intelligence_enabled', settings.enabled);
+    await prefs.setBool('smart_reminders_enabled', settings.smartReminders);
+    await prefs.setBool('smart_categorization_enabled', settings.smartCategorization);
+    await prefs.setBool('natural_language_input_enabled', settings.naturalLanguageInput);
+    await prefs.setBool('duplicate_detection_enabled', settings.duplicateDetection);
+    await prefs.setBool('holiday_detection_enabled', settings.holidayDetection);
+    await prefs.setBool('seasonal_suggestions_enabled', settings.seasonalSuggestions);
+    await prefs.setBool('learn_from_behavior_enabled', settings.learnFromBehavior);
+    
+    await IntelligenceService().updateSettings(settings);
+    
+    _debugService.info('Intelligence settings updated', source: 'Settings');
     notifyListeners();
   }
 }

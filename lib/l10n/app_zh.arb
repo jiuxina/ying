@@ -1,0 +1,242 @@
+{
+  "@@locale": "zh",
+  "appName": "萤",
+  "@appName": {
+    "description": "应用名称"
+  },
+  "cancel": "取消",
+  "@cancel": {
+    "description": "取消按钮"
+  },
+  "confirm": "确认",
+  "@confirm": {
+    "description": "确认按钮"
+  },
+  "save": "保存",
+  "@save": {
+    "description": "保存按钮"
+  },
+  "delete": "删除",
+  "@delete": {
+    "description": "删除按钮"
+  },
+  "edit": "编辑",
+  "@edit": {
+    "description": "编辑按钮"
+  },
+  "search": "搜索",
+  "@search": {
+    "description": "搜索"
+  },
+  "settings": "设置",
+  "@settings": {
+    "description": "设置"
+  },
+  "about": "关于",
+  "@about": {
+    "description": "关于"
+  },
+  "version": "版本",
+  "@version": {
+    "description": "版本"
+  },
+  "days": "天",
+  "@days": {
+    "description": "天数单位"
+  },
+  "hours": "小时",
+  "@hours": {
+    "description": "小时单位"
+  },
+  "minutes": "分钟",
+  "@minutes": {
+    "description": "分钟单位"
+  },
+  "seconds": "秒",
+  "@seconds": {
+    "description": "秒单位"
+  },
+  "addEvent": "添加事件",
+  "@addEvent": {
+    "description": "添加事件"
+  },
+  "editEvent": "编辑事件",
+  "@editEvent": {
+    "description": "编辑事件"
+  },
+  "deleteEvent": "删除事件",
+  "@deleteEvent": {
+    "description": "删除事件"
+  },
+  "eventTitle": "事件名称",
+  "@eventTitle": {
+    "description": "事件名称"
+  },
+  "eventDate": "日期",
+  "@eventDate": {
+    "description": "事件日期"
+  },
+  "eventCategory": "分类",
+  "@eventCategory": {
+    "description": "事件分类"
+  },
+  "eventNote": "备注",
+  "@eventNote": {
+    "description": "事件备注"
+  },
+  "repeatYearly": "每年重复",
+  "@repeatYearly": {
+    "description": "每年重复"
+  },
+  "repeatMonthly": "每月重复",
+  "@repeatMonthly": {
+    "description": "每月重复"
+  },
+  "lunarDate": "农历",
+  "@lunarDate": {
+    "description": "农历日期"
+  },
+  "solarDate": "公历",
+  "@solarDate": {
+    "description": "公历日期"
+  },
+  "cloudSync": "云端同步",
+  "@cloudSync": {
+    "description": "云端同步"
+  },
+  "syncNow": "立即同步",
+  "@syncNow": {
+    "description": "立即同步"
+  },
+  "autoSync": "自动同步",
+  "@autoSync": {
+    "description": "自动同步"
+  },
+  "syncSuccess": "同步成功",
+  "@syncSuccess": {
+    "description": "同步成功"
+  },
+  "syncFailed": "同步失败",
+  "@syncFailed": {
+    "description": "同步失败"
+  },
+  "exportData": "导出数据",
+  "@exportData": {
+    "description": "导出数据"
+  },
+  "importData": "导入数据",
+  "@importData": {
+    "description": "导入数据"
+  },
+  "share": "分享",
+  "@share": {
+    "description": "分享"
+  },
+  "shareCard": "分享卡片",
+  "@shareCard": {
+    "description": "分享卡片"
+  },
+  "saveToAlbum": "保存到相册",
+  "@saveToAlbum": {
+    "description": "保存到相册"
+  },
+  "savedSuccess": "保存成功",
+  "@savedSuccess": {
+    "description": "保存成功"
+  },
+  "theme": "主题",
+  "@theme": {
+    "description": "主题"
+  },
+  "darkMode": "深色模式",
+  "@darkMode": {
+    "description": "深色模式"
+  },
+  "lightMode": "浅色模式",
+  "@lightMode": {
+    "description": "浅色模式"
+  },
+  "systemMode": "跟随系统",
+  "@systemMode": {
+    "description": "跟随系统"
+  },
+  "themeColor": "主题色",
+  "@themeColor": {
+    "description": "主题色"
+  },
+  "batchDelete": "批量删除",
+  "@batchDelete": {
+    "description": "批量删除"
+  },
+  "batchArchive": "批量归档",
+  "@batchArchive": {
+    "description": "批量归档"
+  },
+  "batchChangeCategory": "批量更改分类",
+  "@batchChangeCategory": {
+    "description": "批量更改分类"
+  },
+  "batchExport": "批量导出",
+  "@batchExport": {
+    "description": "批量导出"
+  },
+  "selectAll": "全选",
+  "@selectAll": {
+    "description": "全选"
+  },
+  "deselectAll": "取消全选",
+  "@deselectAll": {
+    "description": "取消全选"
+  },
+  "invertSelection": "反选",
+  "@invertSelection": {
+    "description": "反选"
+  },
+  "selectedCount": "已选择 {count} 个事件",
+  "@selectedCount": {
+    "description": "已选择事件数量",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deletedCount": "已删除 {count} 个事件",
+  "@deletedCount": {
+    "description": "已删除事件数量",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "archivedCount": "已归档 {count} 个事件",
+  "@archivedCount": {
+    "description": "已归档事件数量",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "undo": "撤销",
+  "@undo": {
+    "description": "撤销"
+  },
+  "undoSuccess": "已撤销操作",
+  "@undoSuccess": {
+    "description": "撤销成功"
+  },
+  "noEventsSelected": "没有选中任何事件",
+  "@noEventsSelected": {
+    "description": "没有选中任何事件"
+  },
+  "changeCategory": "更改分类",
+  "@changeCategory": {
+    "description": "更改分类"
+  },
+  "moveToCategory": "将选中的事件移至：",
+  "@moveToCategory": {
+    "description": "将选中的事件移至"
+  }
+}

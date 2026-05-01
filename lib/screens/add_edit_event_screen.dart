@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/countdown_event.dart';
+import '../models/event_template.dart';
 import '../providers/events_provider.dart';
 import '../services/notification_service.dart';
 import '../utils/constants.dart';
@@ -15,6 +16,9 @@ import '../widgets/common/time_picker_sheet.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import '../models/reminder.dart';
+import '../models/advanced_reminder.dart';
+import '../services/advanced_reminder_service.dart';
+import 'template_gallery_screen.dart';
 
 /// ============================================================================
 /// 添加/编辑事件页面
@@ -22,8 +26,15 @@ import '../models/reminder.dart';
 
 class AddEditEventScreen extends StatefulWidget {
   final CountdownEvent? event;
+  final EventTemplate? initialTemplate;
+  final DateTime? initialTargetDate;
 
-  const AddEditEventScreen({super.key, this.event});
+  const AddEditEventScreen({
+    super.key,
+    this.event,
+    this.initialTemplate,
+    this.initialTargetDate,
+  });
 
   @override
   State<AddEditEventScreen> createState() => _AddEditEventScreenState();
@@ -52,6 +63,29 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   String? _groupId;
   List<Reminder> _reminders = [];
 
+  // 高级提醒状态变量
+  bool _advancedReminderEnabled = false;
+  bool _smartReminderEnabled = false;
+  ReminderType _reminderType = ReminderType.multiStage;
+  
+  // 多阶段提醒选项（预设天数）
+  final Map<int, bool> _multiStageOptions = {
+    1: false,
+    3: false,
+    7: false,
+    30: false,
+    90: false,
+  };
+  
+  // 自定义提醒规则
+  List<ReminderRule> _customRules = [];
+  
+  // 高级提醒服务实例
+  final AdvancedReminderService _advancedReminderService = AdvancedReminderService();
+  
+  // 当前编辑事件的高级提醒（如果有）
+  AdvancedReminder? _currentAdvancedReminder;
+
   bool get _isEditing => widget.event != null;
 
   // 追踪初始值用于判断是否有未保存的更改
@@ -71,7 +105,11 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   @override
   void initState() {
     super.initState();
-    if (_isEditing) {
+    
+    // 如果从模板创建，先应用模板默认值
+    if (widget.initialTemplate != null) {
+      _applyTemplate(widget.initialTemplate!, widget.initialTargetDate);
+    } else if (_isEditing) {
       final e = widget.event!;
       _titleController.text = e.title;
       _noteController.text = e.note ?? '';
@@ -86,6 +124,9 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
 
       _groupId = e.groupId;
       _reminders = List.from(e.reminders);
+      
+      // 加载现有高级提醒配置
+      _loadAdvancedReminder(e.id);
     } else {
       _categoryId =
           'custom'; // Default to custom if not specified, or 'birthday'
@@ -118,6 +159,97 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
     _initialEnableNotification = _enableNotification;
     _initialBackgroundImage = _backgroundImage;
     _initialGroupId = _groupId;
+  }
+
+  /// 应用模板默认值
+  void _applyTemplate(EventTemplate template, DateTime? targetDate) {
+    final defaults = template.defaultValues;
+    
+    _titleController.text = template.name;
+    _categoryId = defaults['categoryId'] as String? ?? 'custom';
+    _isRepeating = defaults['isRepeating'] == true;
+    _enableNotification = defaults['enableNotification'] == true;
+    _isLunar = defaults['isLunar'] == true;
+    
+    // 设置目标日期
+    if (targetDate != null) {
+      _targetDate = targetDate;
+    } else if (defaults['targetMonth'] != null && defaults['targetDay'] != null) {
+      final now = DateTime.now();
+      _targetDate = DateTime(now.year, defaults['targetMonth'], defaults['targetDay']);
+    } else {
+      _targetDate = DateTime.now().add(const Duration(days: 30));
+    }
+    
+    // 处理农历日期
+    if (_isLunar && defaults['lunarMonth'] != null && defaults['lunarDay'] != null) {
+      // 从农历转换为公历
+      _targetDate = LunarUtils.lunarToSolar(
+        _targetDate.year,
+        defaults['lunarMonth'] as int,
+        defaults['lunarDay'] as int,
+      );
+    }
+  }
+
+  /// 加载事件的高级提醒配置
+  Future<void> _loadAdvancedReminder(String eventId) async {
+    try {
+      final advancedReminder = await _advancedReminderService.getAdvancedReminder(eventId);
+      if (advancedReminder != null && mounted) {
+        setState(() {
+          _currentAdvancedReminder = advancedReminder;
+          _advancedReminderEnabled = advancedReminder.isEnabled;
+          _smartReminderEnabled = advancedReminder.smartModeEnabled;
+          _reminderType = advancedReminder.type;
+          
+          // 加载多阶段提醒选项
+          _multiStageOptions.updateAll((key, value) => false);
+          for (final rule in advancedReminder.rules) {
+            final days = rule.daysOffset.abs();
+            if (_multiStageOptions.containsKey(days)) {
+              _multiStageOptions[days] = rule.isEnabled;
+            } else {
+              // 自定义规则
+              if (rule.isEnabled) {
+                _customRules.add(rule);
+              }
+            }
+          }
+        });
+      }
+    } catch (e) {
+      // 忽略加载错误，使用默认配置
+      debugPrint('Failed to load advanced reminder: $e');
+    }
+  }
+
+  /// 从模板创建事件
+  Future<void> _selectFromTemplate() async {
+    HapticFeedback.selectionClick();
+    
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TemplateGalleryScreen(),
+      ),
+    );
+    
+    if (result != null && mounted) {
+      final template = result['template'] as EventTemplate;
+      final targetDate = result['targetDate'] as DateTime;
+      
+      setState(() {
+        _applyTemplate(template, targetDate);
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('已应用模板: ${template.name}'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   /// 检查是否有未保存的更改
@@ -205,6 +337,12 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                       padding: EdgeInsets.all(ResponsiveSpacing.lg(context)),
                       child: Column(
                         children: [
+                          // 从模板创建入口（仅新建模式显示）
+                          if (!_isEditing) ...[
+                            _buildTemplateButton(context),
+                            SizedBox(height: ResponsiveSpacing.lg(context)),
+                          ],
+                          
                           // 基本信息
                           const SectionHeader(title: '基本信息', icon: Icons.info),
                           SizedBox(height: ResponsiveSpacing.md(context)),
@@ -675,9 +813,13 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                                       onTap: _sendTestNotification,
                                     ),
                                 ],
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
+                            SizedBox(height: ResponsiveSpacing.lg(context)),
+
+                          // 高级提醒设置
+                          _buildAdvancedReminderSection(context),
                           SizedBox(height: ResponsiveSpacing.lg(context)),
 
                           // 背景设置
@@ -776,7 +918,84 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
             ),
             overflow: TextOverflow.ellipsis,
           ),
+          const Spacer(),
+          // 从模板创建按钮（仅在新建模式显示）
+          if (!_isEditing)
+            TextButton.icon(
+              onPressed: _selectFromTemplate,
+              icon: const Icon(Icons.auto_awesome, size: 18),
+              label: const Text('模板'),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.primary,
+              ),
+            ),
         ],
+      ),
+    );
+  }
+
+  /// 构建模板选择按钮
+  Widget _buildTemplateButton(BuildContext context) {
+    return InkWell(
+      onTap: _selectFromTemplate,
+      borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
+      child: Container(
+        padding: EdgeInsets.all(ResponsiveSpacing.md(context)),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primaryContainer,
+              Theme.of(context).colorScheme.secondaryContainer,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(ResponsiveSpacing.sm(context)),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.auto_awesome,
+                color: Theme.of(context).colorScheme.primary,
+                size: ResponsiveIconSize.base(context),
+              ),
+            ),
+            SizedBox(width: ResponsiveSpacing.base(context)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '从模板快速创建',
+                    style: TextStyle(
+                      fontSize: ResponsiveFontSize.base(context),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    '生日、纪念日、考试等常用模板',
+                    style: TextStyle(
+                      fontSize: ResponsiveFontSize.sm(context),
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -824,6 +1043,443 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 构建高级提醒设置区域
+  Widget _buildAdvancedReminderSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 标题 + 新功能标签
+        Row(
+          children: [
+            SectionHeader(
+              title: '高级提醒',
+              icon: Icons.auto_awesome,
+            ),
+            Container(
+              margin: EdgeInsets.only(left: ResponsiveSpacing.sm(context)),
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveSpacing.sm(context),
+                vertical: ResponsiveSpacing.xs(context),
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.purple,
+                    Colors.deepPurple,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(
+                  ResponsiveBorderRadius.sm(context),
+                ),
+              ),
+              child: Text(
+                'NEW',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: ResponsiveFontSize.xs(context),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: ResponsiveSpacing.md(context)),
+        
+        // 高级提醒开关
+        GlassCard(
+          child: Column(
+            children: [
+              SwitchListTile(
+                secondary: IconBox(
+                  icon: _advancedReminderEnabled
+                      ? Icons.enhanced_encryption
+                      : Icons.enhanced_encryption_outlined,
+                  color: _advancedReminderEnabled
+                      ? Colors.purple
+                      : Colors.grey,
+                ),
+                title: Text(
+                  '开启高级提醒',
+                  style: TextStyle(
+                    fontSize: ResponsiveFontSize.base(context),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  '多阶段提醒和智能提醒模式',
+                  style: TextStyle(
+                    fontSize: ResponsiveFontSize.sm(context),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                value: _advancedReminderEnabled,
+                onChanged: _enableNotification
+                    ? (v) => setState(() => _advancedReminderEnabled = v)
+                    : null,
+              ),
+              
+              if (_advancedReminderEnabled && _enableNotification) ...[
+                Divider(
+                  height: ResponsiveUtils.scaledSize(context, 1),
+                ),
+                
+                // 多阶段提醒选项
+                _buildMultiStageOptions(context),
+                
+                Divider(
+                  height: ResponsiveUtils.scaledSize(context, 1),
+                ),
+                
+                // 智能提醒模式
+                _buildSmartReminderToggle(context),
+                
+                // 自定义规则区域（仅在非智能模式下显示）
+                if (!_smartReminderEnabled) ...[
+                  Divider(
+                    height: ResponsiveUtils.scaledSize(context, 1),
+                  ),
+                  _buildCustomRulesSection(context),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 构建多阶段提醒选项
+  Widget _buildMultiStageOptions(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(ResponsiveSpacing.base(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '提醒时间节点',
+            style: TextStyle(
+              fontSize: ResponsiveFontSize.base(context),
+              fontWeight: FontWeight.w500,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: ResponsiveSpacing.sm(context)),
+          Wrap(
+            spacing: ResponsiveSpacing.sm(context),
+            runSpacing: ResponsiveSpacing.sm(context),
+            children: [
+              _buildReminderChip(context, 1, '1天'),
+              _buildReminderChip(context, 3, '3天'),
+              _buildReminderChip(context, 7, '7天'),
+              _buildReminderChip(context, 30, '30天'),
+              _buildReminderChip(context, 90, '90天'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建提醒时间节点Chip
+  Widget _buildReminderChip(BuildContext context, int days, String label) {
+    final isSelected = _multiStageOptions[days] ?? false;
+    
+    return FilterChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: ResponsiveFontSize.sm(context),
+          color: isSelected ? Colors.white : null,
+        ),
+      ),
+      selected: isSelected,
+      onSelected: _smartReminderEnabled
+          ? null
+          : (selected) {
+              HapticFeedback.selectionClick();
+              setState(() {
+                _multiStageOptions[days] = selected;
+              });
+            },
+      selectedColor: Colors.purple,
+      checkmarkColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      side: BorderSide(
+        color: isSelected
+            ? Colors.purple
+            : Theme.of(context).dividerColor,
+      ),
+    );
+  }
+
+  /// 构建智能提醒开关
+  Widget _buildSmartReminderToggle(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(ResponsiveSpacing.base(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: IconBox(
+              icon: Icons.psychology,
+              color: _smartReminderEnabled
+                  ? Colors.amber
+                  : Colors.grey,
+            ),
+            title: Text(
+              '智能提醒模式',
+              style: TextStyle(
+                fontSize: ResponsiveFontSize.base(context),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              '根据事件重要性自动调整提醒策略',
+              style: TextStyle(
+                fontSize: ResponsiveFontSize.sm(context),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+            value: _smartReminderEnabled,
+            onChanged: (v) {
+              HapticFeedback.selectionClick();
+              setState(() {
+                _smartReminderEnabled = v;
+                if (v) {
+                  _reminderType = ReminderType.smart;
+                } else {
+                  _reminderType = ReminderType.multiStage;
+                }
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建自定义规则区域
+  Widget _buildCustomRulesSection(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(ResponsiveSpacing.base(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '自定义提醒天数',
+                style: TextStyle(
+                  fontSize: ResponsiveFontSize.base(context),
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              TextButton.icon(
+                onPressed: _showAddCustomRuleDialog,
+                icon: Icon(
+                  Icons.add,
+                  size: ResponsiveIconSize.sm(context),
+                ),
+                label: Text(
+                  '添加',
+                  style: TextStyle(
+                    fontSize: ResponsiveFontSize.sm(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (_customRules.isEmpty)
+            Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: ResponsiveSpacing.md(context),
+              ),
+              child: Center(
+                child: Text(
+                  '暂无自定义提醒',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.outline,
+                    fontSize: ResponsiveFontSize.sm(context),
+                  ),
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: EdgeInsets.only(top: ResponsiveSpacing.sm(context)),
+              child: Wrap(
+                spacing: ResponsiveSpacing.sm(context),
+                runSpacing: ResponsiveSpacing.sm(context),
+                children: _customRules.map((rule) {
+                  return Chip(
+                    label: Text(
+                      '${rule.daysOffset.abs()}天',
+                      style: TextStyle(
+                        fontSize: ResponsiveFontSize.sm(context),
+                      ),
+                    ),
+                    deleteIcon: Icon(
+                      Icons.close,
+                      size: ResponsiveIconSize.sm(context),
+                    ),
+                    onDeleted: () {
+                      HapticFeedback.mediumImpact();
+                      setState(() {
+                        _customRules.remove(rule);
+                      });
+                    },
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                  );
+                }).toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 显示添加自定义规则对话框
+  void _showAddCustomRuleDialog() {
+    HapticFeedback.selectionClick();
+    
+    int? selectedDays;
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: GlassCard(
+                padding: EdgeInsets.all(ResponsiveSpacing.lg(context)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '添加自定义提醒',
+                      style: TextStyle(
+                        fontSize: ResponsiveFontSize.lg(context),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: ResponsiveSpacing.lg(context)),
+                    
+                    // 常用天数快捷选择
+                    Text(
+                      '提前天数：',
+                      style: TextStyle(
+                        fontSize: ResponsiveFontSize.base(context),
+                      ),
+                    ),
+                    SizedBox(height: ResponsiveSpacing.sm(context)),
+                    Wrap(
+                      spacing: ResponsiveSpacing.sm(context),
+                      runSpacing: ResponsiveSpacing.sm(context),
+                      children: [2, 5, 10, 14, 21, 45, 60, 120].map((days) {
+                        final isSelected = selectedDays == days;
+                        return ChoiceChip(
+                          label: Text(
+                            '$days天',
+                            style: TextStyle(
+                              fontSize: ResponsiveFontSize.sm(context),
+                            ),
+                          ),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setDialogState(() {
+                              selectedDays = selected ? days : null;
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    
+                    SizedBox(height: ResponsiveSpacing.lg(context)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            '取消',
+                            style: TextStyle(
+                              fontSize: ResponsiveFontSize.base(context),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: ResponsiveSpacing.sm(context)),
+                        FilledButton(
+                          onPressed: selectedDays == null
+                              ? null
+                              : () {
+                                  // 检查是否与预设重复
+                                  if (_multiStageOptions.containsKey(selectedDays)) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          '该天数已在预设选项中',
+                                          style: TextStyle(
+                                            fontSize: ResponsiveFontSize.base(context),
+                                          ),
+                                        ),
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  
+                                  // 检查是否重复添加
+                                  final exists = _customRules.any(
+                                    (r) => r.daysOffset.abs() == selectedDays,
+                                  );
+                                  if (exists) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          '已存在相同天数的提醒',
+                                          style: TextStyle(
+                                            fontSize: ResponsiveFontSize.base(context),
+                                          ),
+                                        ),
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  
+                                  setState(() {
+                                    _customRules.add(ReminderRule.create(
+                                      daysOffset: -selectedDays!,
+                                      hour: 9,
+                                      minute: 0,
+                                    ));
+                                  });
+                                  Navigator.pop(context);
+                                },
+                          child: Text(
+                            '确定',
+                            style: TextStyle(
+                              fontSize: ResponsiveFontSize.base(context),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1502,8 +2158,10 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
 
     final provider = context.read<EventsProvider>();
     try {
+      String? eventId;
       if (_isEditing) {
         await provider.updateEvent(event);
+        eventId = event.id;
       } else {
         await provider.addEvent(
           title: event.title,
@@ -1523,7 +2181,18 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
           groupId: event.groupId,
           reminders: event.reminders,
         );
+        // 获取新建事件ID（使用事件对象中的ID）
+        eventId = event.id;
       }
+      
+      // 保存高级提醒设置
+      if (_enableNotification && eventId != null) {
+        await _saveAdvancedReminder(eventId);
+      } else if (!_enableNotification && _isEditing && widget.event != null) {
+        // 如果关闭了通知，删除高级提醒
+        await _advancedReminderService.deleteEventAdvancedReminders(widget.event!.id);
+      }
+      
       if (mounted) {
         // 显示成功提示
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1555,6 +2224,84 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
           ),
         );
       }
+    }
+  }
+
+  /// 保存高级提醒设置
+  Future<void> _saveAdvancedReminder(String eventId) async {
+    if (!_advancedReminderEnabled) {
+      // 如果高级提醒未启用，删除现有的
+      await _advancedReminderService.deleteEventAdvancedReminders(eventId);
+      return;
+    }
+
+    // 构建提醒规则列表
+    final rules = <ReminderRule>[];
+    
+    if (_smartReminderEnabled) {
+      // 智能提醒模式 - 由服务自动计算规则
+      _reminderType = ReminderType.smart;
+    } else {
+      // 多阶段提醒 - 添加选中的预设选项
+      _reminderType = ReminderType.multiStage;
+      for (final entry in _multiStageOptions.entries) {
+        if (entry.value) {
+          rules.add(ReminderRule.create(
+            daysOffset: -entry.key,
+            hour: 9,
+            minute: 0,
+          ));
+        }
+      }
+      
+      // 添加自定义规则
+      rules.addAll(_customRules);
+    }
+
+    // 如果没有启用任何提醒选项，给出提示
+    if (rules.isEmpty && !_smartReminderEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '请至少选择一个提醒时间节点',
+            style: TextStyle(
+              fontSize: ResponsiveFontSize.base(context),
+            ),
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // 创建或更新高级提醒
+      final existingReminder = await _advancedReminderService.getAdvancedReminder(eventId);
+      
+      if (existingReminder != null) {
+        // 更新现有
+        final updatedReminder = existingReminder.copyWith(
+          type: _reminderType,
+          rules: rules,
+          smartModeEnabled: _smartReminderEnabled,
+          isEnabled: _advancedReminderEnabled,
+          updatedAt: DateTime.now(),
+        );
+        await _advancedReminderService.updateAdvancedReminder(updatedReminder);
+      } else {
+        // 创建新的
+        await _advancedReminderService.createAdvancedReminder(
+          eventId: eventId,
+          type: _reminderType,
+          customRules: rules,
+          smartModeEnabled: _smartReminderEnabled,
+        );
+      }
+      
+      debugPrint('Advanced reminder saved successfully for event: $eventId');
+    } catch (e) {
+      debugPrint('Failed to save advanced reminder: $e');
+      // 不阻止主流程，只记录错误
     }
   }
 }

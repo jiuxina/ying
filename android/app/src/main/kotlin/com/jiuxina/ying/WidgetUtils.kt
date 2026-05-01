@@ -10,8 +10,7 @@ import android.util.Log
  */
 object WidgetUtils {
     private const val TAG = "WidgetUtils"
-    // Flutter home_widget 插件默认使用默认的 SharedPreferences
-    // 文件名为 <package_name>_preferences
+    private const val WIDGET_PREFERENCES = "HomeWidgetPreferences"
     
     // 颜色常量
     object Colors {
@@ -45,6 +44,38 @@ object WidgetUtils {
     }
 
     /**
+     * 字体大小枚举
+     */
+    enum class FontSize {
+        SMALL, MEDIUM, LARGE;
+
+        companion object {
+            fun fromString(value: String?): FontSize {
+                if (value == null) return MEDIUM
+                return try {
+                    valueOf(value.uppercase())
+                } catch (e: Exception) {
+                    MEDIUM
+                }
+            }
+        }
+
+        val titleScale: Float
+            get() = when (this) {
+                SMALL -> 0.85f
+                MEDIUM -> 1.0f
+                LARGE -> 1.15f
+            }
+
+        val daysScale: Float
+            get() = when (this) {
+                SMALL -> 0.85f
+                MEDIUM -> 1.0f
+                LARGE -> 1.2f
+            }
+    }
+
+    /**
      * 小部件数据模型
      */
     data class WidgetData(
@@ -56,91 +87,128 @@ object WidgetUtils {
         val gradientEndColor: Int = 0xFF8B5CF6.toInt(),
         val opacity: Float = 1.0f,
         val showDate: Boolean = true,
+        val showTitle: Boolean = true,
+        val showDays: Boolean = true,
+        val showIcon: Boolean = false,
         val style: WidgetStyle = WidgetStyle.STANDARD,
+        val fontSize: FontSize = FontSize.MEDIUM,
+        val cornerRadius: Float = 16.0f,
+        val textColor: Int = Color.WHITE,
+        val backgroundImage: String? = null,
         val event2Title: String = "",
         val event2Days: String = "",
         val event3Title: String = "",
         val event3Days: String = ""
     )
 
+    fun getWidgetPreferences(context: Context): SharedPreferences {
+        return context.getSharedPreferences(WIDGET_PREFERENCES, Context.MODE_PRIVATE)
+    }
+
+    fun getStringSafe(prefs: SharedPreferences, key: String, def: String? = null): String? {
+        return when (val value = prefs.all[key]) {
+            is String -> value
+            is Number -> value.toString()
+            is Boolean -> value.toString()
+            else -> def
+        }
+    }
+
+    fun getLongSafe(prefs: SharedPreferences, key: String, def: Long = 0L): Long {
+        return when (val value = prefs.all[key]) {
+            is Long -> value
+            is Int -> value.toLong()
+            is Float -> value.toLong()
+            is String -> value.toLongOrNull() ?: def
+            else -> def
+        }
+    }
+
+    fun getIntSafe(prefs: SharedPreferences, key: String, def: Int): Int {
+        return when (val value = prefs.all[key]) {
+            is Int -> value
+            is Long -> value.toInt()
+            is Float -> value.toInt()
+            is String -> value.toIntOrNull() ?: def
+            else -> def
+        }
+    }
+
+    fun getFloatSafe(prefs: SharedPreferences, key: String, def: Float): Float {
+        return when (val value = prefs.all[key]) {
+            is Float -> value
+            is Double -> value.toFloat()
+            is Int -> value.toFloat()
+            is Long -> value.toFloat()
+            is String -> value.toFloatOrNull() ?: def
+            else -> def
+        }
+    }
+
+    fun getBoolSafe(prefs: SharedPreferences, key: String, def: Boolean): Boolean {
+        return when (val value = prefs.all[key]) {
+            is Boolean -> value
+            is String -> value.toBooleanStrictOrNull() ?: def
+            else -> def
+        }
+    }
+
     /**
      * 从 SharedPreferences 读取小部件数据
      */
     fun loadWidgetData(context: Context, sizePrefix: String = "standard"): WidgetData {
         return try {
-            // 尝试获取 Flutter shared_preferences 插件使用的默认 store
-            // 通常是 "FlutterSharedPreferences" 或者 "<package>_preferences"
-            // home_widget 插件在 Android 上通常写入到 context.getSharedPreferences(name)
-            // 如果未指定名称，可能会有所不同。
-            // 最稳妥的方式是尝试读取 Dart side 写入的特定 key
-            
-            // 注意：home_widget: ^0.7.0+ 默认使用 PreferenceManager.getDefaultSharedPreferences
-            
-            val prefsName = "${context.packageName}_preferences"
-            val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
-            
-            // 辅助函数：安全获取 Int (处理 Flutter 可能存储为 Long 的情况)
-            fun getIntSafe(key: String, def: Int): Int {
-                if (!prefs.contains(key)) return def
-                return try {
-                    prefs.getInt(key, def)
-                } catch (e: ClassCastException) {
-                    try {
-                        prefs.getLong(key, def.toLong()).toInt()
-                    } catch (e2: Exception) {
-                        def
-                    }
-                }
-            }
-
-            // 辅助函数：安全获取 Boolean
-            fun getBoolSafe(key: String, def: Boolean): Boolean {
-                if (!prefs.contains(key)) return def
-                return try {
-                    prefs.getBoolean(key, def)
-                } catch (e: Exception) {
-                    def
-                }
-            }
-            
-            // 辅助函数：安全获取 Float (处理 Double/Long)
-            fun getFloatSafe(key: String, def: Float): Float {
-                if (!prefs.contains(key)) return def
-                return try {
-                    prefs.getFloat(key, def)
-                } catch (e: Exception) {
-                    try {
-                        // Flutter share_preferences 可能会把 double 存为 float? 或者反之
-                         // 但 home_widget saveWidgetData<double> 应该存为 Float 或 String?
-                         // 让我们尝试转换
-                        def // 暂时降级为默认值，如果类型不匹配
-                    } catch (e2: Exception) {
-                        def
-                    }
-                }
-            }
-
-            val styleStr = prefs.getString("widget_${sizePrefix}_style", "standard")
+            val prefs = getWidgetPreferences(context)
+            val styleStr = getStringSafe(prefs, "widget_${sizePrefix}_style", "standard")
             
             WidgetData(
-                title = prefs.getString("widget_title", "萤") ?: "萤",
-                days = prefs.getString("widget_days", "0") ?: "0",
-                prefix = prefs.getString("widget_prefix", "还有") ?: "还有",
-                date = prefs.getString("widget_date", "暂无事件") ?: "暂无事件",
-                backgroundColor = getIntSafe("widget_${sizePrefix}_bg_color", 0xFF6366F1.toInt()),
-                gradientEndColor = getIntSafe("widget_${sizePrefix}_gradient_end", 0xFF8B5CF6.toInt()),
-                opacity = getFloatSafe("widget_${sizePrefix}_opacity", 1.0f),
-                showDate = getBoolSafe("widget_${sizePrefix}_show_date", true),
+                title = getStringSafe(prefs, "widget_title", "萤") ?: "萤",
+                days = getStringSafe(prefs, "widget_days", "0") ?: "0",
+                prefix = getStringSafe(prefs, "widget_prefix", "还有") ?: "还有",
+                date = getStringSafe(prefs, "widget_date", "暂无事件") ?: "暂无事件",
+                backgroundColor = getIntSafe(prefs, "widget_${sizePrefix}_bg_color", 0xFF6366F1.toInt()),
+                gradientEndColor = getIntSafe(prefs, "widget_${sizePrefix}_gradient_end", 0xFF8B5CF6.toInt()),
+                showDate = getBoolSafe(prefs, "widget_${sizePrefix}_show_date", true),
+                showTitle = getBoolSafe(prefs, "widget_${sizePrefix}_show_title", true),
+                showDays = getBoolSafe(prefs, "widget_${sizePrefix}_show_days", true),
+                showIcon = getBoolSafe(prefs, "widget_${sizePrefix}_show_icon", false),
                 style = WidgetStyle.fromString(styleStr),
-                event2Title = prefs.getString("widget_event2_title", "") ?: "",
-                event2Days = prefs.getString("widget_event2_days", "") ?: "",
-                event3Title = prefs.getString("widget_event3_title", "") ?: "",
-                event3Days = prefs.getString("widget_event3_days", "") ?: ""
+                fontSize = FontSize.fromString(getStringSafe(prefs, "widget_${sizePrefix}_font_size", "medium")),
+                cornerRadius = getFloatSafe(prefs, "widget_${sizePrefix}_corner_radius", 16.0f),
+                textColor = getIntSafe(prefs, "widget_${sizePrefix}_text_color", Color.WHITE),
+                backgroundImage = getStringSafe(prefs, "widget_${sizePrefix}_bg_image", null),
+                event2Title = getStringSafe(prefs, "widget_event2_title", "") ?: "",
+                event2Days = getStringSafe(prefs, "widget_event2_days", "") ?: "",
+                event3Title = getStringSafe(prefs, "widget_event3_title", "") ?: "",
+                event3Days = getStringSafe(prefs, "widget_event3_days", "") ?: ""
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error loading widget data", e)
             WidgetData()
         }
+    }
+
+    /**
+     * 从 per-widget 配置读取样式数据
+     */
+    fun loadWidgetStyle(prefs: SharedPreferences, widgetId: Int): WidgetData {
+        val prefix = "style_$widgetId"
+        val styleStr = getStringSafe(prefs, "${prefix}_style", null)
+        
+        return WidgetData(
+            style = WidgetStyle.fromString(styleStr),
+            backgroundColor = getIntSafe(prefs, "${prefix}_bg_color", 0xFF6366F1.toInt()),
+            gradientEndColor = getIntSafe(prefs, "${prefix}_gradient_end", 0xFF8B5CF6.toInt()),
+            opacity = getFloatSafe(prefs, "${prefix}_opacity", 1.0f),
+            showDate = getBoolSafe(prefs, "${prefix}_show_date", true),
+            showTitle = getBoolSafe(prefs, "${prefix}_show_title", true),
+            showDays = getBoolSafe(prefs, "${prefix}_show_days", true),
+            showIcon = getBoolSafe(prefs, "${prefix}_show_icon", false),
+            fontSize = FontSize.fromString(getStringSafe(prefs, "${prefix}_font_size", "medium")),
+            cornerRadius = getFloatSafe(prefs, "${prefix}_corner_radius", 16.0f),
+            textColor = getIntSafe(prefs, "${prefix}_text_color", Color.WHITE),
+            backgroundImage = getStringSafe(prefs, "${prefix}_bg_image", null)
+        )
     }
 
     /**

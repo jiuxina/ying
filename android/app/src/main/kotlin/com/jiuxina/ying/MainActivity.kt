@@ -19,6 +19,55 @@ import java.io.File
 class MainActivity : FlutterActivity() {
     private val INSTALL_CHANNEL = "com.jiuxina.ying/install"
     private val NOTIFICATION_CHANNEL = "com.jiuxina.ying/notifications"
+    private val WIDGET_CHANNEL = "com.jiuxina.ying/widget"
+    
+    // 保存最新的 Intent（用于 singleTop 模式下正确获取 Widget ID）
+    private var pendingWidgetId: Int? = null
+    private var pendingEventId: String? = null
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // 更新当前 intent，以便 MethodChannel 可以读取正确的 extras
+        setIntent(intent)
+        
+        // 检查是否是 Widget 配置启动
+        val widgetId = intent.extras?.getInt(
+            AppWidgetManager.EXTRA_APPWIDGET_ID,
+            AppWidgetManager.INVALID_APPWIDGET_ID
+        ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+        
+        if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            pendingWidgetId = widgetId
+            // 通知 Flutter 端有新的 Widget 配置请求
+            notifyWidgetConfigPending(widgetId)
+        }
+        
+        // 检查是否是 Widget 点击启动（带事件ID）
+        val eventId = intent.getStringExtra("event_id")
+            ?: intent.data?.getQueryParameter("eventId")
+        if (eventId != null) {
+            pendingEventId = eventId
+            notifyWidgetClickPending(eventId)
+        }
+    }
+    
+    private fun notifyWidgetConfigPending(widgetId: Int) {
+        flutterEngine?.dartExecutor?.let { executor ->
+            MethodChannel(executor.binaryMessenger, WIDGET_CHANNEL).invokeMethod(
+                "onWidgetConfigPending",
+                mapOf("widgetId" to widgetId)
+            )
+        }
+    }
+    
+    private fun notifyWidgetClickPending(eventId: String) {
+        flutterEngine?.dartExecutor?.let { executor ->
+            MethodChannel(executor.binaryMessenger, WIDGET_CHANNEL).invokeMethod(
+                "onWidgetClickPending",
+                mapOf("eventId" to eventId)
+            )
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -39,16 +88,25 @@ class MainActivity : FlutterActivity() {
                     }
                 }
                 "getAppWidgetId" -> {
-                    val appWidgetId = intent?.extras?.getInt(
+                    // 优先使用 pendingWidgetId（从 onNewIntent 获取）
+                    val appWidgetId = pendingWidgetId ?: intent?.extras?.getInt(
                         AppWidgetManager.EXTRA_APPWIDGET_ID,
                         AppWidgetManager.INVALID_APPWIDGET_ID
                     ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
                     
                     if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
                         result.success(appWidgetId)
+                        // 清除 pending 状态
+                        pendingWidgetId = null
                     } else {
                         result.success(null)
                     }
+                }
+                "consumePendingWidgetId" -> {
+                    // 消费并返回 pending widget ID，然后清除
+                    val widgetId = pendingWidgetId
+                    pendingWidgetId = null
+                    result.success(widgetId)
                 }
                 "finishConfigure" -> {
                     val widgetId = call.argument<Int>("widgetId")
@@ -91,6 +149,57 @@ class MainActivity : FlutterActivity() {
                     val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
                     prefs.edit().putBoolean("flutter.needs_notification_restore", false).apply()
                     result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
+        
+        // Widget MethodChannel - 处理 Widget 点击和数据查询
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, WIDGET_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getWidgetEventId" -> {
+                    val widgetId = call.argument<Int>("widgetId")
+                    if (widgetId != null && widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                        val prefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+                        val eventId = prefs.getString("event_id_$widgetId", null)
+                        result.success(eventId)
+                    } else {
+                        result.success(null)
+                    }
+                }
+                "getLaunchEventId" -> {
+                    // 优先使用 pendingEventId（从 onNewIntent 获取）
+                    val eventId = pendingEventId 
+                        ?: intent?.getStringExtra("event_id")
+                        ?: intent?.data?.getQueryParameter("eventId")
+                    // 清除 pending 状态
+                    pendingEventId = null
+                    result.success(eventId)
+                }
+                "consumePendingEventId" -> {
+                    // 消费并返回 pending event ID，然后清除
+                    val eventId = pendingEventId
+                    pendingEventId = null
+                    result.success(eventId)
+                }
+                // 兼容旧调用：部分 Flutter 代码可能从 widget 通道读取 pending widget ID
+                "consumePendingWidgetId" -> {
+                    val widgetId = pendingWidgetId
+                    pendingWidgetId = null
+                    result.success(widgetId)
+                }
+                "getAppWidgetId" -> {
+                    val appWidgetId = pendingWidgetId ?: intent?.extras?.getInt(
+                        AppWidgetManager.EXTRA_APPWIDGET_ID,
+                        AppWidgetManager.INVALID_APPWIDGET_ID
+                    ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+
+                    if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                        result.success(appWidgetId)
+                        pendingWidgetId = null
+                    } else {
+                        result.success(null)
+                    }
                 }
                 else -> result.notImplemented()
             }

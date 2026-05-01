@@ -1,0 +1,242 @@
+{
+  "@@locale": "en",
+  "appName": "Ying",
+  "@appName": {
+    "description": "App name"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Confirm button"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Save button"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button"
+  },
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit button"
+  },
+  "search": "Search",
+  "@search": {
+    "description": "Search"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings"
+  },
+  "about": "About",
+  "@about": {
+    "description": "About"
+  },
+  "version": "Version",
+  "@version": {
+    "description": "Version"
+  },
+  "days": "days",
+  "@days": {
+    "description": "Days unit"
+  },
+  "hours": "hours",
+  "@hours": {
+    "description": "Hours unit"
+  },
+  "minutes": "minutes",
+  "@minutes": {
+    "description": "Minutes unit"
+  },
+  "seconds": "seconds",
+  "@seconds": {
+    "description": "Seconds unit"
+  },
+  "addEvent": "Add Event",
+  "@addEvent": {
+    "description": "Add event"
+  },
+  "editEvent": "Edit Event",
+  "@editEvent": {
+    "description": "Edit event"
+  },
+  "deleteEvent": "Delete Event",
+  "@deleteEvent": {
+    "description": "Delete event"
+  },
+  "eventTitle": "Event Title",
+  "@eventTitle": {
+    "description": "Event title"
+  },
+  "eventDate": "Date",
+  "@eventDate": {
+    "description": "Event date"
+  },
+  "eventCategory": "Category",
+  "@eventCategory": {
+    "description": "Event category"
+  },
+  "eventNote": "Note",
+  "@eventNote": {
+    "description": "Event note"
+  },
+  "repeatYearly": "Repeat Yearly",
+  "@repeatYearly": {
+    "description": "Repeat yearly"
+  },
+  "repeatMonthly": "Repeat Monthly",
+  "@repeatMonthly": {
+    "description": "Repeat monthly"
+  },
+  "lunarDate": "Lunar",
+  "@lunarDate": {
+    "description": "Lunar date"
+  },
+  "solarDate": "Solar",
+  "@solarDate": {
+    "description": "Solar date"
+  },
+  "cloudSync": "Cloud Sync",
+  "@cloudSync": {
+    "description": "Cloud sync"
+  },
+  "syncNow": "Sync Now",
+  "@syncNow": {
+    "description": "Sync now"
+  },
+  "autoSync": "Auto Sync",
+  "@autoSync": {
+    "description": "Auto sync"
+  },
+  "syncSuccess": "Sync Successful",
+  "@syncSuccess": {
+    "description": "Sync successful"
+  },
+  "syncFailed": "Sync Failed",
+  "@syncFailed": {
+    "description": "Sync failed"
+  },
+  "exportData": "Export Data",
+  "@exportData": {
+    "description": "Export data"
+  },
+  "importData": "Import Data",
+  "@importData": {
+    "description": "Import data"
+  },
+  "share": "Share",
+  "@share": {
+    "description": "Share"
+  },
+  "shareCard": "Share Card",
+  "@shareCard": {
+    "description": "Share card"
+  },
+  "saveToAlbum": "Save to Album",
+  "@saveToAlbum": {
+    "description": "Save to album"
+  },
+  "savedSuccess": "Saved Successfully",
+  "@savedSuccess": {
+    "description": "Saved successfully"
+  },
+  "theme": "Theme",
+  "@theme": {
+    "description": "Theme"
+  },
+  "darkMode": "Dark Mode",
+  "@darkMode": {
+    "description": "Dark mode"
+  },
+  "lightMode": "Light Mode",
+  "@lightMode": {
+    "description": "Light mode"
+  },
+  "systemMode": "System",
+  "@systemMode": {
+    "description": "Follow system"
+  },
+  "themeColor": "Theme Color",
+  "@themeColor": {
+    "description": "Theme color"
+  },
+  "batchDelete": "Batch Delete",
+  "@batchDelete": {
+    "description": "Batch delete"
+  },
+  "batchArchive": "Batch Archive",
+  "@batchArchive": {
+    "description": "Batch archive"
+  },
+  "batchChangeCategory": "Batch Change Category",
+  "@batchChangeCategory": {
+    "description": "Batch change category"
+  },
+  "batchExport": "Batch Export",
+  "@batchExport": {
+    "description": "Batch export"
+  },
+  "selectAll": "Select All",
+  "@selectAll": {
+    "description": "Select all"
+  },
+  "deselectAll": "Deselect All",
+  "@deselectAll": {
+    "description": "Deselect all"
+  },
+  "invertSelection": "Invert Selection",
+  "@invertSelection": {
+    "description": "Invert selection"
+  },
+  "selectedCount": "{count} events selected",
+  "@selectedCount": {
+    "description": "Selected event count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deletedCount": "{count} events deleted",
+  "@deletedCount": {
+    "description": "Deleted event count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "archivedCount": "{count} events archived",
+  "@archivedCount": {
+    "description": "Archived event count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "undo": "Undo",
+  "@undo": {
+    "description": "Undo"
+  },
+  "undoSuccess": "Operation undone",
+  "@undoSuccess": {
+    "description": "Undo successful"
+  },
+  "noEventsSelected": "No events selected",
+  "@noEventsSelected": {
+    "description": "No events selected"
+  },
+  "changeCategory": "Change Category",
+  "@changeCategory": {
+    "description": "Change category"
+  },
+  "moveToCategory": "Move selected events to:",
+  "@moveToCategory": {
+    "description": "Move selected events to"
+  }
+}

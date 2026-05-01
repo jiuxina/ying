@@ -1,0 +1,117 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter clean
+        run: flutter clean
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build release APKs (split per ABI)
+        run: flutter build apk --release --split-per-abi
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Rename APKs with custom naming
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          cd build/app/outputs/flutter-apk
+          
+          # Rename APKs to ying-v{version}-{abi}.apk format
+          if [ -f "app-armeabi-v7a-release.apk" ]; then
+            mv app-armeabi-v7a-release.apk ying-v${VERSION}-armeabi-v7a.apk
+          fi
+          if [ -f "app-arm64-v8a-release.apk" ]; then
+            mv app-arm64-v8a-release.apk ying-v${VERSION}-arm64-v8a.apk
+          fi
+          if [ -f "app-x86_64-release.apk" ]; then
+            mv app-x86_64-release.apk ying-v${VERSION}-x86_64.apk
+          fi
+          
+          echo "Renamed APKs:"
+          ls -la *.apk
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            # First release, get all commits
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --reverse)
+          else
+            # Get commits since last tag
+            COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --reverse)
+          fi
+          
+          # Save changelog to file for multiline output
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: 萤 v${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## 🎉 萤 (Ying) v${{ steps.get_version.outputs.VERSION }}
+            
+            ### 📝 更新内容
+            
+            ${{ steps.changelog.outputs.CHANGELOG }}
+            
+            ### 📦 下载说明
+            
+            请根据您的设备架构选择对应的 APK 文件：
+            - `ying-v${{ steps.get_version.outputs.VERSION }}-armeabi-v7a.apk` - 适用于大多数 32 位设备
+            - `ying-v${{ steps.get_version.outputs.VERSION }}-arm64-v8a.apk` - 适用于 64 位设备（推荐）
+            - `ying-v${{ steps.get_version.outputs.VERSION }}-x86_64.apk` - 适用于 x86 模拟器
+            
+            ### 💡 安装提示
+            
+            1. 下载对应架构的 APK 文件
+            2. 允许安装未知来源应用
+            3. 安装并授予必要权限
+            
+            ---
+            
+            [完整更新日志](https://github.com/jiuxina/ying/blob/main/CHANGELOG.md)
+          files: build/app/outputs/flutter-apk/*.apk
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

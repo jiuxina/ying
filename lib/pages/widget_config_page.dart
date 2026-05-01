@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/events_provider.dart';
+import '../providers/settings_provider.dart';
 import '../models/countdown_event.dart';
 import '../services/widget_service.dart';
 
@@ -24,8 +25,15 @@ class _WidgetConfigPageState extends State<WidgetConfigPage> {
 
   Future<void> _checkWidgetId() async {
     try {
-      const channel = MethodChannel('com.jiuxina.ying/install');
-      _widgetId = await channel.invokeMethod<int>('getAppWidgetId');
+      // 首先从 install channel 消费 pending ID（与 Android 端实现保持一致）
+      const installChannel = MethodChannel('com.jiuxina.ying/install');
+      _widgetId = await installChannel.invokeMethod<int>('consumePendingWidgetId');
+      
+      // 如果没有，再尝试从 intent 读取
+      if (_widgetId == null) {
+        _widgetId = await installChannel.invokeMethod<int>('getAppWidgetId');
+      }
+      
       debugPrint("Widget ID from channel: $_widgetId");
     } catch (e) {
       debugPrint("Error getting widget ID: $e");
@@ -38,7 +46,12 @@ class _WidgetConfigPageState extends State<WidgetConfigPage> {
 
   Future<void> _selectEvent(CountdownEvent event) async {
     if (_widgetId != null) {
-      await WidgetService.saveConfiguredWidget(_widgetId!, event);
+      // 获取当前的 Widget 配置
+      final settings = context.read<SettingsProvider>();
+      final config = settings.currentWidgetConfig;
+      
+      // 保存配置
+      await WidgetService.saveConfiguredWidget(_widgetId!, event, config: config);
       
       // 通过 MethodChannel 通知原生端完成配置
       // 这会设置 RESULT_OK 并正确返回 widget ID，让系统知道配置成功

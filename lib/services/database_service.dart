@@ -2,6 +2,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/countdown_event.dart';
 import '../models/event_group.dart';
+import '../models/event_memory.dart';
+import '../models/intelligence_models.dart';
 
 /// 数据库服务 - 管理事件的本地存储
 /// 
@@ -21,6 +23,12 @@ class DatabaseService {
   static const String _categoriesTable = 'event_categories';
   static const String _groupsTable = 'event_groups';
   static const String _remindersTable = 'event_reminders';
+  static const String _advancedRemindersTable = 'advanced_reminders';
+  static const String _reminderRulesTable = 'reminder_rules';
+  static const String _reminderHistoryTable = 'reminder_history';
+  static const String _memoriesTable = 'event_memories';
+  static const String _templatesTable = 'event_templates';
+  static const String _learnedPatternsTable = 'learned_patterns';
 
   /// 获取数据库实例
   Future<Database> get database async {
@@ -36,7 +44,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 6, // Increment version for reminder schema migration
+      version: 9, // Increment version for learned patterns
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -65,7 +73,8 @@ class DatabaseService {
         notifyDaysBefore INTEGER NOT NULL DEFAULT 1,
         notifyHour INTEGER NOT NULL DEFAULT 9,
         notifyMinute INTEGER NOT NULL DEFAULT 0,
-        groupId TEXT
+        groupId TEXT,
+        isPrivate INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -75,6 +84,7 @@ class DatabaseService {
     await db.execute('CREATE INDEX idx_events_pinned ON $_tableName(isPinned)');
     await db.execute('CREATE INDEX idx_events_target_date ON $_tableName(targetDate)');
     await db.execute('CREATE INDEX idx_events_group_id ON $_tableName(groupId)');
+    await db.execute('CREATE INDEX idx_events_private ON $_tableName(isPrivate)');
 
     await db.execute('''
       CREATE TABLE $_groupsTable (
@@ -90,6 +100,10 @@ class DatabaseService {
     await _createCategoriesTable(db);
     await _seedDefaultCategories(db);
     await _createRemindersTable(db); // Create reminders table
+    await _createAdvancedRemindersTables(db); // Create advanced reminders tables
+    await _createMemoriesTable(db);
+    await _createTemplatesTable(db); // Create templates table
+    await _createLearnedPatternsTable(db); // Create learned patterns table
   }
 
   /// 升级数据库
@@ -139,6 +153,28 @@ class DatabaseService {
       await db.execute('DROP TABLE IF EXISTS $_remindersTable');
       await _createRemindersTable(db);
     }
+    
+    // Add isPrivate column (version 7+)
+    if (oldVersion < 7) {
+      await db.execute('ALTER TABLE $_tableName ADD COLUMN isPrivate INTEGER NOT NULL DEFAULT 0');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_events_private ON $_tableName(isPrivate)');
+    
+      // Add advanced reminders tables (version 7+)
+      await _createAdvancedRemindersTables(db);
+    
+      // Add memories table (version 7+)
+      await _createMemoriesTable(db);
+    }
+    
+    // Add templates table (version 8+)
+    if (oldVersion < 8) {
+      await _createTemplatesTable(db);
+    }
+    
+    // Add learned patterns table (version 9+)
+    if (oldVersion < 9) {
+      await _createLearnedPatternsTable(db);
+    }
   }
   
   Future<void> _createCategoriesTable(Database db) async {
@@ -165,6 +201,129 @@ class DatabaseService {
     ''');
     // Create index for faster lookups by eventId
     await db.execute('CREATE INDEX idx_reminders_event_id ON $_remindersTable(eventId)');
+  }
+
+  Future<void> _createAdvancedRemindersTables(Database db) async {
+    // Create advanced_reminders table
+    await db.execute('''
+      CREATE TABLE $_advancedRemindersTable (
+        id TEXT PRIMARY KEY,
+        eventId TEXT NOT NULL,
+        type INTEGER NOT NULL,
+        smartModeEnabled INTEGER NOT NULL DEFAULT 0,
+        importanceScore INTEGER NOT NULL DEFAULT 5,
+        isEnabled INTEGER NOT NULL DEFAULT 1,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        FOREIGN KEY (eventId) REFERENCES $_tableName (id) ON DELETE CASCADE
+      )
+    ''');
+    
+    // Create indexes for advanced_reminders
+    await db.execute('CREATE INDEX idx_advanced_reminders_event_id ON $_advancedRemindersTable(eventId)');
+    await db.execute('CREATE INDEX idx_advanced_reminders_enabled ON $_advancedRemindersTable(isEnabled)');
+
+    // Create reminder_rules table
+    await db.execute('''
+      CREATE TABLE $_reminderRulesTable (
+        id TEXT PRIMARY KEY,
+        advancedReminderId TEXT NOT NULL,
+        daysOffset INTEGER NOT NULL,
+        hour INTEGER NOT NULL DEFAULT 9,
+        minute INTEGER NOT NULL DEFAULT 0,
+        isEnabled INTEGER NOT NULL DEFAULT 1,
+        customMessageTemplate TEXT,
+        priority INTEGER NOT NULL DEFAULT 5,
+        FOREIGN KEY (advancedReminderId) REFERENCES $_advancedRemindersTable (id) ON DELETE CASCADE
+      )
+    ''');
+    
+    // Create indexes for reminder_rules
+    await db.execute('CREATE INDEX idx_reminder_rules_reminder_id ON $_reminderRulesTable(advancedReminderId)');
+    await db.execute('CREATE INDEX idx_reminder_rules_enabled ON $_reminderRulesTable(isEnabled)');
+
+    // Create reminder_history table
+    await db.execute('''
+      CREATE TABLE $_reminderHistoryTable (
+        id TEXT PRIMARY KEY,
+        advancedReminderId TEXT,
+        eventId TEXT NOT NULL,
+        sentAt INTEGER NOT NULL,
+        scheduledTime INTEGER NOT NULL,
+        isSuccessful INTEGER NOT NULL DEFAULT 1,
+        failureReason TEXT,
+        message TEXT NOT NULL,
+        ruleId TEXT,
+        FOREIGN KEY (advancedReminderId) REFERENCES $_advancedRemindersTable (id) ON DELETE CASCADE,
+        FOREIGN KEY (eventId) REFERENCES $_tableName (id) ON DELETE CASCADE
+      )
+    ''');
+    
+    // Create indexes for reminder_history
+    await db.execute('CREATE INDEX idx_reminder_history_event_id ON $_reminderHistoryTable(eventId)');
+    await db.execute('CREATE INDEX idx_reminder_history_reminder_id ON $_reminderHistoryTable(advancedReminderId)');
+    await db.execute('CREATE INDEX idx_reminder_history_sent_at ON $_reminderHistoryTable(sentAt)');
+  }
+
+  Future<void> _createMemoriesTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE $_memoriesTable (
+        id TEXT PRIMARY KEY,
+        eventId TEXT NOT NULL,
+        type INTEGER NOT NULL,
+        content TEXT,
+        imagePaths TEXT,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        FOREIGN KEY (eventId) REFERENCES $_tableName (id) ON DELETE CASCADE
+      )
+    ''');
+    // Create indexes for frequently queried columns
+    await db.execute('CREATE INDEX idx_memories_event_id ON $_memoriesTable(eventId)');
+    await db.execute('CREATE INDEX idx_memories_created_at ON $_memoriesTable(createdAt)');
+    await db.execute('CREATE INDEX idx_memories_type ON $_memoriesTable(type)');
+  }
+
+  Future<void> _createTemplatesTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE $_templatesTable (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        category TEXT NOT NULL,
+        icon TEXT NOT NULL,
+        defaultValues TEXT,
+        isBuiltIn INTEGER NOT NULL DEFAULT 0,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        usageCount INTEGER NOT NULL DEFAULT 0,
+        features TEXT
+      )
+    ''');
+    // Create indexes for frequently queried columns
+    await db.execute('CREATE INDEX idx_templates_category ON $_templatesTable(category)');
+    await db.execute('CREATE INDEX idx_templates_builtin ON $_templatesTable(isBuiltIn)');
+  }
+
+  Future<void> _createLearnedPatternsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE $_learnedPatternsTable (
+        id TEXT PRIMARY KEY,
+        type INTEGER NOT NULL,
+        key TEXT NOT NULL UNIQUE,
+        data TEXT NOT NULL,
+        confidence INTEGER NOT NULL DEFAULT 0,
+        sampleCount INTEGER NOT NULL DEFAULT 0,
+        firstObserved INTEGER NOT NULL,
+        lastObserved INTEGER NOT NULL,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL
+      )
+    ''');
+    // Create indexes for frequently queried columns
+    await db.execute('CREATE INDEX idx_learned_patterns_type ON $_learnedPatternsTable(type)');
+    await db.execute('CREATE INDEX idx_learned_patterns_key ON $_learnedPatternsTable(key)');
+    await db.execute('CREATE INDEX idx_learned_patterns_confidence ON $_learnedPatternsTable(confidence)');
   }
 
   Future<void> _seedDefaultCategories(Database db) async {
@@ -423,6 +582,248 @@ class DatabaseService {
     return grouped;
   }
 
+  // Memory CRUD
+
+  /// 获取事件的所有记忆
+  Future<List<EventMemory>> getMemories(String eventId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      _memoriesTable,
+      where: 'eventId = ?',
+      whereArgs: [eventId],
+      orderBy: 'createdAt DESC',
+    );
+    return List.generate(maps.length, (i) => EventMemory.fromMap(maps[i]));
+  }
+
+  /// 获取所有记忆
+  Future<List<EventMemory>> getAllMemories() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      _memoriesTable,
+      orderBy: 'createdAt DESC',
+    );
+    return List.generate(maps.length, (i) => EventMemory.fromMap(maps[i]));
+  }
+
+  /// 按类型获取记忆
+  Future<List<EventMemory>> getMemoriesByType(String eventId, MemoryType type) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      _memoriesTable,
+      where: 'eventId = ? AND type = ?',
+      whereArgs: [eventId, type.index],
+      orderBy: 'createdAt DESC',
+    );
+    return List.generate(maps.length, (i) => EventMemory.fromMap(maps[i]));
+  }
+
+  /// 插入记忆
+  Future<void> insertMemory(EventMemory memory) async {
+    final db = await database;
+    await db.insert(
+      _memoriesTable,
+      memory.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// 更新记忆
+  Future<void> updateMemory(EventMemory memory) async {
+    final db = await database;
+    await db.update(
+      _memoriesTable,
+      memory.toMap(),
+      where: 'id = ?',
+      whereArgs: [memory.id],
+    );
+  }
+
+  /// 删除记忆
+  Future<void> deleteMemory(String id) async {
+    final db = await database;
+    await db.delete(
+      _memoriesTable,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// 删除事件的所有记忆
+  Future<void> deleteEventMemories(String eventId) async {
+    final db = await database;
+    await db.delete(
+      _memoriesTable,
+      where: 'eventId = ?',
+      whereArgs: [eventId],
+    );
+  }
+
+  /// 批量获取所有记忆（按事件ID分组）
+  /// 解决 N+1 查询问题
+  Future<Map<String, List<EventMemory>>> getAllMemoriesGrouped() async {
+    final db = await database;
+    final results = await db.query(_memoriesTable, orderBy: 'createdAt DESC');
+    
+    final grouped = <String, List<EventMemory>>{};
+    for (final row in results) {
+      final memory = EventMemory.fromMap(row);
+      grouped.putIfAbsent(memory.eventId, () => []).add(memory);
+    }
+    return grouped;
+  }
+
+  /// 获取事件的记忆数量
+  Future<int> getMemoryCount(String eventId) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM $_memoriesTable WHERE eventId = ?',
+      [eventId],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  /// 获取事件的照片总数
+  Future<int> getPhotoCount(String eventId) async {
+    final memories = await getMemories(eventId);
+    return memories.fold<int>(0, (sum, memory) => sum + memory.imageCount);
+  }
+
+  // Template CRUD
+
+  /// 获取所有模板
+  Future<List<Map<String, dynamic>>> getAllTemplates() async {
+    final db = await database;
+    return await db.query(_templatesTable, orderBy: 'createdAt DESC');
+  }
+
+  /// 获取自定义模板
+  Future<List<Map<String, dynamic>>> getCustomTemplates() async {
+    final db = await database;
+    return await db.query(
+      _templatesTable,
+      where: 'isBuiltIn = ?',
+      whereArgs: [0],
+      orderBy: 'createdAt DESC',
+    );
+  }
+
+  /// 插入模板
+  Future<void> insertTemplate(Map<String, dynamic> template) async {
+    final db = await database;
+    await db.insert(
+      _templatesTable,
+      template,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// 更新模板
+  Future<void> updateTemplate(Map<String, dynamic> template) async {
+    final db = await database;
+    await db.update(
+      _templatesTable,
+      template,
+      where: 'id = ?',
+      whereArgs: [template['id']],
+    );
+  }
+
+  /// 删除模板
+  Future<void> deleteTemplate(String id) async {
+    final db = await database;
+    await db.delete(
+      _templatesTable,
+      where: 'id = ? AND isBuiltIn = 0',
+      whereArgs: [id],
+    );
+  }
+
+  /// 根据分类获取模板
+  Future<List<Map<String, dynamic>>> getTemplatesByCategory(String category) async {
+    final db = await database;
+    return await db.query(
+      _templatesTable,
+      where: 'category = ?',
+      whereArgs: [category],
+      orderBy: 'createdAt DESC',
+    );
+  }
+
+  // Learned Patterns CRUD
+
+  /// 获取所有学习到的模式
+  Future<List<LearnedPattern>> getAllLearnedPatterns() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      _learnedPatternsTable,
+      orderBy: 'confidence DESC, sampleCount DESC',
+    );
+    return maps.map((m) => LearnedPattern.fromMap(m)).toList();
+  }
+
+  /// 根据类型获取模式
+  Future<List<LearnedPattern>> getLearnedPatternsByType(int type) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      _learnedPatternsTable,
+      where: 'type = ?',
+      whereArgs: [type],
+      orderBy: 'confidence DESC',
+    );
+    return maps.map((m) => LearnedPattern.fromMap(m)).toList();
+  }
+
+  /// 根据key获取模式
+  Future<LearnedPattern?> getLearnedPatternByKey(String key) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      _learnedPatternsTable,
+      where: 'key = ?',
+      whereArgs: [key],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return LearnedPattern.fromMap(maps.first);
+  }
+
+  /// 插入学习模式
+  Future<void> insertLearnedPattern(LearnedPattern pattern) async {
+    final db = await database;
+    await db.insert(
+      _learnedPatternsTable,
+      pattern.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// 更新学习模式
+  Future<void> updateLearnedPattern(LearnedPattern pattern) async {
+    final db = await database;
+    await db.update(
+      _learnedPatternsTable,
+      pattern.toMap(),
+      where: 'id = ?',
+      whereArgs: [pattern.id],
+    );
+  }
+
+  /// 删除学习模式
+  Future<void> deleteLearnedPattern(String id) async {
+    final db = await database;
+    await db.delete(
+      _learnedPatternsTable,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// 清除所有学习模式
+  Future<void> clearLearnedPatterns() async {
+    final db = await database;
+    await db.delete(_learnedPatternsTable);
+  }
+
   // Backup & Restore
 
   Future<Map<String, dynamic>> exportAllData() async {
@@ -432,14 +833,24 @@ class DatabaseService {
     final categories = await db.query(_categoriesTable);
     final groups = await db.query(_groupsTable);
     final reminders = await db.query(_remindersTable);
+    final advancedReminders = await db.query(_advancedRemindersTable);
+    final reminderRules = await db.query(_reminderRulesTable);
+    final reminderHistory = await db.query(_reminderHistoryTable);
+    final memories = await db.query(_memoriesTable);
 
     return {
-      'version': 1,
+      'version': 5,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
       'events': events,
       'categories': categories,
       'groups': groups,
       'reminders': reminders,
+      'advancedReminders': advancedReminders,
+      'reminderRules': reminderRules,
+      'reminderHistory': reminderHistory,
+      'memories': memories,
+      'templates': await db.query(_templatesTable),
+      'learnedPatterns': await db.query(_learnedPatternsTable),
     };
   }
 
@@ -448,6 +859,12 @@ class DatabaseService {
     
     await db.transaction((txn) async {
       // Clear all tables
+      await txn.delete(_learnedPatternsTable);
+      await txn.delete(_templatesTable);
+      await txn.delete(_memoriesTable);
+      await txn.delete(_reminderHistoryTable);
+      await txn.delete(_reminderRulesTable);
+      await txn.delete(_advancedRemindersTable);
       await txn.delete(_remindersTable);
       await txn.delete(_tableName);
       await txn.delete(_categoriesTable);
@@ -478,6 +895,54 @@ class DatabaseService {
         final reminders = (data['reminders'] as List).cast<Map<String, dynamic>>();
         for (var item in reminders) {
           await txn.insert(_remindersTable, item);
+        }
+      }
+
+      // Restore Advanced Reminders
+      if (data['advancedReminders'] != null) {
+        final advancedReminders = (data['advancedReminders'] as List).cast<Map<String, dynamic>>();
+        for (var item in advancedReminders) {
+          await txn.insert(_advancedRemindersTable, item);
+        }
+      }
+
+      // Restore Reminder Rules
+      if (data['reminderRules'] != null) {
+        final reminderRules = (data['reminderRules'] as List).cast<Map<String, dynamic>>();
+        for (var item in reminderRules) {
+          await txn.insert(_reminderRulesTable, item);
+        }
+      }
+
+      // Restore Reminder History
+      if (data['reminderHistory'] != null) {
+        final reminderHistory = (data['reminderHistory'] as List).cast<Map<String, dynamic>>();
+        for (var item in reminderHistory) {
+          await txn.insert(_reminderHistoryTable, item);
+        }
+      }
+      
+      // Restore Memories
+      if (data['memories'] != null) {
+        final memories = (data['memories'] as List).cast<Map<String, dynamic>>();
+        for (var item in memories) {
+          await txn.insert(_memoriesTable, item);
+        }
+      }
+      
+      // Restore Templates
+      if (data['templates'] != null) {
+        final templates = (data['templates'] as List).cast<Map<String, dynamic>>();
+        for (var item in templates) {
+          await txn.insert(_templatesTable, item);
+        }
+      }
+      
+      // Restore Learned Patterns
+      if (data['learnedPatterns'] != null) {
+        final learnedPatterns = (data['learnedPatterns'] as List).cast<Map<String, dynamic>>();
+        for (var item in learnedPatterns) {
+          await txn.insert(_learnedPatternsTable, item);
         }
       }
     });

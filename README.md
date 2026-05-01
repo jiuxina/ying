@@ -21,6 +21,9 @@
   <a href="https://www.android.com">
     <img src="https://img.shields.io/badge/platform-Android-brightgreen" alt="Platform Android">
   </a>
+  <a href="https://www.android.com">
+    <img src="https://img.shields.io/badge/Platform-Android%20Only-blue" alt="Android Only">
+  </a>
 </p>
 
 ## 目录
@@ -54,13 +57,15 @@
 - 灵活的排序方式（时间/创建/自定义）
 
 ### 📱 桌面小部件
-> 正在开发中
 
-- 多尺寸小部件支持（1x1 / 2x2 / 4x2）
-- 实时更新倒计时显示
+- 多尺寸小部件支持（1x1 迷你 / 2x2 标准 / 4x2 大型）
+- 实时更新倒计时显示（跨天自动刷新）
 - 极简设计，一目了然
-- 点击直达事件详情
-- 自定义小部件主题
+- 点击直达事件详情页
+- 自定义小部件主题色
+- 支持多实例独立配置（每个小部件显示不同事件）
+
+> **注意**：桌面小部件功能仅支持 Android 平台。
 
 ### 📅 日历视图
 
@@ -128,7 +133,8 @@
 - **Flutter SDK**: >= 3.9.2
 - **Dart SDK**: >= 3.9.2
 - **Android SDK**: API 21+ (Android 5.0+)
-- **iOS**: iOS 12.0+ (可选)
+
+> **本项目为纯 Android 应用**，不支持 iOS 或其他平台。桌面小部件功能仅适用于 Android。
 
 #### 构建步骤
 
@@ -181,12 +187,13 @@ flutter run --profile
 4. 保存即可
 
 ### 添加桌面小部件
-> 正在开发中
 
 1. 长按桌面空白处
 2. 选择"小部件"
 3. 找到"萤"应用
-4. 拖拽到桌面，选择要显示的事件
+4. 选择尺寸（迷你/标准/大型）
+5. 拖拽到桌面，选择要显示的事件
+6. 可在应用内"设置 → 桌面小部件"自定义样式
 
 ### 生成分享卡片
 

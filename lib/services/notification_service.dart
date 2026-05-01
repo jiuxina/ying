@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/countdown_event.dart';
 import '../models/reminder.dart';
 import 'debug_service.dart';
@@ -43,9 +42,12 @@ class NotificationService {
   static const _ledOffMs = 500;  // LED熄灭时长（毫秒）
   static const _initTimeoutSeconds = 30;  // 初始化超时时间（秒）
   
-  // 时间常量
+  // 时间常量（预留用于午夜提醒）
+  // ignore: unused_field
   static const _midnightHour = 0;
+  // ignore: unused_field
   static const _midnightMinute = 0;
+  // ignore: unused_field
   static const _midnightSecond = 0;
 
   /// 初始化通知服务

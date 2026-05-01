@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:ying/models/countdown_event.dart';
 import 'package:ying/models/event_group.dart';
+import 'package:ying/models/event_memory.dart';
 import 'package:ying/models/reminder.dart';
 
 import 'package:ying/providers/events_provider.dart';
@@ -14,6 +15,8 @@ class MockDatabaseService implements DatabaseService {
   final List<CountdownEvent> _mockEvents = [];
   final List<CountdownEvent> _mockArchived = [];
   final List<EventGroup> _mockGroups = [];
+  final List<EventMemory> _mockMemories = [];
+  final List<Map<String, dynamic>> _mockTemplates = [];
 
   @override
   Future<Database> get database => throw UnimplementedError();
@@ -145,6 +148,86 @@ class MockDatabaseService implements DatabaseService {
 
   @override
   Future<void> close() async {}
+
+  // Memory methods
+  @override
+  Future<List<EventMemory>> getMemories(String eventId) async =>
+      _mockMemories.where((m) => m.eventId == eventId).toList();
+
+  @override
+  Future<List<EventMemory>> getAllMemories() async => [..._mockMemories];
+
+  @override
+  Future<List<EventMemory>> getMemoriesByType(String eventId, MemoryType type) async =>
+      _mockMemories.where((m) => m.eventId == eventId && m.type == type).toList();
+
+  @override
+  Future<void> insertMemory(EventMemory memory) async {
+    _mockMemories.add(memory);
+  }
+
+  @override
+  Future<void> updateMemory(EventMemory memory) async {
+    final index = _mockMemories.indexWhere((m) => m.id == memory.id);
+    if (index != -1) _mockMemories[index] = memory;
+  }
+
+  @override
+  Future<void> deleteMemory(String id) async {
+    _mockMemories.removeWhere((m) => m.id == id);
+  }
+
+  @override
+  Future<void> deleteEventMemories(String eventId) async {
+    _mockMemories.removeWhere((m) => m.eventId == eventId);
+  }
+
+  @override
+  Future<Map<String, List<EventMemory>>> getAllMemoriesGrouped() async {
+    final grouped = <String, List<EventMemory>>{};
+    for (final memory in _mockMemories) {
+      grouped.putIfAbsent(memory.eventId, () => []).add(memory);
+    }
+    return grouped;
+  }
+
+  @override
+  Future<int> getMemoryCount(String eventId) async =>
+      _mockMemories.where((m) => m.eventId == eventId).length;
+
+  @override
+  Future<int> getPhotoCount(String eventId) async {
+    final memories = _mockMemories.where((m) => m.eventId == eventId);
+    return memories.fold<int>(0, (sum, memory) => sum + memory.imageCount);
+  }
+
+  // Template methods
+  @override
+  Future<List<Map<String, dynamic>>> getAllTemplates() async => [..._mockTemplates];
+
+  @override
+  Future<List<Map<String, dynamic>>> getCustomTemplates() async =>
+      _mockTemplates.where((t) => t['isBuiltIn'] == 0).toList();
+
+  @override
+  Future<void> insertTemplate(Map<String, dynamic> template) async {
+    _mockTemplates.add(template);
+  }
+
+  @override
+  Future<void> updateTemplate(Map<String, dynamic> template) async {
+    final index = _mockTemplates.indexWhere((t) => t['id'] == template['id']);
+    if (index != -1) _mockTemplates[index] = template;
+  }
+
+  @override
+  Future<void> deleteTemplate(String id) async {
+    _mockTemplates.removeWhere((t) => t['id'] == id && t['isBuiltIn'] == 0);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getTemplatesByCategory(String category) async =>
+      _mockTemplates.where((t) => t['category'] == category).toList();
 }
 
 void main() {

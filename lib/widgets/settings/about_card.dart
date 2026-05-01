@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import '../../utils/constants.dart';
 import '../../services/update_service.dart';
+import '../../screens/settings/open_source_licenses_screen.dart';
 import '../common/ui_helpers.dart';
 
 class AboutCard extends StatefulWidget {
@@ -281,6 +282,19 @@ class _AboutCardState extends State<AboutCard> {
                 subtitle: const Text('查看源代码和提交反馈'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _launchUrl(AppConstants.githubUrl),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const IconBox(icon: Icons.description, color: Colors.purple),
+                title: const Text('开放源代码许可'),
+                subtitle: const Text('查看第三方开源库许可'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const OpenSourceLicensesScreen(),
+                  ),
+                ),
               ),
               const Divider(height: 1),
               ListTile(

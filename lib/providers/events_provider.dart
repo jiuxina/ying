@@ -4,10 +4,15 @@ import '../models/countdown_event.dart';
 import '../models/event_group.dart';
 import '../models/category_model.dart';
 import '../models/reminder.dart';
+import '../models/intelligence_models.dart';
 import '../services/database_service.dart';
 import '../services/widget_service.dart';
 import '../services/notification_service.dart';
 import '../services/debug_service.dart';
+import '../services/security_service.dart';
+import '../services/intelligence_service.dart';
+import '../services/smart_suggestion_service.dart'; // For SmartInputResult
+import '../services/holiday_detector.dart'; // For HolidayInfo
 
 /// 事件状态管理 Provider
 ///
@@ -22,6 +27,8 @@ class EventsProvider extends ChangeNotifier {
   final DatabaseService _dbService;
   final NotificationService _notificationService;
   final DebugService _debugService = DebugService();
+  final SecurityService _securityService = SecurityService();
+  final IntelligenceService _intelligenceService = IntelligenceService();
   final Uuid _uuid = const Uuid();
 
   EventsProvider({
@@ -35,6 +42,7 @@ class EventsProvider extends ChangeNotifier {
   String? _selectedCategoryId;
   String _searchQuery = '';
   bool _isLoading = false;
+  bool _showPrivateEvents = false; // 是否显示私密事件
 
   // Getters
   List<CountdownEvent> get events => _filteredEvents;
@@ -42,20 +50,31 @@ class EventsProvider extends ChangeNotifier {
   String? get selectedCategoryId => _selectedCategoryId;
   String get searchQuery => _searchQuery;
   bool get isLoading => _isLoading;
+  bool get showPrivateEvents => _showPrivateEvents;
+  bool get isPrivateUnlocked => _securityService.isPrivateUnlocked;
 
   /// 获取过滤后的事件列表
   List<CountdownEvent> get _filteredEvents {
     var result = List<CountdownEvent>.from(_events);
+
+    // 过滤私密事件（如果未解锁）
+    if (!_showPrivateEvents && !_securityService.isPrivateUnlocked) {
+      result = result.where((e) => !e.isPrivate).toList();
+    }
 
     // 按分类过滤
     if (_selectedCategoryId != null) {
       result = result.where((e) => e.categoryId == _selectedCategoryId).toList();
     }
 
-    // 按搜索词过滤
+    // 按搜索词过滤（不包含私密事件）
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
       result = result.where((e) {
+        // 搜索时不显示私密事件（除非已解锁且允许显示）
+        if (e.isPrivate && !_securityService.isPrivateUnlocked) {
+          return false;
+        }
         return e.title.toLowerCase().contains(query) ||
             (e.note?.toLowerCase().contains(query) ?? false);
       }).toList();
@@ -88,6 +107,8 @@ class EventsProvider extends ChangeNotifier {
       await _loadEvents();
       await _loadGroups();
       await _loadCategories(); // Added
+      await _securityService.initialize();
+      await _intelligenceService.initialize(); // Initialize intelligence service
     } catch (e) {
       debugPrint('Error initializing provider: $e'); // Updated message
     } finally { // Added finally block
@@ -184,6 +205,8 @@ class EventsProvider extends ChangeNotifier {
     int notifyMinute = 0,
     String? groupId,
     List<Reminder>? reminders, // Added parameter
+    bool isPrivate = false, // 是否为私密事件
+    bool learnFromEvent = true, // 是否从事件学习
   }) async {
     final now = DateTime.now();
     final eventId = _uuid.v4(); // Generate ID first
@@ -208,6 +231,7 @@ class EventsProvider extends ChangeNotifier {
       notifyMinute: notifyMinute,
       groupId: groupId,
       reminders: reminders ?? [],
+      isPrivate: isPrivate,
     );
 
     await _dbService.insertEvent(event);
@@ -225,7 +249,13 @@ class EventsProvider extends ChangeNotifier {
     // Schedule notifications
     await _notificationService.scheduleEventReminders(event);
     
+    // Learn from event creation
+    if (learnFromEvent) {
+      await _intelligenceService.recordEventCreation(event);
+    }
+    
     _debugService.info('Event created: $title', source: 'Events');
+    await _updateWidget();
     notifyListeners();
   }
 
@@ -359,6 +389,41 @@ class EventsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 设置是否显示私密事件
+  void setShowPrivateEvents(bool show) {
+    _showPrivateEvents = show;
+    notifyListeners();
+  }
+
+  /// 获取所有非私密事件（用于小部件）
+  List<CountdownEvent> get publicEvents => 
+      _events.where((e) => !e.isPrivate && !e.isArchived).toList();
+
+  /// 获取私密事件列表
+  List<CountdownEvent> get privateEvents => 
+      _events.where((e) => e.isPrivate).toList();
+
+  /// 切换事件隐私状态
+  Future<void> togglePrivate(String id) async {
+    final index = _events.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      final event = _events[index];
+      // 如果要设为私密，不需要验证
+      // 如果要取消私密，需要验证
+      if (event.isPrivate) {
+        // 需要验证才能取消私密
+        final result = await _securityService.authenticate(
+          localizedReason: '请验证身份以取消事件私密状态',
+        );
+        if (result != AuthResult.success) {
+          return; // 验证失败，不执行操作
+        }
+      }
+      
+      await updateEvent(event.copyWith(isPrivate: !event.isPrivate));
+    }
+  }
+
   // Group Management
 
   /// 添加分组
@@ -428,5 +493,65 @@ class EventsProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('更新小部件失败: $e');
     }
+  }
+
+  // ==================== 智能功能方法 ====================
+
+  /// 检测重复事件
+  ///
+  /// 在添加新事件前调用，检测是否存在相似的已有事件
+  Future<DuplicateCheckResult> checkDuplicate(
+    String title,
+    DateTime? targetDate,
+  ) async {
+    return await _intelligenceService.checkDuplicate(title, targetDate);
+  }
+
+  /// 获取智能分类建议
+  Future<List<SmartSuggestion>> getCategorySuggestions(String title) async {
+    return await _intelligenceService.getCategorySuggestions(title);
+  }
+
+  /// 获取智能提醒建议
+  Future<List<SmartReminderSuggestion>> getSmartReminderSuggestions(
+    CountdownEvent event,
+  ) async {
+    return await _intelligenceService.getReminderSuggestions(event);
+  }
+
+  /// 生成智能提醒
+  Future<List<Reminder>> generateSmartReminders(
+    CountdownEvent event, {
+    int maxReminders = 5,
+  }) async {
+    return await _intelligenceService.generateSmartReminders(
+      event,
+      maxReminders: maxReminders,
+    );
+  }
+
+  /// 解析自然语言输入
+  Future<ParsedEventInput> parseNaturalLanguage(String input) async {
+    return await _intelligenceService.parseNaturalLanguage(input);
+  }
+
+  /// 解析并获取完整建议
+  Future<SmartInputResult> parseAndSuggest(String input) async {
+    return await _intelligenceService.parseAndSuggest(input);
+  }
+
+  /// 获取事件统计
+  Future<EventStatistics> getEventStatistics() async {
+    return await _intelligenceService.getEventStatistics();
+  }
+
+  /// 获取即将到来的节假日
+  List<HolidayInfo> getUpcomingHolidays({int count = 5}) {
+    return _intelligenceService.getUpcomingHolidays(count: count);
+  }
+
+  /// 获取季节性事件建议
+  Future<List<SmartSuggestion>> getSeasonalSuggestions() async {
+    return await _intelligenceService.getSeasonalSuggestions();
   }
 }

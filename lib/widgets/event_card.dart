@@ -15,6 +15,9 @@ class EventCard extends StatefulWidget {
   final VoidCallback? onLongPress;
   final VoidCallback? onTogglePin;
   final bool compact; // 紧凑模式
+  final bool isSelectionMode; // 是否处于选择模式
+  final bool isSelected; // 是否被选中
+  final ValueChanged<bool>? onSelectionChanged; // 选择状态改变回调
 
   const EventCard({
     super.key,
@@ -23,6 +26,9 @@ class EventCard extends StatefulWidget {
     this.onLongPress,
     this.onTogglePin,
     this.compact = false,
+    this.isSelectionMode = false,
+    this.isSelected = false,
+    this.onSelectionChanged,
   });
 
   @override
@@ -85,11 +91,13 @@ class _EventCardState extends State<EventCard>
         );
       },
       child: GestureDetector(
-        onTapDown: _handleTapDown,
-        onTapUp: _handleTapUp,
-        onTapCancel: _handleTapCancel,
-        onTap: widget.onTap,
-        onLongPress: widget.onLongPress,
+        onTapDown: widget.isSelectionMode ? null : _handleTapDown,
+        onTapUp: widget.isSelectionMode ? null : _handleTapUp,
+        onTapCancel: widget.isSelectionMode ? null : _handleTapCancel,
+        onTap: widget.isSelectionMode
+            ? () => widget.onSelectionChanged?.call(!widget.isSelected)
+            : widget.onTap,
+        onLongPress: widget.isSelectionMode ? null : widget.onLongPress,
         child: Hero(
           tag: 'event_card_${event.id}',
           flightShuttleBuilder: (
@@ -109,12 +117,20 @@ class _EventCardState extends State<EventCard>
               ),
             );
           },
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(ResponsiveBorderRadius.lg(context)),
+              border: widget.isSelectionMode && widget.isSelected
+                  ? Border.all(
+                      color: theme.colorScheme.primary,
+                      width: 3,
+                    )
+                  : null,
               boxShadow: [
                 BoxShadow(
-                  color: categoryColor.withAlpha(30),
+                  color: categoryColor.withAlpha(widget.isSelected ? 60 : 30),
                   blurRadius: ResponsiveUtils.scaledSize(context, 20),
                   offset: Offset(0, ResponsiveUtils.scaledSpacing(context, 8)),
                 ),
@@ -134,7 +150,9 @@ class _EventCardState extends State<EventCard>
                       ? _buildCompactContent(theme, categoryColor, category)
                       : _buildContent(theme, categoryColor, category),
                   // 置顶标记
-                  if (event.isPinned) _buildPinnedBadge(categoryColor),
+                  if (event.isPinned && !widget.isSelectionMode) _buildPinnedBadge(categoryColor),
+                  // 选择指示器
+                  if (widget.isSelectionMode) _buildSelectionIndicator(theme),
                 ],
               ),
             ),
@@ -636,6 +654,46 @@ class _EventCardState extends State<EventCard>
           size: ResponsiveUtils.scaledSize(context, 14),
           color: color,
         ),
+      ),
+    );
+  }
+
+  /// 选择指示器
+  Widget _buildSelectionIndicator(ThemeData theme) {
+    return Positioned(
+      top: ResponsiveSpacing.sm(context),
+      left: ResponsiveSpacing.sm(context),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        width: ResponsiveUtils.scaledSize(context, 28),
+        height: ResponsiveUtils.scaledSize(context, 28),
+        decoration: BoxDecoration(
+          color: widget.isSelected
+              ? theme.colorScheme.primary
+              : Colors.white.withAlpha(180),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: widget.isSelected
+                ? theme.colorScheme.primary
+                : Colors.white.withAlpha(100),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(30),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: widget.isSelected
+            ? Icon(
+                Icons.check,
+                size: ResponsiveUtils.scaledSize(context, 18),
+                color: Colors.white,
+              )
+            : null,
       ),
     );
   }

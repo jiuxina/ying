@@ -184,34 +184,6 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       return;
     }
 
-    // 确认对话框
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('⚠️ 警告'),
-        content: const Text(
-          '恢复操作将覆盖本地所有数据，且无法撤销！\n\n建议在恢复前先执行备份操作。',
-          style: TextStyle(color: Colors.red),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              Navigator.pop(context, true);
-            },
-            child: const Text('确认覆盖恢复'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
     HapticFeedback.mediumImpact();
     setState(() => _isSyncing = true);
 
@@ -221,8 +193,19 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
 
     setState(() => _isSyncing = false);
 
+    // 处理冲突
+    if (result.conflictType != null && 
+        result.conflictType != ConflictType.none) {
+      _showConflictDialog(result);
+      return;
+    }
+
     if (result.success) {
       HapticFeedback.heavyImpact();
+      final settings = Provider.of<SettingsProvider>(context, listen: false);
+      await settings.updateLastSyncTime();
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('✓ 恢复成功，请重启应用以应用更改'),
@@ -240,6 +223,126 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
         ),
       );
     }
+  }
+
+  /// 显示冲突对话框
+  void _showConflictDialog(SyncResult result) {
+    final localTime = result.localModifiedTime;
+    final remoteTime = result.remoteModifiedTime;
+    final dateFormat = DateFormat('yyyy-MM-dd HH:mm');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber, color: Colors.orange.shade700),
+            const SizedBox(width: 8),
+            const Text('检测到冲突'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('本地和云端数据都有更新，请选择要保留的数据：'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.phone_android, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('本地数据', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          '最后修改: ${localTime != null ? dateFormat.format(localTime) : "未知"}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.cloud, color: Colors.green),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('云端数据', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          '最后修改: ${remoteTime != null ? dateFormat.format(remoteTime) : "未知"}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '建议：选择时间较新的数据版本',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          FilledButton.tonal(
+            onPressed: () async {
+              Navigator.pop(context);
+              // 上传本地数据
+              await _backup();
+            },
+            child: const Text('使用本地'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              // 强制恢复远程数据
+              setState(() => _isSyncing = true);
+              final forceResult = await _cloudSyncService.forceRestore();
+              if (mounted) {
+                setState(() => _isSyncing = false);
+                if (forceResult.success) {
+                  final settings = Provider.of<SettingsProvider>(context, listen: false);
+                  await settings.updateLastSyncTime();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✓ 已使用云端数据'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('使用云端'),
+          ),
+        ],
+      ),
+    );
   }
 
   bool _isConfigValid() {

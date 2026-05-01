@@ -1,24 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:home_widget/home_widget.dart';
+// ignore: unused_import
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
+import 'l10n/app_localizations.dart';
 import 'providers/events_provider.dart';
 import 'providers/settings_provider.dart';
+import 'providers/batch_operations_provider.dart';
 import 'services/notification_service.dart';
 import 'services/debug_service.dart';
-import 'screens/home_screen.dart';
+import 'services/widget_update_scheduler.dart';
+import 'services/cloud_sync_service.dart';
+import 'services/webdav_service.dart';
+import 'services/font_service.dart';
+import 'screens/main_screen.dart';
 import 'screens/event_detail_screen.dart';
 import 'theme/app_theme.dart';
 import 'utils/constants.dart';
 import 'widgets/particle_background.dart';
+import 'widgets/global_particle_overlay.dart';
 import 'widgets/debug/debug_overlay_widget.dart';
 
 import 'utils/route_observer.dart'; // import for globalRouteObserver
 
 import 'pages/widget_config_page.dart';
+import 'widgets/startup_auth_wrapper.dart';
 
 // 全局导航器键，用于在没有 BuildContext 的情况下导航
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -47,6 +57,9 @@ void main() async {
   // Initialize home widget
   await HomeWidget.setAppGroupId(AppConstants.appGroupId);
 
+  // Load custom fonts
+  await FontService.loadAllCustomFonts();
+
   // Initialize settings
   final settingsProvider = SettingsProvider();
   await settingsProvider.init();
@@ -54,6 +67,9 @@ void main() async {
   // Initialize events
   final eventsProvider = EventsProvider();
   await eventsProvider.init();
+
+  // Initialize batch operations provider
+  final batchOpsProvider = BatchOperationsProvider(eventsProvider: eventsProvider);
 
   // Initialize notification service
   final notificationService = NotificationService();
@@ -122,18 +138,14 @@ void main() async {
 
   // 设置系统 UI 样式 - 沉浸式状态栏
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    systemNavigationBarColor: Colors.transparent,
-    systemNavigationBarDividerColor: Colors.transparent,
-    systemNavigationBarIconBrightness: Brightness.dark,
-  ));
+  // 注意：具体的颜色和亮度由 AppTheme 中的 appBarTheme.systemOverlayStyle 控制
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: settingsProvider),
         ChangeNotifierProvider.value(value: eventsProvider),
+        ChangeNotifierProvider.value(value: batchOpsProvider),
       ],
       child: const YingApp(),
     ),
@@ -152,16 +164,86 @@ class YingApp extends StatefulWidget {
 
 class _YingAppState extends State<YingApp> with WidgetsBindingObserver {
   final DebugService _debugService = DebugService();
+  CloudSyncService? _cloudSyncService;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // 启动 Widget 午夜更新调度
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startWidgetScheduler();
+      // 检查并执行自动同步
+      _checkAutoSync();
+    });
+  }
+  
+  void _startWidgetScheduler() {
+    final eventsProvider = context.read<EventsProvider>();
+    WidgetUpdateScheduler.instance.startScheduling(eventsProvider.events);
+  }
+  
+  /// 检查并执行自动同步
+  Future<void> _checkAutoSync() async {
+    final settings = context.read<SettingsProvider>();
+    
+    // 检查是否启用了自动同步且已配置 WebDAV
+    if (!settings.autoSyncEnabled || !settings.isWebdavConfigured) {
+      return;
+    }
+    
+    // 检查上次同步时间，如果超过1小时则执行同步
+    final lastSync = settings.lastSyncTime;
+    if (lastSync != null) {
+      final timeSinceLastSync = DateTime.now().difference(lastSync);
+      // 如果距离上次同步不到1小时，跳过
+      if (timeSinceLastSync.inHours < 1) {
+        debugPrint('自动同步: 距离上次同步不到1小时，跳过');
+        return;
+      }
+    }
+    
+    // 执行自动备份
+    await _performAutoBackup(settings);
+  }
+  
+  /// 执行自动备份
+  Future<void> _performAutoBackup(SettingsProvider settings) async {
+    try {
+      debugPrint('自动同步: 开始执行自动备份...');
+      
+      // 初始化 WebDAV 服务
+      final webdavService = WebDAVService();
+      webdavService.initialize(WebDAVConfig(
+        url: settings.webdavUrl,
+        username: settings.webdavUsername,
+        password: settings.webdavPassword,
+      ));
+      
+      // 创建云同步服务
+      _cloudSyncService = CloudSyncService(webdavService: webdavService);
+      
+      // 执行备份
+      final result = await _cloudSyncService!.backup();
+      
+      if (result.success) {
+        await settings.updateLastSyncTime();
+        debugPrint('自动同步: 备份成功');
+        _debugService.info('Auto backup completed successfully', source: 'CloudSync');
+      } else {
+        debugPrint('自动同步: 备份失败 - ${result.errorMessage}');
+        _debugService.info('Auto backup failed: ${result.errorMessage}', source: 'CloudSync');
+      }
+    } catch (e) {
+      debugPrint('自动同步: 备份异常 - $e');
+      _debugService.error('Auto backup error: $e', source: 'CloudSync');
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    WidgetUpdateScheduler.instance.stopScheduling();
     super.dispose();
   }
 
@@ -171,6 +253,10 @@ class _YingAppState extends State<YingApp> with WidgetsBindingObserver {
     switch (state) {
       case AppLifecycleState.resumed:
         _debugService.updateAppState('Resumed');
+        // 应用恢复时刷新 Widget
+        WidgetUpdateScheduler.instance.refreshNow();
+        // 检查并执行自动同步
+        _checkAutoSync();
         break;
       case AppLifecycleState.inactive:
         _debugService.updateAppState('Inactive');
@@ -195,6 +281,32 @@ class _YingAppState extends State<YingApp> with WidgetsBindingObserver {
       navigatorKey: navigatorKey,  // 设置全局导航器键
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
+      // 国际化支持
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('zh'), // 简体中文
+        Locale('en'), // 英文
+      ],
+      locale: settings.locale,
+      // localeResolutionCallback: 确保正确匹配语言
+      localeResolutionCallback: (locale, supportedLocales) {
+        if (locale == null) {
+          return const Locale('zh');
+        }
+        // 首先尝试完全匹配
+        for (final supportedLocale in supportedLocales) {
+          if (supportedLocale.languageCode == locale.languageCode) {
+            return supportedLocale;
+          }
+        }
+        // 默认返回中文
+        return const Locale('zh');
+      },
       theme: AppTheme.lightTheme(
         settings.themeColor,
         fontFamily: settings.fontFamily,
@@ -207,13 +319,17 @@ class _YingAppState extends State<YingApp> with WidgetsBindingObserver {
       ),
       themeMode: settings.themeMode,
       navigatorObservers: [globalRouteObserver],
-      home: const HomeScreen(),
+      home: const StartupAuthWrapper(
+        child: MainScreen(),
+      ),
       routes: {
         '/widget_config': (context) => const WidgetConfigPage(),
       },
       builder: (context, child) {
-        return ParticleBackground(
-          child: child ?? const SizedBox(),
+        return GlobalParticleOverlay(
+          child: ParticleBackground(
+            child: child ?? const SizedBox(),
+          ),
         );
       },
     );

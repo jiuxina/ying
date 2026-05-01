@@ -14,6 +14,8 @@ import 'settings/category_management_screen.dart';
 import 'settings/data_backup_screen.dart';
 import 'settings/about_screen.dart';
 import 'settings/debug_settings_screen.dart';
+import 'settings/security_settings_screen.dart';
+import 'statistics_screen.dart';
 
 /// ============================================================================
 /// 设置页面 - 导航式布局
@@ -69,6 +71,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const AppearanceSettingsScreen()),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 安全与隐私
+                    const SectionHeader(title: '安全与隐私', icon: Icons.security),
+                    const SizedBox(height: 8),
+                    GlassCard(
+                      child: _buildSettingsTile(
+                        context,
+                        icon: Icons.fingerprint,
+                        iconColor: Colors.deepPurple,
+                        title: '安全设置',
+                        subtitle: '生物识别、PIN码、私密事件',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SecuritySettingsScreen()),
                         ),
                       ),
                     ),
@@ -196,6 +216,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     GlassCard(
                       child: Column(
                         children: [
+                          _buildSettingsTile(
+                            context,
+                            icon: Icons.analytics,
+                            iconColor: Colors.cyan,
+                            title: '数据分析',
+                            subtitle: '查看事件统计和可视化图表',
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const StatisticsScreen()),
+                            ),
+                          ),
+                          const Divider(height: 1),
                           _buildSettingsTile(
                             context,
                             icon: Icons.bug_report,

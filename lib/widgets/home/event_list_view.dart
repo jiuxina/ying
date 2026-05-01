@@ -5,13 +5,13 @@ import 'package:provider/provider.dart';
 import '../../models/countdown_event.dart';
 import '../../providers/events_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/batch_operations_provider.dart';
 import '../../screens/add_edit_event_screen.dart';
 import '../../screens/event_detail_screen.dart';
 
 import '../../utils/responsive_utils.dart';
 import '../animations/staggered_animation.dart';
 import '../category_selector.dart';
-import '../common/ui_helpers.dart';
 import '../event_card.dart';
 
 class EventListView extends StatelessWidget {
@@ -33,12 +33,13 @@ class EventListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
+    final batchOps = context.watch<BatchOperationsProvider>();
     
     return ListView(
       padding: EdgeInsets.all(ResponsiveSpacing.base(context)),
       children: [
         // 事件 - 带排序和展开/收起按钮
-        _buildMainHeader(context, settings),
+        _buildMainHeader(context, settings, batchOps),
         SizedBox(height: ResponsiveSpacing.md(context)),
         CategorySelector(
           selectedCategoryId: selectedCategoryId,
@@ -51,10 +52,10 @@ class EventListView extends StatelessWidget {
           // 空状态仍然显示，但保持按钮可见
           _buildEmptyPlaceholder(context),
         ] else ...[
-          if (isCustomSort)
+          if (isCustomSort && !batchOps.isSelectionMode)
             _buildCustomSortList(context)
           else
-            _buildStandardList(context),
+            _buildStandardList(context, batchOps),
         ],
 
         const SizedBox(height: 80),
@@ -62,7 +63,7 @@ class EventListView extends StatelessWidget {
     );
   }
 
-  Widget _buildMainHeader(BuildContext context, SettingsProvider settings) {
+  Widget _buildMainHeader(BuildContext context, SettingsProvider settings, BatchOperationsProvider batchOps) {
     return Row(
       children: [
         Icon(
@@ -83,88 +84,120 @@ class EventListView extends StatelessWidget {
             maxLines: 1,
           ),
         ),
-        SizedBox(width: ResponsiveSpacing.sm(context)),
-        GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            _showSortDialog(context, settings);
-          },
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: ResponsiveSpacing.sm(context),
-              vertical: ResponsiveSpacing.xs(context),
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.surface.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
-              border: Border.all(
-                color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+        // 多选按钮
+        if (!batchOps.isSelectionMode) ...[
+          SizedBox(width: ResponsiveSpacing.sm(context)),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              batchOps.enterSelectionMode();
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveSpacing.sm(context),
+                vertical: ResponsiveSpacing.xs(context),
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
+                border: Border.all(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Icon(
+                Icons.checklist,
+                size: ResponsiveIconSize.sm(context),
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.sort,
-                  size: ResponsiveIconSize.sm(context),
-                  color: Theme.of(context).colorScheme.primary,
+          ),
+        ],
+        if (!batchOps.isSelectionMode) ...[
+          SizedBox(width: ResponsiveSpacing.sm(context)),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _showSortDialog(context, settings);
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveSpacing.sm(context),
+                vertical: ResponsiveSpacing.xs(context),
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surface.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
+                border: Border.all(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
                 ),
-                SizedBox(width: ResponsiveSpacing.xs(context)),
-                Text(
-                  _getSortLabel(settings.sortOrder),
-                  style: TextStyle(
-                    fontSize: ResponsiveFontSize.sm(context),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.sort,
+                    size: ResponsiveIconSize.sm(context),
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(width: ResponsiveSpacing.sm(context)),
-        GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            settings.toggleCardsExpanded();
-          },
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: ResponsiveSpacing.sm(context),
-              vertical: ResponsiveSpacing.xs(context),
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.surface.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
-              border: Border.all(
-                color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                  SizedBox(width: ResponsiveSpacing.xs(context)),
+                  Text(
+                    _getSortLabel(settings.sortOrder),
+                    style: TextStyle(
+                      fontSize: ResponsiveFontSize.sm(context),
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  settings.cardsExpanded
-                      ? Icons.unfold_less
-                      : Icons.unfold_more,
-                  size: ResponsiveIconSize.sm(context),
-                  color: Theme.of(context).colorScheme.primary,
+          ),
+        ],
+        if (!batchOps.isSelectionMode) ...[
+          SizedBox(width: ResponsiveSpacing.sm(context)),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              settings.toggleCardsExpanded();
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveSpacing.sm(context),
+                vertical: ResponsiveSpacing.xs(context),
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surface.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(ResponsiveBorderRadius.md(context)),
+                border: Border.all(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
                 ),
-                SizedBox(width: ResponsiveSpacing.xs(context)),
-                Text(
-                  settings.cardsExpanded ? '收起' : '展开',
-                  style: TextStyle(
-                    fontSize: ResponsiveFontSize.sm(context),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    settings.cardsExpanded
+                        ? Icons.unfold_less
+                        : Icons.unfold_more,
+                    size: ResponsiveIconSize.sm(context),
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                ),
-              ],
+                  SizedBox(width: ResponsiveSpacing.xs(context)),
+                  Text(
+                    settings.cardsExpanded ? '收起' : '展开',
+                    style: TextStyle(
+                      fontSize: ResponsiveFontSize.sm(context),
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -312,13 +345,13 @@ class EventListView extends StatelessWidget {
   /// Merge pinned events at the top, followed by unpinned events
   List<CountdownEvent> get _allEvents => [...pinnedEvents, ...unpinnedEvents];
 
-  Widget _buildStandardList(BuildContext context) {
+  Widget _buildStandardList(BuildContext context, BatchOperationsProvider batchOps) {
     return Column(
       children: [
         ..._allEvents.asMap().entries.map(
           (entry) => StaggeredListItem(
             index: entry.key,
-            child: _buildEventCard(context, entry.value),
+            child: _buildEventCard(context, entry.value, batchOps),
           ),
         ),
       ],
@@ -367,6 +400,7 @@ class EventListView extends StatelessWidget {
           child: _buildEventCard(
             context, 
             event, 
+            null,
             isReorderable: !isPinned, // Only unpinned events are reorderable
           ),
         );
@@ -376,29 +410,41 @@ class EventListView extends StatelessWidget {
 
   Widget _buildEventCard(
     BuildContext context,
-    CountdownEvent event, {
+    CountdownEvent event,
+    BatchOperationsProvider? batchOps, {
     bool isReorderable = false,
   }) {
     final settings = context.watch<SettingsProvider>();
+    final isSelectionMode = batchOps?.isSelectionMode ?? false;
+    final isSelected = batchOps?.isEventSelected(event.id) ?? false;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 0),
       child: EventCard(
         event: event,
         compact: !settings.cardsExpanded,
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => EventDetailScreen(event: event),
-          ),
-        ),
-        onLongPress: isReorderable
+        isSelectionMode: isSelectionMode,
+        isSelected: isSelected,
+        onSelectionChanged: isSelectionMode
+            ? (_) => batchOps!.toggleEventSelection(event.id)
+            : null,
+        onTap: isSelectionMode
+            ? null
+            : () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EventDetailScreen(event: event),
+                ),
+              ),
+        onLongPress: isReorderable || isSelectionMode
             ? null
             : () => _showEventOptions(context, event),
-        onTogglePin: () {
-          HapticFeedback.mediumImpact();
-          context.read<EventsProvider>().togglePin(event.id);
-        },
+        onTogglePin: isSelectionMode
+            ? null
+            : () {
+                HapticFeedback.mediumImpact();
+                context.read<EventsProvider>().togglePin(event.id);
+              },
       ),
     );
   }

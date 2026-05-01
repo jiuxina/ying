@@ -1,5 +1,25 @@
 import 'reminder.dart';
 
+/// 事件验证结果
+class EventValidationResult {
+  final bool isValid;
+  final String? errorMessage;
+  final String? field;
+
+  // ignore: unused_element
+  const EventValidationResult._({
+    required this.isValid,
+    // ignore: unused_element_parameter
+    this.errorMessage,
+    // ignore: unused_element_parameter
+    this.field,
+  });
+
+  const EventValidationResult.valid() : isValid = true, errorMessage = null, field = null;
+
+  const EventValidationResult.invalid(this.errorMessage, {this.field}) : isValid = false;
+}
+
 /// 倒数日事件模型
 class CountdownEvent {
   final String id;
@@ -24,6 +44,7 @@ class CountdownEvent {
   final int notifyHour; // 提醒时间（小时）
   final int notifyMinute; // 提醒时间（分钟）
   final String? groupId; // 所属分组ID
+  final bool isPrivate; // 是否为私密事件
 
   CountdownEvent({
     required this.id,
@@ -47,6 +68,7 @@ class CountdownEvent {
     this.notifyMinute = 0,
     this.groupId,
     this.reminders = const [],
+    this.isPrivate = false,
   });
   
   // existing fields...
@@ -113,6 +135,7 @@ class CountdownEvent {
     int? notifyMinute,
     Object? groupId = _sentinel,
     List<Reminder>? reminders,
+    bool? isPrivate,
   }) {
     return CountdownEvent(
       id: id ?? this.id,
@@ -136,6 +159,7 @@ class CountdownEvent {
       notifyMinute: notifyMinute ?? this.notifyMinute,
       groupId: groupId == _sentinel ? this.groupId : groupId as String?,
       reminders: reminders ?? this.reminders,
+      isPrivate: isPrivate ?? this.isPrivate,
     );
   }
 
@@ -162,6 +186,7 @@ class CountdownEvent {
       'notifyHour': notifyHour,
       'notifyMinute': notifyMinute,
       'groupId': groupId,
+      'isPrivate': isPrivate ? 1 : 0,
     };
   }
 
@@ -188,6 +213,7 @@ class CountdownEvent {
       notifyHour: map['notifyHour'] as int? ?? 9,
       notifyMinute: map['notifyMinute'] as int? ?? 0,
       groupId: map['groupId'] as String?,
+      isPrivate: (map['isPrivate'] as int?) == 1,
       reminders: [], // Reminders are loaded separately
     );
   }
@@ -201,5 +227,85 @@ class CountdownEvent {
 
   @override
   int get hashCode => id.hashCode;
+
+  // ==================== 验证方法 ====================
+
+  /// 验证事件数据的有效性
+  /// 
+  /// 返回验证结果，包含是否有效和错误信息
+  EventValidationResult validate() {
+    // 验证标题
+    if (title.trim().isEmpty) {
+      return const EventValidationResult.invalid('标题不能为空', field: 'title');
+    }
+    if (title.length > 100) {
+      return const EventValidationResult.invalid('标题长度不能超过100个字符', field: 'title');
+    }
+
+    // 验证备注长度
+    if (note != null && note!.length > 1000) {
+      return const EventValidationResult.invalid('备注长度不能超过1000个字符', field: 'note');
+    }
+
+    // 验证目标日期
+    if (isLunar) {
+      // 农历日期需要 lunarDateStr
+      if (lunarDateStr == null || lunarDateStr!.isEmpty) {
+        return const EventValidationResult.invalid('农历日期不能为空', field: 'lunarDateStr');
+      }
+    } else {
+      // 公历日期验证
+      // 对于倒数日，允许过去日期（显示为已过期）
+      // 对于正数日，过去日期是正常的
+    }
+
+    // 验证分类ID
+    if (categoryId.isEmpty) {
+      return const EventValidationResult.invalid('请选择一个分类', field: 'categoryId');
+    }
+
+    // 验证通知设置
+    if (enableNotification) {
+      if (notifyDaysBefore < 0 || notifyDaysBefore > 365) {
+        return const EventValidationResult.invalid('提前天数必须在0-365之间', field: 'notifyDaysBefore');
+      }
+      if (notifyHour < 0 || notifyHour > 23) {
+        return const EventValidationResult.invalid('小时必须在0-23之间', field: 'notifyHour');
+      }
+      if (notifyMinute < 0 || notifyMinute > 59) {
+        return const EventValidationResult.invalid('分钟必须在0-59之间', field: 'notifyMinute');
+      }
+    }
+
+    // 验证提醒列表
+    if (reminders.length > 10) {
+      return const EventValidationResult.invalid('最多只能设置10个提醒', field: 'reminders');
+    }
+
+    // 验证提醒时间
+    for (final reminder in reminders) {
+      if (reminder.reminderDateTime.isAfter(targetDate) && !isCountUp) {
+        return EventValidationResult.invalid(
+          '提醒时间不能晚于目标日期',
+          field: 'reminders',
+        );
+      }
+    }
+
+    return const EventValidationResult.valid();
+  }
+
+  /// 快速验证（仅检查必填字段）
+  bool get isValidQuick {
+    return title.trim().isNotEmpty && categoryId.isNotEmpty;
+  }
+
+  /// 验证并抛出异常
+  void validateOrThrow() {
+    final result = validate();
+    if (!result.isValid) {
+      throw ArgumentError('${result.field ?? "字段"}: ${result.errorMessage}');
+    }
+  }
 }
 

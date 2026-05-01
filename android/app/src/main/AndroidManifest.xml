@@ -70,6 +70,19 @@
                 android:resource="@xml/file_paths" />
         </provider>
         
+        <!-- 迷你小部件 (1×1) - Jetpack Glance -->
+        <receiver
+            android:name=".CountdownMiniWidgetReceiver"
+            android:exported="true"
+            android:label="萤 (迷你)">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/countdown_widget_mini_info" />
+        </receiver>
+        
         <!-- 标准小部件 (2×2) - Jetpack Glance -->
         <receiver
             android:name=".CountdownWidgetReceiver"

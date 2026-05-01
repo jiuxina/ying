@@ -59,7 +59,7 @@ class AppConstants {
   static const String appGroupId = 'com.jiuxina.ying';
 
   /// 版本号
-  static const String appVersion = '1.0.0';
+  static const String appVersion = '1.1.0';
 
   /// 应用描述
   static const String appDescription = '用心记录每一个重要时刻';

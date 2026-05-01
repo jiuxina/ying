@@ -5,18 +5,24 @@ import 'package:provider/provider.dart';
 import 'package:app_links/app_links.dart';
 
 import '../models/countdown_event.dart';
+import '../models/category_model.dart';
 import '../providers/events_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/batch_operations_provider.dart';
 import '../widgets/common/app_background.dart';
 import '../widgets/common/empty_state.dart';
 import '../widgets/common/expandable_fab.dart';
 import '../widgets/home/home_header.dart';
 import '../widgets/home/search_header.dart';
 import '../widgets/home/event_list_view.dart';
+import '../widgets/home/batch_operations_bar.dart';
+import '../utils/responsive_utils.dart';
 import 'add_edit_event_screen.dart';
+import 'event_detail_screen.dart';
 import 'settings_screen.dart';
 import 'archive_screen.dart';
 import 'calendar_screen.dart';
+import 'template_gallery_screen.dart';
 import '../services/share_link_service.dart';
 
 /// ============================================================================
@@ -52,17 +58,63 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _checkWidgetLaunch() async {
     try {
-      // 检查是否是 Widget 配置启动
-      const channel = MethodChannel('com.jiuxina.ying/install');
-      final int? widgetId = await channel.invokeMethod<int>('getAppWidgetId');
+      // 首先从 install channel 消费 pending widget ID（与 Android 端实现保持一致）
+      const installChannel = MethodChannel('com.jiuxina.ying/install');
+      int? widgetId = await installChannel.invokeMethod<int>('consumePendingWidgetId');
+      
+      // 如果没有 pending ID，尝试从 intent 获取
+      if (widgetId == null) {
+        widgetId = await installChannel.invokeMethod<int>('getAppWidgetId');
+      }
+
+      const widgetChannel = MethodChannel('com.jiuxina.ying/widget');
       
       if (widgetId != null) {
+        // Widget 配置模式
+        debugPrint('Widget config mode, ID: $widgetId');
         if (mounted) {
-           Navigator.of(context).pushReplacementNamed('/widget_config');
+          Navigator.of(context).pushReplacementNamed('/widget_config');
+        }
+        return;
+      }
+      
+      // 首先尝试消费 pending event ID（从 onNewIntent 获取）
+      String? eventId = await widgetChannel.invokeMethod<String>('consumePendingEventId');
+      
+      // 如果没有 pending ID，尝试从 intent 获取
+      if (eventId == null) {
+        eventId = await widgetChannel.invokeMethod<String>('getLaunchEventId');
+      }
+      
+      if (eventId != null && mounted) {
+        debugPrint('Widget click mode, event ID: $eventId');
+        // 查找事件并跳转到详情页
+        final eventsProvider = context.read<EventsProvider>();
+        try {
+          final event = eventsProvider.events.firstWhere(
+            (e) => e.id == eventId,
+            orElse: () => eventsProvider.archivedEvents.firstWhere(
+              (e) => e.id == eventId,
+              orElse: () => throw Exception('Event not found'),
+            ),
+          );
+          
+          // 延迟导航，确保页面已构建完成
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => EventDetailScreen(event: event),
+                ),
+              );
+            }
+          });
+        } catch (e) {
+          debugPrint('Widget 点击事件未找到: $eventId');
         }
       }
     } catch (e) {
-      debugPrint("Error checking widget ID: $e");
+      debugPrint("Error checking widget launch: $e");
     }
   }
 
@@ -187,11 +239,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final batchOps = context.watch<BatchOperationsProvider>();
+    
     return PopScope(
-      canPop: !_isSearching,
+      canPop: !_isSearching && !batchOps.isSelectionMode,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && _isSearching) {
-          _exitSearch();
+        if (!didPop) {
+          if (batchOps.isSelectionMode) {
+            batchOps.exitSelectionMode();
+          } else if (_isSearching) {
+            _exitSearch();
+          }
         }
       },
       child: Scaffold(
@@ -200,13 +258,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             bottom: false,
             child: Column(
               children: [
-                _buildAppBar(),
+                _buildAppBar(batchOps),
                 Expanded(
                   child: Consumer<EventsProvider>(
                     builder: (context, provider, child) {
                       return RefreshIndicator(
                         onRefresh: () => provider.init(),
-                        child: _buildBody(provider),
+                        child: _buildBody(provider, batchOps),
                       );
                     },
                   ),
@@ -215,12 +273,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
         ),
-        floatingActionButton: _buildExpandableFAB(),
+        floatingActionButton: batchOps.isSelectionMode 
+            ? null 
+            : _buildExpandableFAB(),
+        bottomNavigationBar: batchOps.isSelectionMode
+            ? BatchOperationsBar(
+                onDelete: () => _showBatchDeleteConfirm(context, batchOps),
+                onArchive: () => _showBatchArchiveConfirm(context, batchOps),
+                onChangeCategory: () => _showBatchCategoryDialog(context, batchOps),
+                onExport: () => _handleBatchExport(context, batchOps),
+              )
+            : null,
       ),
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(BatchOperationsProvider batchOps) {
+    // 选择模式下的 AppBar
+    if (batchOps.isSelectionMode) {
+      return _buildSelectionModeAppBar(batchOps);
+    }
+    
+    // 搜索模式下的 AppBar
     if (_isSearching) {
       return SearchHeader(
         controller: _searchController,
@@ -228,6 +302,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         onChanged: (value) => setState(() {}),
       );
     }
+    
+    // 默认 AppBar
     return HomeHeader(
       onSearchTap: () => setState(() => _isSearching = true),
       onSettingsTap: () => Navigator.push(
@@ -245,7 +321,49 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildBody(EventsProvider provider) {
+  /// 选择模式 AppBar
+  Widget _buildSelectionModeAppBar(BatchOperationsProvider batchOps) {
+    final theme = Theme.of(context);
+    final selectedCount = batchOps.selectedCount;
+    
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveSpacing.base(context),
+        vertical: ResponsiveSpacing.sm(context),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              batchOps.exitSelectionMode();
+            },
+          ),
+          Expanded(
+            child: Text(
+              '已选择 $selectedCount 个事件',
+              style: TextStyle(
+                fontSize: ResponsiveFontSize.lg(context),
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+          if (selectedCount > 0)
+            TextButton(
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                batchOps.invertSelection();
+              },
+              child: const Text('反选'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(EventsProvider provider, BatchOperationsProvider batchOps) {
     if (provider.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -254,7 +372,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final settings = context.watch<SettingsProvider>();
     final isCustomSort = settings.sortOrder == 'custom' && 
                          _searchController.text.isEmpty && 
-                         _selectedCategoryId == null;
+                         _selectedCategoryId == null &&
+                         !batchOps.isSelectionMode;
 
     if (events.isEmpty && !_isSearching && _selectedCategoryId == null) {
       // Only show default empty state when there are truly no events at all
@@ -367,6 +486,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           },
         ),
         ExpandableFabItem(
+          icon: Icons.dashboard_customize,
+          label: '从模板创建',
+          color: Colors.indigo,
+          onPressed: () {
+            HapticFeedback.mediumImpact();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const TemplateGalleryScreen()),
+            );
+          },
+        ),
+        ExpandableFabItem(
           icon: Icons.add,
           label: '添加事件',
           color: Theme.of(context).colorScheme.primary,
@@ -383,6 +514,258 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       ],
     );
+  }
+
+  // ========== 批量操作方法 ==========
+
+  /// 显示批量删除确认对话框
+  Future<void> _showBatchDeleteConfirm(
+    BuildContext context,
+    BatchOperationsProvider batchOps,
+  ) async {
+    final selectedCount = batchOps.selectedCount;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('批量删除'),
+        content: Text('确定要删除选中的 $selectedCount 个事件吗？\n此操作可以撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final result = await batchOps.batchDelete();
+      
+      if (mounted) {
+        if (result.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('已删除 ${result.successCount} 个事件'),
+              action: SnackBarAction(
+                label: '撤销',
+                onPressed: () async {
+                  final undoSuccess = await batchOps.undoBatchDelete();
+                  if (undoSuccess && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('已撤销删除')),
+                    );
+                  }
+                },
+              ),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('删除完成：成功 ${result.successCount} 个，失败 ${result.failureCount} 个'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// 显示批量归档确认对话框
+  Future<void> _showBatchArchiveConfirm(
+    BuildContext context,
+    BatchOperationsProvider batchOps,
+  ) async {
+    final selectedCount = batchOps.selectedCount;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('批量归档'),
+        content: Text('确定要归档选中的 $selectedCount 个事件吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('归档'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final result = await batchOps.batchArchive();
+      
+      if (mounted) {
+        if (result.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('已归档 ${result.successCount} 个事件'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('归档完成：成功 ${result.successCount} 个，失败 ${result.failureCount} 个'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// 显示批量更改分类对话框
+  Future<void> _showBatchCategoryDialog(
+    BuildContext context,
+    BatchOperationsProvider batchOps,
+  ) async {
+    final eventsProvider = context.read<EventsProvider>();
+    final categories = eventsProvider.categories;
+    
+    String? selectedCategoryId;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('更改分类'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '将选中的 ${batchOps.selectedCount} 个事件移至：',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // 分类列表
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 300),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      final isSelected = selectedCategoryId == category.id;
+                      
+                      return RadioListTile<String>(
+                        value: category.id,
+                        groupValue: selectedCategoryId,
+                        title: Row(
+                          children: [
+                            Text(category.icon),
+                            const SizedBox(width: 8),
+                            Text(category.name),
+                          ],
+                        ),
+                        secondary: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: Color(category.color),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setState(() => selectedCategoryId = value);
+                        },
+                        selected: isSelected,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: selectedCategoryId != null
+                    ? () => Navigator.pop(context, true)
+                    : null,
+                child: const Text('确定'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (confirmed == true && selectedCategoryId != null && mounted) {
+      final result = await batchOps.batchChangeCategory(selectedCategoryId!);
+      
+      if (mounted) {
+        if (result.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('已更改 ${result.successCount} 个事件的分类'),
+              action: SnackBarAction(
+                label: '撤销',
+                onPressed: () async {
+                  final undoSuccess = await batchOps.undoBatchChangeCategory();
+                  if (undoSuccess && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('已撤销更改分类')),
+                    );
+                  }
+                },
+              ),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('更改完成：成功 ${result.successCount} 个，失败 ${result.failureCount} 个'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// 处理批量导出
+  void _handleBatchExport(
+    BuildContext context,
+    BatchOperationsProvider batchOps,
+  ) {
+    final exportedData = batchOps.exportSelected();
+    
+    if (exportedData.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('没有选中任何事件')),
+      );
+      return;
+    }
+    
+    // 显示导出成功提示
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('已选择 ${exportedData.length} 个事件，导出功能开发中...'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    
+    // TODO: 实现实际的导出功能
+    // 可以导出为 JSON 或 iCalendar 格式
   }
 }
 

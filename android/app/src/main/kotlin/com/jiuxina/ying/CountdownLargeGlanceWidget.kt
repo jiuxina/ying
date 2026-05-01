@@ -70,7 +70,8 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
                     -1
                 }
                 
-                val prefs = context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)
+                // home_widget 插件在 Android 上写入 HomeWidgetPreferences
+                val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
 
                 // 1. 读取主事件 (ID-Based)
                 val titleKey = "title_$widgetId"
@@ -83,6 +84,7 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
 
                 if (title == null) {
                     // 未配置 -> 显示 "点击设置"
+                    val widgetEventId = prefs.getString("event_id_$widgetId", null)
                     Box(
                         modifier = GlanceModifier
                             .fillMaxSize()
@@ -91,6 +93,7 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
                                 Intent(context, MainActivity::class.java).apply {
                                     action = AppWidgetManager.ACTION_APPWIDGET_CONFIGURE
                                     putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+                                    widgetEventId?.let { putExtra("event_id", it) }
                                 }
                             ))
                             .padding(16.dp),
@@ -120,19 +123,71 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
                     val e3Title = prefs.getString("widget_event3_title", "") ?: ""
                     val e3Days = prefs.getString("widget_event3_days", "") ?: ""
                     
-                    // 3. 读取样式 (Global Large Style)
-                    val styleStr = prefs.getString("widget_large_style", "standard")
-                    val bgColor = prefs.getInt("widget_large_bg_color", 0xFF6366F1.toInt())
-                    val showDate = prefs.getBoolean("widget_large_show_date", true)
+                    // 3. 读取样式 (per-widget first, then global)
+                    val styleData = WidgetUtils.loadWidgetStyle(prefs, widgetId)
+                    
+                    val finalStyleStr = prefs.getString("style_${widgetId}_style", null)
+                        ?: prefs.getString("widget_large_style", "standard")
+                    
+                    val finalBgColor = if (styleData.backgroundColor != 0xFF6366F1.toInt()) {
+                        styleData.backgroundColor
+                    } else {
+                        try {
+                            prefs.getInt("widget_large_bg_color", styleData.backgroundColor)
+                        } catch (e: Exception) {
+                            styleData.backgroundColor
+                        }
+                    }
+                    
+                    val finalShowDate = if (prefs.getString("style_${widgetId}_style", null) != null) {
+                        styleData.showDate
+                    } else {
+                        try {
+                            prefs.getBoolean("widget_large_show_date", styleData.showDate)
+                        } catch (e: Exception) {
+                            styleData.showDate
+                        }
+                    }
+                    
+                    val finalShowTitle = if (prefs.getString("style_${widgetId}_style", null) != null) {
+                        styleData.showTitle
+                    } else {
+                        try {
+                            prefs.getBoolean("widget_large_show_title", true)
+                        } catch (e: Exception) {
+                            true
+                        }
+                    }
+                    
+                    val finalShowDays = if (prefs.getString("style_${widgetId}_style", null) != null) {
+                        styleData.showDays
+                    } else {
+                        try {
+                            prefs.getBoolean("widget_large_show_days", true)
+                        } catch (e: Exception) {
+                            true
+                        }
+                    }
+
+                    // 获取事件 ID 用于点击跳转
+                    val widgetEventId = prefs.getString("event_id_$widgetId", null)
 
                     val data = WidgetUtils.WidgetData(
                         title = title,
                         days = daysLong.toString(),
                         prefix = prefix,
                         date = dateStr ?: "",
-                        backgroundColor = bgColor,
-                        showDate = showDate,
-                        style = WidgetUtils.WidgetStyle.fromString(styleStr),
+                        backgroundColor = finalBgColor,
+                        gradientEndColor = styleData.gradientEndColor,
+                        opacity = styleData.opacity,
+                        showDate = finalShowDate,
+                        showTitle = finalShowTitle,
+                        showDays = finalShowDays,
+                        style = WidgetUtils.WidgetStyle.fromString(finalStyleStr),
+                        fontSize = styleData.fontSize,
+                        cornerRadius = styleData.cornerRadius,
+                        textColor = styleData.textColor,
+                        backgroundImage = styleData.backgroundImage,
                         
                         event2Title = e2Title,
                         event2Days = e2Days,
@@ -140,16 +195,17 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
                         event3Days = e3Days
                     )
                     
-                    LargeWidgetContent(data)
+                    LargeWidgetContent(data, widgetEventId)
                 }
             }
         }
     }
 
     @Composable
-    private fun LargeWidgetContent(data: WidgetUtils.WidgetData) {
+    private fun LargeWidgetContent(data: WidgetUtils.WidgetData, eventId: String? = null) {
         val size = LocalSize.current
         val isExpanded = size.width > 300.dp
+        val context = LocalContext.current
         
         // 根据样式计算背景色
         val bgColor = when (data.style) {
@@ -167,14 +223,24 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
             }
         }
         
-        val context = LocalContext.current
+        // 字体大小
+        val titleSize = (if (isExpanded) 18.sp else 16.sp) * data.fontSize.titleScale
+        val daysSize = (if (isExpanded) 40.sp else 36.sp) * data.fontSize.daysScale
+        val labelSize = 12.sp * data.fontSize.titleScale
+        val dateSize = 10.sp * data.fontSize.titleScale
+        val listItemSize = 12.sp * data.fontSize.titleScale
         
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .cornerRadius(16.dp)
+                .cornerRadius(data.cornerRadius.dp)
                 .background(ColorProvider(bgColor))
-                .clickable(actionStartActivity(Intent(context, MainActivity::class.java)))
+                .clickable(actionStartActivity(
+                    Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        eventId?.let { putExtra("event_id", it) }
+                    }
+                ))
         ) {
             Row(
                 modifier = GlanceModifier
@@ -188,56 +254,62 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = data.title,
-                        style = TextStyle(
-                            color = ColorProvider(WidgetUtils.Colors.WHITE),
-                            fontSize = if (isExpanded) 18.sp else 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        ),
-                        maxLines = 1
-                    )
-                    
-                    Spacer(modifier = GlanceModifier.height(8.dp))
-                    
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                    // 标题
+                    if (data.showTitle) {
                         Text(
-                            text = data.prefix,
+                            text = data.title,
                             style = TextStyle(
-                                color = ColorProvider(WidgetUtils.Colors.WHITE_80),
-                                fontSize = 12.sp
-                            )
+                                color = ColorProvider(data.textColor),
+                                fontSize = titleSize,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            ),
+                            maxLines = 1
                         )
-                        Spacer(modifier = GlanceModifier.width(4.dp))
-                        Text(
-                            text = data.days,
-                            style = TextStyle(
-                                color = ColorProvider(WidgetUtils.Colors.WHITE),
-                                fontSize = if (isExpanded) 40.sp else 36.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Spacer(modifier = GlanceModifier.width(2.dp))
-                        Text(
-                            text = "天",
-                            style = TextStyle(
-                                color = ColorProvider(WidgetUtils.Colors.WHITE_80),
-                                fontSize = 12.sp
-                            )
-                        )
+                        Spacer(modifier = GlanceModifier.height(8.dp))
                     }
                     
-                    if (data.showDate) {
+                    // 天数
+                    if (data.showDays) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = data.prefix,
+                                style = TextStyle(
+                                    color = ColorProvider(WidgetUtils.applyOpacity(data.textColor, 0.8f)),
+                                    fontSize = labelSize
+                                )
+                            )
+                            Spacer(modifier = GlanceModifier.width(4.dp))
+                            Text(
+                                text = data.days,
+                                style = TextStyle(
+                                    color = ColorProvider(data.textColor),
+                                    fontSize = daysSize,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                            Spacer(modifier = GlanceModifier.width(2.dp))
+                            Text(
+                                text = "天",
+                                style = TextStyle(
+                                    color = ColorProvider(WidgetUtils.applyOpacity(data.textColor, 0.8f)),
+                                    fontSize = labelSize
+                                )
+                            )
+                        }
+                    }
+                    
+                    // 日期
+                    if (data.showDate && data.date.isNotEmpty()) {
                         Spacer(modifier = GlanceModifier.height(4.dp))
                         Text(
                             text = data.date,
                             style = TextStyle(
-                                color = ColorProvider(WidgetUtils.Colors.WHITE_60),
-                                fontSize = 10.sp
+                                color = ColorProvider(WidgetUtils.applyOpacity(data.textColor, 0.6f)),
+                                fontSize = dateSize
                             ),
                             maxLines = 1
                         )
@@ -249,7 +321,7 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
                     modifier = GlanceModifier
                         .width(1.dp)
                         .fillMaxHeight()
-                        .background(ColorProvider(WidgetUtils.Colors.DIVIDER))
+                        .background(ColorProvider(WidgetUtils.applyOpacity(data.textColor, 0.2f)))
                 )
                 
                 // 右侧：事件列表
@@ -260,17 +332,17 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (data.event2Title.isNotEmpty()) {
-                        EventListItem(data.event2Title, data.event2Days)
+                        EventListItem(data.event2Title, data.event2Days, listItemSize, data.textColor)
                         Spacer(modifier = GlanceModifier.height(8.dp))
                     }
                     if (data.event3Title.isNotEmpty()) {
-                        EventListItem(data.event3Title, data.event3Days)
+                        EventListItem(data.event3Title, data.event3Days, listItemSize, data.textColor)
                     }
                     if (data.event2Title.isEmpty() && data.event3Title.isEmpty()) {
                         Text(
                             text = "暂无更多事件",
                             style = TextStyle(
-                                color = ColorProvider(WidgetUtils.Colors.WHITE_50),
+                                color = ColorProvider(WidgetUtils.applyOpacity(data.textColor, 0.5f)),
                                 fontSize = 11.sp
                             )
                         )
@@ -281,7 +353,7 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun EventListItem(title: String, days: String) {
+    private fun EventListItem(title: String, days: String, fontSize: androidx.compose.ui.unit.TextUnit, textColor: Int) {
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -289,8 +361,8 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
             Text(
                 text = title,
                 style = TextStyle(
-                    color = ColorProvider(WidgetUtils.Colors.WHITE_80),
-                    fontSize = 12.sp
+                    color = ColorProvider(WidgetUtils.applyOpacity(textColor, 0.8f)),
+                    fontSize = fontSize
                 ),
                 maxLines = 1,
                 modifier = GlanceModifier.defaultWeight()
@@ -299,8 +371,8 @@ class CountdownLargeGlanceWidget : GlanceAppWidget() {
             Text(
                 text = days,
                 style = TextStyle(
-                    color = ColorProvider(WidgetUtils.Colors.WHITE),
-                    fontSize = 12.sp,
+                    color = ColorProvider(textColor),
+                    fontSize = fontSize,
                     fontWeight = FontWeight.Bold
                 )
             )

@@ -3,6 +3,7 @@
     <string name="app_name">萤</string>
     <string name="shortcut_add_event_short">添加事件</string>
     <string name="shortcut_add_event_long">添加新的倒数日</string>
+    <string name="widget_description_mini">倒数日迷你小部件 - 仅显示天数</string>
     <string name="widget_description">倒数日小部件 - 显示单个事件</string>
     <string name="widget_description_large">倒数日大部件 - 主事件 + 事件列表</string>
     <string name="widget_loading">加载中...</string>
