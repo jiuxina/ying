@@ -1,4 +1,4 @@
-# 萤 - 倒数日
+# 萤 - 倒数日(暂时停止更新)
 
 <p align="center">
   <img src="app.png" width="180" alt="萤 Logo">
