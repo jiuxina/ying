@@ -121,6 +121,9 @@ class SettingsProvider extends ChangeNotifier {
   /// 底部导航栏透明度（0.1–1.0）
   double _bottomNavOpacity = 0.95;
 
+  /// 底部导航栏是否显示“设置”入口
+  bool _bottomNavSettingsEntryVisible = true;
+
   // ==================== 卡片设置 ====================
   
   /// 事件卡片是否展开
@@ -238,6 +241,7 @@ class SettingsProvider extends ChangeNotifier {
   double get cardOpacity => _cardOpacity;
   double get backgroundBrightness => _backgroundBrightness;
   double get bottomNavOpacity => _bottomNavOpacity;
+  bool get bottomNavSettingsEntryVisible => _bottomNavSettingsEntryVisible;
   bool get cardsExpanded => _cardsExpanded;
   String get progressStyle => _progressStyle;
   Color get progressColor => Color(_progressColorValue);
@@ -379,6 +383,7 @@ class SettingsProvider extends ChangeNotifier {
     _cardOpacity = prefs.getDouble('card_opacity') ?? 1.0;
     _backgroundBrightness = prefs.getDouble('background_brightness') ?? 1.0;
     _bottomNavOpacity = prefs.getDouble('bottom_nav_opacity') ?? 0.95;
+    _bottomNavSettingsEntryVisible = prefs.getBool('bottom_nav_settings_entry_visible') ?? true;
     
     // 卡片设置
     _cardsExpanded = prefs.getBool('cards_expanded') ?? true;
@@ -488,7 +493,7 @@ class SettingsProvider extends ChangeNotifier {
     _fontSizePx = size.clamp(12.0, 24.0);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('font_size_px', _fontSizePx);
-    _debugService.info('Font size (px) changed: ${_fontSizePx}', source: 'Settings');
+    _debugService.info('Font size (px) changed: $_fontSizePx', source: 'Settings');
     notifyListeners();
   }
 
@@ -671,6 +676,15 @@ class SettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('bottom_nav_opacity', _bottomNavOpacity);
     _debugService.info('Bottom nav opacity changed: $_bottomNavOpacity', source: 'Settings');
+    notifyListeners();
+  }
+
+  /// 设置底部导航栏“设置”入口是否显示
+  Future<void> setBottomNavSettingsEntryVisible(bool visible) async {
+    _bottomNavSettingsEntryVisible = visible;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('bottom_nav_settings_entry_visible', visible);
+    _debugService.info('Bottom nav settings entry ${visible ? "shown" : "hidden"}', source: 'Settings');
     notifyListeners();
   }
 
