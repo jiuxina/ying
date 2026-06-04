@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'home_screen.dart';
 import 'progress_view_screen.dart';
 import 'settings_screen.dart';
+import '../providers/settings_provider.dart';
 
 /// ============================================================================
 /// 主屏幕 - 底部导航栏包装器
@@ -26,35 +28,44 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+    final showSettingsEntry = settings.bottomNavSettingsEntryVisible;
+    final screens = showSettingsEntry ? _screens : _screens.take(2).toList();
+    final destinations = <NavigationDestination>[
+      const NavigationDestination(
+        icon: Icon(Icons.home_outlined),
+        selectedIcon: Icon(Icons.home),
+        label: '首页',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.timeline_outlined),
+        selectedIcon: Icon(Icons.timeline),
+        label: '进度',
+      ),
+      if (showSettingsEntry)
+        const NavigationDestination(
+          icon: Icon(Icons.settings_outlined),
+          selectedIcon: Icon(Icons.settings),
+          label: '设置',
+        ),
+    ];
+    final selectedIndex = showSettingsEntry
+        ? _currentIndex.clamp(0, screens.length - 1).toInt()
+        : (_currentIndex >= 2 ? 0 : _currentIndex);
+
     return Scaffold(
       body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+        index: selectedIndex,
+        children: screens,
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
+        selectedIndex: selectedIndex,
         onDestinationSelected: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: '首页',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.timeline_outlined),
-            selectedIcon: Icon(Icons.timeline),
-            label: '进度',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: '设置',
-          ),
-        ],
+        destinations: destinations,
       ),
     );
   }

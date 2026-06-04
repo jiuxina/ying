@@ -1,7 +1,7 @@
 // ============================================================================
 // 其他外观设置页面
 //
-// 包含：底部导航栏透明度
+// 包含：底部导航栏透明度、底部导航栏“设置”入口显示开关
 // 排除：已在主题设置中的项目（主题模式、主题色、界面字体颜色、按钮样式、卡片透明度）
 // ============================================================================
 
@@ -44,6 +44,17 @@ class _OtherAppearanceSettingsScreenState
                       children: [
                         // 底部导航栏透明度
                         buildSection(l10n.bottomNavOpacity, Icons.tab_rounded, [
+                          SwitchListTile(
+                            secondary: const Icon(Icons.settings_outlined),
+                            title: const Text('显示底部导航栏设置入口', overflow: TextOverflow.ellipsis),
+                            subtitle: const Text('关闭后，底部导航栏将不再显示“设置”标签', overflow: TextOverflow.ellipsis),
+                            value: settings.bottomNavSettingsEntryVisible,
+                            onChanged: (value) {
+                              HapticFeedback.selectionClick();
+                              settings.setBottomNavSettingsEntryVisible(value);
+                            },
+                          ),
+                          const Divider(height: 1),
                           _buildBottomNavOpacitySlider(settings, l10n),
                         ]),
 
