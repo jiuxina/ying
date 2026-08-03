@@ -38,7 +38,9 @@ class _ReminderDiagnosticsSectionState
 
   void _refresh() {
     if (!mounted) return;
-    setState(() => diagnosticsFuture = _loadDiagnostics());
+    setState(() {
+      diagnosticsFuture = _loadDiagnostics();
+    });
   }
 
   Future<void> _sendTest() async {

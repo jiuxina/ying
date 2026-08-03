@@ -32,7 +32,9 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
   }
 
   void _reloadStatus() {
-    setState(() => statusFuture = WidgetService.status());
+    setState(() {
+      statusFuture = WidgetService.status();
+    });
   }
 
   Future<void> _refresh() async {
