@@ -10,6 +10,7 @@ import 'package:ying/models/event_sort_mode.dart';
 import 'package:ying/services/storage_service.dart';
 import 'package:ying/state/app_controller.dart';
 import 'package:ying/ui/event_card.dart';
+import 'package:ying/ui/event_detail_page.dart';
 import 'package:ying/ui/event_filter_bar.dart';
 import 'package:ying/ui/event_form_sheet.dart';
 import 'package:ying/ui/glass_ui.dart';
@@ -447,6 +448,108 @@ void main() {
       final themeNode = tester.getSemantics(find.bySemanticsLabel('主题：深色'));
       expect(themeNode.flagsCollection.isSelected, isTrue);
       handle.dispose();
+    });
+
+    testWidgets('提醒诊断刷新重新加载状态', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(buildSettingsPage(controller));
+      await flushPlatform(tester);
+
+      expect(find.text('提醒诊断'), findsOneWidget);
+      expect(find.text('刷新状态'), findsOneWidget);
+
+      // 刷新会以新的 Future 重建诊断区，通道错误兜底后重新渲染。
+      await tester.tap(find.text('刷新状态'));
+      await tester.pump();
+      await flushPlatform(tester);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('提醒诊断'), findsOneWidget);
+      expect(find.text('通知权限'), findsOneWidget);
+    });
+  });
+
+  group('事件详情页', () {
+    AppController buildController() {
+      return AppController(
+        StorageService(),
+        autoLoad: false,
+        loadEvents: () async => const [],
+        saveEvents: (_) async {},
+        loadSettings: () async => const AppSettings(),
+        saveSettings: (_) async {},
+        scheduleNotification: (_) async {},
+        cancelNotification: (_) async {},
+        syncWidget: (_, _) async {},
+        timerFactory: (_, _) => _IdleTimer(),
+      );
+    }
+
+    testWidgets('完成、恢复与置顶按钮更新事件状态', (tester) async {
+      final controller = buildController();
+      final event = makeEvent(title: '详情页事件');
+      await controller.saveEvent(event);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [appControllerProvider.overrideWith((ref) => controller)],
+          child: glassApp(EventDetailPage(eventId: event.id)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('标记完成'), findsOneWidget);
+      expect(find.text('置顶'), findsOneWidget);
+
+      await tester.tap(find.text('标记完成'));
+      await tester.pumpAndSettle();
+      expect(controller.state.events.single.isCompleted, isTrue);
+      expect(find.text('恢复事件'), findsOneWidget);
+
+      await tester.tap(find.text('置顶'));
+      await tester.pumpAndSettle();
+      expect(controller.state.events.single.isPinned, isTrue);
+      expect(find.text('取消置顶'), findsOneWidget);
+    });
+
+    testWidgets('删除按钮移除事件并返回上一页', (tester) async {
+      final controller = buildController();
+      final event = makeEvent(title: '待删除事件');
+      await controller.saveEvent(event);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [appControllerProvider.overrideWith((ref) => controller)],
+          child: glassApp(
+            Scaffold(
+              body: Center(
+                child: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => EventDetailPage(eventId: event.id),
+                      ),
+                    ),
+                    child: const Text('打开详情'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('打开详情'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('删除'));
+      await tester.pumpAndSettle();
+
+      expect(controller.state.events, isEmpty);
+      expect(find.text('打开详情'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 
