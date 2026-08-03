@@ -114,18 +114,30 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
               final status = snapshot.data!;
               return Column(
                 children: [
-                  _StatusLine(
-                    label: '桌面实例',
+                  _StatusRow(
+                    icon: Icons.widgets_outlined,
+                    color: status.installedCount == 0
+                        ? GlassPalette.orange
+                        : GlassPalette.indigo,
+                    title: '桌面实例',
                     value: status.installedCount == 0
                         ? '未检测到'
                         : '${status.installedCount} 个',
                   ),
-                  _StatusLine(
-                    label: '已同步事件',
+                  const _StatusDivider(),
+                  _StatusRow(
+                    icon: Icons.sync_rounded,
+                    color: GlassPalette.blue,
+                    title: '已同步事件',
                     value: '${status.syncedEventCount} 个',
                   ),
-                  _StatusLine(
-                    label: '最近刷新',
+                  const _StatusDivider(),
+                  _StatusRow(
+                    icon: Icons.schedule_outlined,
+                    color: status.lastSyncedAt == null
+                        ? GlassPalette.orange
+                        : GlassPalette.mint,
+                    title: '最近刷新',
                     value: status.lastSyncedAt == null
                         ? '尚未同步'
                         : DateFormat(
@@ -133,8 +145,15 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
                             'zh_CN',
                           ).format(status.lastSyncedAt!),
                   ),
-                  if (status.error != null)
-                    _StatusLine(label: '状态异常', value: status.error!),
+                  if (status.error != null) ...[
+                    const _StatusDivider(),
+                    _StatusRow(
+                      icon: Icons.error_outline_rounded,
+                      color: GlassPalette.orange,
+                      title: '状态异常',
+                      value: status.error!,
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -207,7 +226,9 @@ class _WidgetPreview extends StatelessWidget {
     return Semantics(
       label: compact ? '小号小部件预览' : '中号小部件预览',
       child: Container(
-        constraints: BoxConstraints(minHeight: compact ? 150 : 170),
+        // 桌面小部件是固定尺寸，这里用固定高度，避免在无界约束（ListView）
+        // 下内部 Column 的 Spacer 拿到无限高度而崩溃。
+        height: compact ? 150 : 170,
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: color,
@@ -285,32 +306,52 @@ class _WidgetPreview extends StatelessWidget {
   }
 }
 
-class _StatusLine extends StatelessWidget {
-  const _StatusLine({required this.label, required this.value});
+class _StatusRow extends StatelessWidget {
+  const _StatusRow({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.value,
+  });
 
-  final String label;
+  final IconData icon;
+  final Color color;
+  final String title;
   final String value;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 9),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: Text(label)),
-          const SizedBox(width: 16),
-          Flexible(
+          Icon(
+            icon,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            size: 18,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
             child: Text(
-              value,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: GlassStatusPill(label: value, color: color, maxLines: 3),
           ),
         ],
       ),
     );
+  }
+}
+
+class _StatusDivider extends StatelessWidget {
+  const _StatusDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Divider(height: 1, color: Theme.of(context).dividerColor);
   }
 }

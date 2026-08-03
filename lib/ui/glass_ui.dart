@@ -208,6 +208,63 @@ class GlassIconButton extends StatelessWidget {
   }
 }
 
+/// 自定义玻璃开关，替代原生 Switch，保证与玻璃控件一致的观感与动效。
+/// 语义由调用方通过外层 Semantics/MergeSemantics 提供，避免重复播报。
+class GlassSwitch extends StatelessWidget {
+  const GlassSwitch({super.key, required this.value, required this.onChanged});
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final duration = motionDuration(context, const Duration(milliseconds: 160));
+    return ExcludeSemantics(
+      child: InkWell(
+        onTap: () => onChanged(!value),
+        borderRadius: BorderRadius.circular(999),
+        child: Padding(
+          // 扩大触控热区到 44px 高。
+          padding: const EdgeInsets.symmetric(vertical: 8.5, horizontal: 2),
+          child: AnimatedContainer(
+            duration: duration,
+            width: 46,
+            height: 27,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              color: value
+                  ? scheme.primary
+                  : scheme.outlineVariant.withValues(alpha: 0.55),
+            ),
+            child: AnimatedAlign(
+              duration: duration,
+              curve: Curves.easeOutCubic,
+              alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                width: 21,
+                height: 21,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.16),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class GlassChoiceTile extends StatelessWidget {
   const GlassChoiceTile({
     super.key,

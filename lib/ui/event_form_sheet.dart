@@ -158,11 +158,9 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
                       value: isAllDay ? '已开启' : '已关闭',
                       subtitle: '全天事件只记录日期，提醒以当天 09:00 为基准',
                       selected: isAllDay,
-                      trailing: ExcludeSemantics(
-                        child: Switch(
-                          value: isAllDay,
-                          onChanged: _toggleAllDay,
-                        ),
+                      trailing: GlassSwitch(
+                        value: isAllDay,
+                        onChanged: _toggleAllDay,
                       ),
                       onTap: () => _toggleAllDay(!isAllDay),
                     ),
