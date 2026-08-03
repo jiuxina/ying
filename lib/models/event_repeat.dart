@@ -1,0 +1,1 @@
+enum EventRepeatType { none, yearly }
