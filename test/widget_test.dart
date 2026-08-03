@@ -30,11 +30,14 @@ void main() {
 
   group('CountdownEvent', () {
     test('calculates future countdown days', () {
-      final now = DateTime(2026, 7, 28, 20);
+      // 使用相对日期，避免 isCountingUp 内部取真实 DateTime.now() 时过期失效。
+      final base = DateTime.now();
+      final today = DateTime(base.year, base.month, base.day);
+      final now = today.add(const Duration(hours: 20));
       final event = CountdownEvent(
         id: 'future',
         title: '考试',
-        targetDate: DateTime(2026, 8, 2, 9),
+        targetDate: today.add(const Duration(days: 5, hours: 9)),
         category: '学习',
         createdAt: now,
       );

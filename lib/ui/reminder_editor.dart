@@ -64,15 +64,20 @@ class ReminderEditor extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: InkWell(
-                  onTap: () => _openPicker(context),
-                  borderRadius: BorderRadius.circular(14),
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: '添加提醒',
-                      isDense: true,
+                child: Semantics(
+                  button: true,
+                  label: '添加提醒，当前${options[reminderToAdd] ?? '未选择'}',
+                  hint: '点击选择提醒时间',
+                  child: InkWell(
+                    onTap: () => _openPicker(context),
+                    borderRadius: BorderRadius.circular(14),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: '添加提醒',
+                        isDense: true,
+                      ),
+                      child: Text(options[reminderToAdd] ?? '选择提醒'),
                     ),
-                    child: Text(options[reminderToAdd] ?? '选择提醒'),
                   ),
                 ),
               ),

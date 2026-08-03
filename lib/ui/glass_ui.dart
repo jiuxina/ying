@@ -233,6 +233,7 @@ class GlassChoiceTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Semantics(
       button: true,
+      selected: selected,
       label: '$title，$value',
       child: Material(
         color: Colors.transparent,
@@ -309,10 +310,16 @@ class GlassChoiceTile extends StatelessWidget {
 }
 
 class GlassStatusPill extends StatelessWidget {
-  const GlassStatusPill({super.key, required this.label, this.color});
+  const GlassStatusPill({
+    super.key,
+    required this.label,
+    this.color,
+    this.maxLines = 2,
+  });
 
   final String label;
   final Color? color;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -328,6 +335,8 @@ class GlassStatusPill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         child: Text(
           label,
+          maxLines: maxLines,
+          overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
             color: accent,
             fontWeight: FontWeight.w700,

@@ -223,7 +223,7 @@ class _DiagnosticRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Flexible(
-            child: GlassStatusPill(label: value, color: color),
+            child: GlassStatusPill(label: value, color: color, maxLines: 3),
           ),
         ],
       ),

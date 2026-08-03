@@ -158,9 +158,11 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
                       value: isAllDay ? '已开启' : '已关闭',
                       subtitle: '全天事件只记录日期，提醒以当天 09:00 为基准',
                       selected: isAllDay,
-                      trailing: Switch(
-                        value: isAllDay,
-                        onChanged: _toggleAllDay,
+                      trailing: ExcludeSemantics(
+                        child: Switch(
+                          value: isAllDay,
+                          onChanged: _toggleAllDay,
+                        ),
                       ),
                       onTap: () => _toggleAllDay(!isAllDay),
                     ),
@@ -557,41 +559,46 @@ class _DirectionOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(15),
-      child: AnimatedContainer(
-        duration: motionDuration(context, const Duration(milliseconds: 180)),
-        constraints: const BoxConstraints(minHeight: 50),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: selected
-              ? scheme.primary.withValues(alpha: 0.12)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '计时方式：$label',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: AnimatedContainer(
+          duration: motionDuration(context, const Duration(milliseconds: 180)),
+          constraints: const BoxConstraints(minHeight: 50),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
             color: selected
-                ? scheme.primary.withValues(alpha: 0.34)
-                : scheme.outlineVariant.withValues(alpha: 0.55),
+                ? scheme.primary.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: selected
+                  ? scheme.primary.withValues(alpha: 0.34)
+                  : scheme.outlineVariant.withValues(alpha: 0.55),
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: selected ? scheme.primary : scheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
                 color: selected ? scheme.primary : scheme.onSurfaceVariant,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               ),
-            ),
-          ],
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected ? scheme.primary : scheme.onSurfaceVariant,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
