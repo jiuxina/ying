@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/event_reminder.dart';
+import 'glass_ui.dart';
 
 class ReminderEditor extends StatelessWidget {
   const ReminderEditor({
@@ -63,23 +64,16 @@ class ReminderEditor extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField<int>(
-                  initialValue: reminderToAdd,
-                  decoration: const InputDecoration(
-                    labelText: '添加提醒',
-                    isDense: true,
+                child: InkWell(
+                  onTap: () => _openPicker(context),
+                  borderRadius: BorderRadius.circular(14),
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: '添加提醒',
+                      isDense: true,
+                    ),
+                    child: Text(options[reminderToAdd] ?? '选择提醒'),
                   ),
-                  items: options.entries
-                      .map(
-                        (entry) => DropdownMenuItem<int>(
-                          value: entry.key,
-                          child: Text(entry.value),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value != null) onOptionChanged(value);
-                  },
                 ),
               ),
               const SizedBox(width: 8),
@@ -104,5 +98,58 @@ class ReminderEditor extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _openPicker(BuildContext context) async {
+    final value = await showModalBottomSheet<int>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+          child: GlassSurface(
+            radius: 24,
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '选择提醒时间',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                for (final entry in options.entries)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: GlassChoiceTile(
+                      icon: Icons.notifications_none_rounded,
+                      title: entry.value,
+                      value: '',
+                      selected: entry.key == reminderToAdd,
+                      onTap: () => Navigator.pop(context, entry.key),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (value != null) onOptionChanged(value);
   }
 }

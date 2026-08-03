@@ -21,6 +21,22 @@ class AppTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: Colors.transparent,
       fontFamily: 'SF Pro Display',
+      fontFamilyFallback: const [
+        'PingFang SC',
+        'Microsoft YaHei',
+        'Noto Sans CJK SC',
+        'sans-serif',
+      ],
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: GlassPageTransitionsBuilder(),
+          TargetPlatform.iOS: GlassPageTransitionsBuilder(),
+          TargetPlatform.macOS: GlassPageTransitionsBuilder(),
+          TargetPlatform.windows: GlassPageTransitionsBuilder(),
+          TargetPlatform.linux: GlassPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: GlassPageTransitionsBuilder(),
+        },
+      ),
     );
     final controlShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(14),
@@ -34,14 +50,20 @@ class AppTheme {
         headlineMedium: base.textTheme.headlineMedium?.copyWith(
           fontWeight: FontWeight.w700,
           letterSpacing: -0.8,
+          height: 1.18,
         ),
         titleLarge: base.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w700,
           letterSpacing: -0.3,
+          height: 1.28,
         ),
         titleMedium: base.textTheme.titleMedium?.copyWith(
           fontWeight: FontWeight.w600,
+          height: 1.35,
         ),
+        bodyLarge: base.textTheme.bodyLarge?.copyWith(height: 1.48),
+        bodyMedium: base.textTheme.bodyMedium?.copyWith(height: 1.42),
+        bodySmall: base.textTheme.bodySmall?.copyWith(height: 1.38),
       ),
       iconTheme: IconThemeData(color: scheme.onSurfaceVariant, size: 20),
       cardTheme: const CardThemeData(

@@ -251,7 +251,7 @@ class _EventsPageState extends ConsumerState<_EventsPage> {
   }
 
   Widget _buildEventCard(BuildContext context, CountdownEvent event) {
-    return EventCard(
+    final child = EventCard(
       key: ValueKey(event.id),
       event: event,
       onOpen: () => Navigator.push<void>(
@@ -268,6 +268,20 @@ class _EventsPageState extends ConsumerState<_EventsPage> {
           ref.read(appControllerProvider.notifier).deleteEventWithUndo(event),
       onTogglePinned: () =>
           ref.read(appControllerProvider.notifier).togglePinned(event),
+    );
+    if (reduceMotionOf(context)) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, animatedChild) => Opacity(
+        opacity: value,
+        child: Transform.translate(
+          offset: Offset(0, 10 * (1 - value)),
+          child: animatedChild,
+        ),
+      ),
+      child: child,
     );
   }
 }

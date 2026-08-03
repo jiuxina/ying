@@ -261,17 +261,30 @@ class _CardContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  event.dayDelta() == 0 ? '今' : '${event.displayDays}',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: isTerminal
-                        ? scheme.onSurfaceVariant
-                        : scheme.primary,
-                    fontWeight: FontWeight.w700,
-                    height: 0.95,
-                    letterSpacing: -1,
+              AnimatedSwitcher(
+                duration: motionDuration(
+                  context,
+                  const Duration(milliseconds: 220),
+                ),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(scale: animation, child: child),
+                ),
+                child: FittedBox(
+                  key: ValueKey(
+                    '${event.displayDays}-${event.dayDelta() == 0}',
+                  ),
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    event.dayDelta() == 0 ? '今' : '${event.displayDays}',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: isTerminal
+                          ? scheme.onSurfaceVariant
+                          : scheme.primary,
+                      fontWeight: FontWeight.w700,
+                      height: 0.95,
+                      letterSpacing: -1,
+                    ),
                   ),
                 ),
               ),
@@ -329,12 +342,19 @@ class _CardContent extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 2),
-              Text(
-                '${event.statusLabel} · ${DateFormat('M月d日 E', 'zh_CN').format(event.targetDate)}${event.isAllDay ? ' · 全天' : ''}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
+              AnimatedSwitcher(
+                duration: motionDuration(
+                  context,
+                  const Duration(milliseconds: 180),
+                ),
+                child: Text(
+                  '${event.statusLabel} · ${DateFormat('M月d日 E', 'zh_CN').format(event.targetDate)}${event.isAllDay ? ' · 全天' : ''}',
+                  key: ValueKey('${event.statusLabel}-${event.targetDate}'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               const SizedBox(height: 7),

@@ -214,17 +214,22 @@ class EventDetailPage extends ConsumerWidget {
                     const SizedBox(height: 20),
                     Row(
                       children: [
-                        GlassIconButton(
-                          tooltip: current.isPinned ? '取消置顶' : '置顶事件',
-                          onPressed: () => ref
-                              .read(appControllerProvider.notifier)
-                              .togglePinned(current),
-                          icon: current.isPinned
-                              ? Icons.push_pin_rounded
-                              : Icons.push_pin_outlined,
-                        ),
-                        const SizedBox(width: 12),
                         Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => ref
+                                .read(appControllerProvider.notifier)
+                                .togglePinned(current),
+                            icon: Icon(
+                              current.isPinned
+                                  ? Icons.push_pin_rounded
+                                  : Icons.push_pin_outlined,
+                            ),
+                            label: Text(current.isPinned ? '取消置顶' : '置顶'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 2,
                           child: FilledButton.icon(
                             onPressed: () => ref
                                 .read(appControllerProvider.notifier)
@@ -243,16 +248,18 @@ class EventDetailPage extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        GlassIconButton(
-                          tooltip: '删除事件',
-                          onPressed: () async {
-                            await ref
-                                .read(appControllerProvider.notifier)
-                                .deleteEventWithUndo(current);
-                            if (context.mounted) Navigator.pop(context);
-                          },
-                          icon: Icons.delete_outline_rounded,
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              await ref
+                                  .read(appControllerProvider.notifier)
+                                  .deleteEventWithUndo(current);
+                              if (context.mounted) Navigator.pop(context);
+                            },
+                            icon: const Icon(Icons.delete_outline_rounded),
+                            label: const Text('删除'),
+                          ),
                         ),
                       ],
                     ),

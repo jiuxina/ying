@@ -2,6 +2,37 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+class GlassPageTransitionsBuilder extends PageTransitionsBuilder {
+  const GlassPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final duration = motionDuration(context, const Duration(milliseconds: 260));
+    if (duration == Duration.zero) return child;
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.02, end: 1).animate(curved),
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.035),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      ),
+    );
+  }
+}
+
 class AccessibleAppearance extends InheritedWidget {
   const AccessibleAppearance({
     super.key,
@@ -173,6 +204,136 @@ class GlassIconButton extends StatelessWidget {
         minimumSize: const Size.square(44),
       ),
       icon: Icon(icon, size: 21),
+    );
+  }
+}
+
+class GlassChoiceTile extends StatelessWidget {
+  const GlassChoiceTile({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.onTap,
+    this.subtitle,
+    this.trailing,
+    this.selected = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String value;
+  final String? subtitle;
+  final Widget? trailing;
+  final VoidCallback onTap;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: '$title，$value',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: AnimatedContainer(
+            duration: motionDuration(
+              context,
+              const Duration(milliseconds: 180),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+            decoration: BoxDecoration(
+              color: selected ? scheme.primary.withValues(alpha: 0.10) : null,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: selected
+                    ? scheme.primary.withValues(alpha: 0.32)
+                    : scheme.outlineVariant.withValues(alpha: 0.45),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: selected ? scheme.primary : scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle!,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                if (trailing != null)
+                  trailing!
+                else
+                  Text(
+                    value,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                if (selected && trailing == null) ...[
+                  const SizedBox(width: 7),
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 19,
+                    color: scheme.primary,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class GlassStatusPill extends StatelessWidget {
+  const GlassStatusPill({super.key, required this.label, this.color});
+
+  final String label;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final accent = color ?? scheme.primary;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.11),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: accent.withValues(alpha: 0.25)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: accent,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
     );
   }
 }

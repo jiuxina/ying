@@ -223,15 +223,7 @@ class _DiagnosticRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.end,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
+            child: GlassStatusPill(label: value, color: color),
           ),
         ],
       ),
