@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/daymark_widget_background"
+    android:gravity="center_vertical"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <TextView
+            android:id="@+id/widget_category"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:text="DAYMARK"
+            android:textColor="#D9FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+        <ImageButton
+            android:id="@+id/widget_previous"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="上一个事件"
+            android:src="@android:drawable/ic_media_previous"
+            android:tint="#FFFFFFFF" />
+        <ImageButton
+            android:id="@+id/widget_next"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="下一个事件"
+            android:src="@android:drawable/ic_media_next"
+            android:tint="#FFFFFFFF" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="添加一个倒数日"
+        android:textColor="#FFFFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="bottom|center_vertical"
+        android:orientation="horizontal">
+        <TextView
+            android:id="@+id/widget_days"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textColor="#FFFFFFFF"
+            android:textSize="44sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/widget_unit"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:paddingBottom="6dp"
+            android:text="天"
+            android:textColor="#D9FFFFFF"
+            android:textSize="14sp" />
+        <ImageButton
+            android:id="@+id/widget_complete"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="标记完成"
+            android:src="@android:drawable/checkbox_off_background"
+            android:tint="#FFFFFFFF" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_note"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="#D9FFFFFF"
+        android:textSize="13sp" />
+</LinearLayout>
