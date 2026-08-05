@@ -41,100 +41,91 @@ class EventFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return GlassSurface(
-      radius: 20,
-      padding: const EdgeInsets.all(10),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _FilterButton(
-                  icon: Icons.search_rounded,
-                  label: searchExpanded ? '收起搜索' : '搜索事件',
-                  selected: searchExpanded || controller.text.isNotEmpty,
-                  onTap: onToggleSearch,
-                ),
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _FilterButton(
+                icon: Icons.search_rounded,
+                label: searchExpanded ? '收起搜索' : '搜索事件',
+                selected: searchExpanded || controller.text.isNotEmpty,
+                onTap: onToggleSearch,
               ),
-              const SizedBox(width: 8),
-              _FilterButton(
-                icon: Icons.swap_vert_rounded,
-                label: _sortLabel(sortMode),
-                onTap: () => _showSortSheet(context),
-              ),
-              const SizedBox(width: 8),
-              _FilterButton(
-                icon: Icons.tune_rounded,
-                label: incompleteOnly || selectedCategory != null
-                    ? '筛选中'
-                    : '筛选',
-                selected: incompleteOnly || selectedCategory != null,
-                onTap: () => _showFilterSheet(context),
-              ),
-            ],
-          ),
-          AnimatedSize(
-            duration: motionDuration(
-              context,
-              const Duration(milliseconds: 220),
             ),
-            curve: Curves.easeOutCubic,
-            child: searchExpanded
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: TextField(
-                      controller: controller,
-                      autofocus: true,
-                      onChanged: onSearchChanged,
-                      decoration: InputDecoration(
-                        hintText: '搜索标题或备注',
-                        prefixIcon: const Icon(Icons.search_rounded),
-                        suffixIcon: controller.text.isEmpty
-                            ? null
-                            : IconButton(
-                                tooltip: '清空搜索',
-                                onPressed: onClear,
-                                icon: const Icon(Icons.close_rounded),
-                              ),
-                      ),
+            const SizedBox(width: 8),
+            _FilterButton(
+              icon: Icons.swap_vert_rounded,
+              label: _sortLabel(sortMode),
+              onTap: () => _showSortSheet(context),
+            ),
+            const SizedBox(width: 8),
+            _FilterButton(
+              icon: Icons.tune_rounded,
+              label: incompleteOnly || selectedCategory != null ? '筛选中' : '筛选',
+              selected: incompleteOnly || selectedCategory != null,
+              onTap: () => _showFilterSheet(context),
+            ),
+          ],
+        ),
+        AnimatedSize(
+          duration: motionDuration(context, const Duration(milliseconds: 220)),
+          curve: Curves.easeOutCubic,
+          child: searchExpanded
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: TextField(
+                    controller: controller,
+                    autofocus: true,
+                    onChanged: onSearchChanged,
+                    decoration: InputDecoration(
+                      hintText: '搜索标题或备注',
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      suffixIcon: controller.text.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: '清空搜索',
+                              onPressed: onClear,
+                              icon: const Icon(Icons.close_rounded),
+                            ),
                     ),
-                  )
-                : const SizedBox.shrink(),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+        if (categories.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 36,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: categories.length + 1,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final category = index == 0 ? null : categories[index - 1];
+                final selected = selectedCategory == category;
+                return _CategoryChip(
+                  label: category ?? '全部',
+                  selected: selected,
+                  onTap: () => onCategoryChanged(category),
+                );
+              },
+            ),
           ),
-          if (categories.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 36,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: categories.length + 1,
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final category = index == 0 ? null : categories[index - 1];
-                  final selected = selectedCategory == category;
-                  return _CategoryChip(
-                    label: category ?? '全部',
-                    selected: selected,
-                    onTap: () => onCategoryChanged(category),
-                  );
-                },
-              ),
-            ),
-          ],
-          if (hasFilters) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: onClear,
-                icon: const Icon(Icons.filter_alt_off_rounded, size: 17),
-                label: const Text('清除筛选'),
-                style: TextButton.styleFrom(foregroundColor: scheme.primary),
-              ),
-            ),
-          ],
         ],
-      ),
+        if (hasFilters) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: onClear,
+              icon: const Icon(Icons.filter_alt_off_rounded, size: 17),
+              label: const Text('清除筛选'),
+              style: TextButton.styleFrom(foregroundColor: scheme.primary),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -199,9 +190,7 @@ class _FilterButton extends StatelessWidget {
       selected: selected,
       label: label,
       child: Material(
-        color: selected
-            ? scheme.primary.withValues(alpha: 0.12)
-            : Colors.transparent,
+        color: selected ? scheme.primary : scheme.surface,
         borderRadius: BorderRadius.circular(15),
         child: InkWell(
           onTap: onTap,
@@ -215,9 +204,7 @@ class _FilterButton extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(15),
                 border: Border.all(
-                  color: selected
-                      ? scheme.primary.withValues(alpha: 0.34)
-                      : scheme.outlineVariant.withValues(alpha: 0.50),
+                  color: selected ? scheme.primary : scheme.outlineVariant,
                 ),
               ),
               child: Row(
@@ -226,7 +213,9 @@ class _FilterButton extends StatelessWidget {
                   Icon(
                     icon,
                     size: 18,
-                    color: selected ? scheme.primary : scheme.onSurfaceVariant,
+                    color: selected
+                        ? scheme.onPrimary
+                        : scheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 6),
                   Flexible(
@@ -234,7 +223,7 @@ class _FilterButton extends StatelessWidget {
                       label,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: selected ? scheme.primary : scheme.onSurface,
+                        color: selected ? scheme.onPrimary : scheme.onSurface,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -274,20 +263,18 @@ class _CategoryChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
             color: selected
-                ? scheme.primary.withValues(alpha: 0.12)
-                : Colors.transparent,
+                ? scheme.primary
+                : Theme.of(context).scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected
-                  ? scheme.primary.withValues(alpha: 0.34)
-                  : scheme.outlineVariant.withValues(alpha: 0.55),
+              color: selected ? scheme.primary : scheme.outlineVariant,
             ),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? scheme.primary : scheme.onSurfaceVariant,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected ? scheme.onPrimary : scheme.onSurfaceVariant,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
             ),
           ),
         ),

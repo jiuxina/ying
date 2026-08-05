@@ -86,36 +86,27 @@ class EventDetailPage extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                 sliver: SliverList.list(
                   children: [
-                    GlassSurface(
-                      radius: 24,
-                      padding: const EdgeInsets.all(22),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 8, 4, 38),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
                             current.statusLabel,
-                            style: Theme.of(context).textTheme.titleMedium
+                            style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: current.isCompleted
                                       ? Theme.of(
                                           context,
                                         ).colorScheme.onSurfaceVariant
                                       : Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.w700,
                                 ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            current.title,
-                            style: Theme.of(context).textTheme.displaySmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -1.6,
-                                ),
-                          ),
-                          const SizedBox(height: 22),
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
                             children: [
                               Text(
                                 current.dayDelta() == 0
@@ -123,26 +114,37 @@ class EventDetailPage extends ConsumerWidget {
                                     : '${current.displayDays}',
                                 style: Theme.of(context).textTheme.displayLarge
                                     ?.copyWith(
-                                      fontWeight: FontWeight.w800,
+                                      fontSize: 80,
+                                      fontWeight: FontWeight.w300,
                                       color: current.isCompleted
                                           ? Theme.of(
                                               context,
                                             ).colorScheme.onSurfaceVariant
                                           : Theme.of(
                                               context,
-                                            ).colorScheme.primary,
-                                      height: 0.9,
+                                            ).colorScheme.onSurface,
+                                      height: 1,
+                                      letterSpacing: -2.5,
                                     ),
                               ),
                               const SizedBox(width: 8),
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 4),
-                                child: Text(
-                                  current.dayDelta() == 0 ? '就是今天' : '天',
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
+                              Text(
+                                current.dayDelta() == 0 ? '就是今天' : '天',
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            current.title,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -203,9 +205,14 @@ class EventDetailPage extends ConsumerWidget {
                             const SizedBox(height: 10),
                             Text(
                               current.note,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodyLarge?.copyWith(height: 1.55),
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
+                                    height: 1.55,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                    fontStyle: FontStyle.italic,
+                                  ),
                             ),
                           ],
                         ),

@@ -66,12 +66,13 @@ bool reduceMotionOf(BuildContext context) {
 Duration motionDuration(BuildContext context, Duration duration) =>
     reduceMotionOf(context) ? Duration.zero : duration;
 
-/// A deliberately small palette. Blue is the only product accent; the
-/// remaining colors are reserved for content that carries real semantics.
+/// A deliberately small palette derived from the reference prototype.
+/// Teal leads the light theme while firefly green leads the dark theme.
 class GlassPalette {
   const GlassPalette._();
 
-  static const blue = Color(0xFF2563EB);
+  static const blue = Color(0xFF0F766E);
+  static const firefly = Color(0xFFBEF264);
   static const indigo = Color(0xFF4F46E5);
   static const purple = Color(0xFF7C3AED);
   static const mint = Color(0xFF16A085);
@@ -90,15 +91,15 @@ class LiquidBackground extends StatelessWidget {
     final reduceTransparency = reduceTransparencyOf(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: dark ? const Color(0xFF101114) : const Color(0xFFF7F7F8),
+        color: dark ? const Color(0xFF0F1115) : const Color(0xFFFCFBF9),
         gradient: reduceTransparency
             ? null
-            : LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+            : RadialGradient(
+                center: const Alignment(0.86, -0.92),
+                radius: 1.15,
                 colors: dark
-                    ? const [Color(0xFF111318), Color(0xFF0D0F12)]
-                    : const [Color(0xFFFAFBFD), Color(0xFFF3F5F8)],
+                    ? const [Color(0x182B3A26), Color(0x00101115)]
+                    : const [Color(0x140F766E), Color(0x00FCFBF9)],
               ),
       ),
       child: child,
@@ -115,6 +116,7 @@ class GlassSurface extends StatelessWidget {
     this.onTap,
     this.opacity,
     this.borderOpacity,
+    this.glass = false,
   });
 
   final Widget child;
@@ -123,6 +125,7 @@ class GlassSurface extends StatelessWidget {
   final VoidCallback? onTap;
   final double? opacity;
   final double? borderOpacity;
+  final bool glass;
 
   @override
   Widget build(BuildContext context) {
@@ -130,25 +133,24 @@ class GlassSurface extends StatelessWidget {
     final dark = theme.brightness == Brightness.dark;
     final reduceTransparency = reduceTransparencyOf(context);
     final borderRadius = BorderRadius.circular(radius);
+    final baseColor = dark ? const Color(0xFF181A20) : Colors.white;
     final container = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: reduceTransparency
-            ? (dark ? const Color(0xFF1B1D22) : Colors.white)
-            : (dark
-                  ? const Color(0xFF1A1C21).withValues(alpha: opacity ?? 0.82)
-                  : Colors.white.withValues(alpha: opacity ?? 0.76)),
+        color: glass && !reduceTransparency
+            ? baseColor.withValues(alpha: opacity ?? 0.88)
+            : baseColor,
         borderRadius: borderRadius,
         border: Border.all(
           color: theme.colorScheme.outlineVariant.withValues(
-            alpha: borderOpacity ?? (dark ? 0.34 : 0.55),
+            alpha: borderOpacity ?? 1,
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: dark ? 0.18 : 0.045),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: dark ? 0.14 : 0.035),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -156,10 +158,10 @@ class GlassSurface extends StatelessWidget {
     );
     final surface = ClipRRect(
       borderRadius: borderRadius,
-      child: reduceTransparency
+      child: reduceTransparency || !glass
           ? container
           : BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
               child: container,
             ),
     );

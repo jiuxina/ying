@@ -359,6 +359,7 @@ class _UndoBanner extends StatelessWidget {
     return GlassSurface(
       radius: 24,
       opacity: Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.82,
+      glass: true,
       padding: const EdgeInsets.fromLTRB(18, 10, 10, 10),
       child: Row(
         children: [
@@ -400,12 +401,34 @@ class _HeroHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '萤',
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -2.2,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '萤',
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                  Container(
+                    width: 6,
+                    height: 6,
+                    margin: const EdgeInsets.only(left: 8, bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.55),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 5),
               Text(
@@ -454,8 +477,8 @@ class _EmptyState extends StatelessWidget {
               Text(
                 '让期待有迹可循',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.8,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.4,
                 ),
               ),
               const SizedBox(height: 9),
@@ -535,6 +558,8 @@ class _GlassTabBar extends StatelessWidget {
       minimum: const EdgeInsets.fromLTRB(18, 0, 18, 12),
       child: GlassSurface(
         radius: 30,
+        glass: true,
+        opacity: 0.88,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         child: SizedBox(
           height: 70,
@@ -589,7 +614,7 @@ class _TabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = selected
-        ? GlassPalette.blue
+        ? Theme.of(context).colorScheme.primary
         : Theme.of(context).colorScheme.onSurfaceVariant;
     return InkWell(
       onTap: onTap,
@@ -627,6 +652,8 @@ class _GlassRail extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassSurface(
       radius: 32,
+      glass: true,
+      opacity: 0.88,
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 16),
       child: SizedBox(
         width: 72,

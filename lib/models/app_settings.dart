@@ -5,7 +5,7 @@ import 'event_sort_mode.dart';
 class AppSettings {
   const AppSettings({
     this.themeMode = ThemeMode.system,
-    this.widgetColor = 0xFF6750A4,
+    this.widgetColor = 0xFF0F766E,
     this.widgetFontScale = 1.0,
     this.widgetShowNote = true,
     this.widgetShowCategory = true,
@@ -62,7 +62,7 @@ class AppSettings {
         (mode) => mode.name == map['themeMode'],
         orElse: () => ThemeMode.system,
       ),
-      widgetColor: (map['widgetColor'] as int?) ?? 0xFF6750A4,
+      widgetColor: (map['widgetColor'] as int?) ?? 0xFF0F766E,
       widgetFontScale: (map['widgetFontScale'] as double?) ?? 1.0,
       widgetShowNote: (map['widgetShowNote'] as bool?) ?? true,
       widgetShowCategory: (map['widgetShowCategory'] as bool?) ?? true,

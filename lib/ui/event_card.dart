@@ -77,9 +77,9 @@ class _EventCardState extends State<EventCard> {
                     : const Duration(milliseconds: 200),
                 opacity: event.isCompleted ? 0.52 : 1,
                 child: GlassSurface(
-                  radius: 20,
+                  radius: 24,
                   onTap: dragOffset == 0 ? widget.onOpen : _closeActions,
-                  padding: const EdgeInsets.fromLTRB(18, 16, 10, 16),
+                  padding: const EdgeInsets.fromLTRB(20, 18, 10, 18),
                   child: _CardContent(
                     event: event,
                     onEdit: widget.onEdit,
@@ -257,10 +257,18 @@ class _CardContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SizedBox(
-          width: 58,
+          width: 70,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              Text(
+                event.statusLabel,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 2),
               AnimatedSwitcher(
                 duration: motionDuration(
                   context,
@@ -280,10 +288,11 @@ class _CardContent extends StatelessWidget {
                     style: theme.textTheme.headlineMedium?.copyWith(
                       color: isTerminal
                           ? scheme.onSurfaceVariant
-                          : scheme.primary,
-                      fontWeight: FontWeight.w700,
-                      height: 0.95,
-                      letterSpacing: -1,
+                          : scheme.onSurface,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w300,
+                      height: 1,
+                      letterSpacing: -0.8,
                     ),
                   ),
                 ),
@@ -308,9 +317,11 @@ class _CardContent extends StatelessWidget {
                   Expanded(
                     child: Text(
                       event.title,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleLarge?.copyWith(
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w500,
                         decoration: isTerminal
                             ? TextDecoration.lineThrough
                             : null,
@@ -341,14 +352,14 @@ class _CardContent extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 5),
               AnimatedSwitcher(
                 duration: motionDuration(
                   context,
                   const Duration(milliseconds: 180),
                 ),
                 child: Text(
-                  '${event.statusLabel} · ${DateFormat('M月d日 E', 'zh_CN').format(event.targetDate)}${event.isAllDay ? ' · 全天' : ''}',
+                  '${DateFormat('M月d日 E', 'zh_CN').format(event.targetDate)}${event.isAllDay ? ' · 全天' : ''}',
                   key: ValueKey('${event.statusLabel}-${event.targetDate}'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

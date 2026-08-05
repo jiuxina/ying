@@ -7,7 +7,6 @@ import 'package:ying/models/app_settings.dart';
 import 'package:ying/services/storage_service.dart';
 import 'package:ying/state/app_controller.dart';
 import 'package:ying/ui/app_theme.dart';
-import 'package:ying/ui/glass_ui.dart';
 import 'package:ying/ui/home_page.dart';
 
 void main() {

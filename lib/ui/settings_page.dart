@@ -33,13 +33,13 @@ class SettingsPage extends ConsumerWidget {
         Text(
           '设置',
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: -2.1,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.8,
           ),
         ),
         const SizedBox(height: 5),
         Text(
-          '让 萤 更像你。',
+          '让萤更像你。',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -208,29 +208,36 @@ class _ThemePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _ThemeOption(
-          icon: Icons.auto_awesome_rounded,
-          label: '自动',
-          selected: value == ThemeMode.system,
-          onTap: () => onChanged(ThemeMode.system),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          children: [
+            _ThemeOption(
+              icon: Icons.auto_awesome_rounded,
+              label: '自动',
+              selected: value == ThemeMode.system,
+              onTap: () => onChanged(ThemeMode.system),
+            ),
+            _ThemeOption(
+              icon: Icons.light_mode_rounded,
+              label: '浅色',
+              selected: value == ThemeMode.light,
+              onTap: () => onChanged(ThemeMode.light),
+            ),
+            _ThemeOption(
+              icon: Icons.dark_mode_rounded,
+              label: '深色',
+              selected: value == ThemeMode.dark,
+              onTap: () => onChanged(ThemeMode.dark),
+            ),
+          ],
         ),
-        const SizedBox(width: 10),
-        _ThemeOption(
-          icon: Icons.light_mode_rounded,
-          label: '浅色',
-          selected: value == ThemeMode.light,
-          onTap: () => onChanged(ThemeMode.light),
-        ),
-        const SizedBox(width: 10),
-        _ThemeOption(
-          icon: Icons.dark_mode_rounded,
-          label: '深色',
-          selected: value == ThemeMode.dark,
-          onTap: () => onChanged(ThemeMode.dark),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -266,38 +273,41 @@ class _ThemeOption extends StatelessWidget {
                 context,
                 const Duration(milliseconds: 180),
               ),
-              constraints: const BoxConstraints(minHeight: 52),
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              constraints: const BoxConstraints(minHeight: 44),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               decoration: BoxDecoration(
-                color: selected
-                    ? scheme.primary.withValues(alpha: 0.10)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  width: selected ? 1.6 : 1,
-                  color: selected ? scheme.primary : scheme.outlineVariant,
-                ),
+                color: selected ? scheme.surface : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ]
+                    : null,
               ),
               // 外层 Semantics 已提供完整 label，排除内部文字避免重复播报。
               child: ExcludeSemantics(
-                child: Column(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       icon,
                       color: selected
-                          ? scheme.primary
+                          ? scheme.onSurface
                           : scheme.onSurfaceVariant,
-                      size: 18,
+                      size: 16,
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(width: 5),
                     Text(
                       label,
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: selected
-                            ? scheme.primary
+                            ? scheme.onSurface
                             : scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],

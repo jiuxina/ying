@@ -8,19 +8,26 @@ class AppTheme {
 
   static ThemeData _build(Brightness brightness) {
     final dark = brightness == Brightness.dark;
+    final primary = dark ? const Color(0xFFBEF264) : const Color(0xFF0F766E);
+    final background = dark ? const Color(0xFF0F1115) : const Color(0xFFFCFBF9);
+    final surface = dark ? const Color(0xFF181A20) : Colors.white;
     final scheme = ColorScheme.fromSeed(
-      seedColor: GlassPalette.blue,
+      seedColor: primary,
       brightness: brightness,
-      primary: GlassPalette.blue,
-      surface: dark ? const Color(0xFF101114) : const Color(0xFFF7F7F8),
-      error: dark ? const Color(0xFFFFB4AB) : const Color(0xFFB42318),
+      primary: primary,
+      onPrimary: dark ? const Color(0xFF0F1115) : Colors.white,
+      surface: surface,
+      onSurface: dark ? const Color(0xFFF4F4F5) : const Color(0xFF27272A),
+      outline: dark ? const Color(0xFF3F424C) : const Color(0xFFD4D4D8),
+      outlineVariant: dark ? const Color(0xFF272A33) : const Color(0xFFE4E4E7),
+      error: dark ? const Color(0xFFEF4444) : const Color(0xFFDC2626),
     );
     final base = ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
-      scaffoldBackgroundColor: Colors.transparent,
-      fontFamily: 'SF Pro Display',
+      scaffoldBackgroundColor: background,
+      fontFamily: 'PingFang SC',
       fontFamilyFallback: const [
         'PingFang SC',
         'Microsoft YaHei',
@@ -44,8 +51,8 @@ class AppTheme {
     return base.copyWith(
       textTheme: base.textTheme.copyWith(
         displaySmall: base.textTheme.displaySmall?.copyWith(
-          fontWeight: FontWeight.w700,
-          letterSpacing: -1.2,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.8,
         ),
         headlineMedium: base.textTheme.headlineMedium?.copyWith(
           fontWeight: FontWeight.w700,
@@ -53,7 +60,7 @@ class AppTheme {
           height: 1.18,
         ),
         titleLarge: base.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           letterSpacing: -0.3,
           height: 1.28,
         ),
@@ -74,9 +81,7 @@ class AppTheme {
       dividerColor: scheme.outlineVariant.withValues(alpha: 0.55),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surfaceContainerHighest.withValues(
-          alpha: dark ? 0.30 : 0.52,
-        ),
+        fillColor: background,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 15,
@@ -86,13 +91,11 @@ class AppTheme {
         suffixIconColor: scheme.onSurfaceVariant,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-            color: scheme.outlineVariant.withValues(alpha: 0.60),
-          ),
+          borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -133,13 +136,13 @@ class AppTheme {
         ),
       ),
       chipTheme: base.chipTheme.copyWith(
-        backgroundColor: Colors.transparent,
-        selectedColor: scheme.primary.withValues(alpha: 0.10),
+        backgroundColor: background,
+        selectedColor: scheme.primary,
         side: BorderSide(color: scheme.outlineVariant),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         labelStyle: TextStyle(color: scheme.onSurfaceVariant),
         secondaryLabelStyle: TextStyle(
-          color: scheme.primary,
+          color: scheme.onPrimary,
           fontWeight: FontWeight.w600,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -163,14 +166,14 @@ class AppTheme {
         ),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: dark ? const Color(0xFF202227) : Colors.white,
-        elevation: 8,
+        color: surface,
+        elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: dark ? const Color(0xFF1B1D22) : Colors.white,
-        elevation: 12,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        backgroundColor: surface,
+        elevation: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
