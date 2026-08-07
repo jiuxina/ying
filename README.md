@@ -114,7 +114,13 @@
 
 ## 截图展示
 
-> 截图待补充。
+| 首页 | 新建事件 | 事件详情 |
+| --- | --- | --- |
+| ![首页](docs/screenshots/home.png) | ![新建事件](docs/screenshots/form.png) | ![事件详情](docs/screenshots/detail.png) |
+
+| 创建完成 | 设置 |
+| --- | --- |
+| ![创建完成](docs/screenshots/created.png) | ![设置](docs/screenshots/settings.png) |
 
 ---
 
@@ -303,7 +309,7 @@ Flutter 官方支持通过 Android Gradle Plugin 的 `abiFilters` 限定 `x86_64
 
 ## 版本计划
 
-- **主版本号 (1.0.0)**：仅在大变更或重大功能更新时更新
+- **主版本号 (2.0.0)**：仅在大变更或重大功能更新时更新
 - **次版本号 (0.1.0)**：不定期更新，包含较多新功能和改进
 - **修订号 (0.0.1)**：不定期更新，包含 bug 修复和小改进
 
