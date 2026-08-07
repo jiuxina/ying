@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
+import '../models/countdown_event.dart';
 import '../state/app_controller.dart';
 import 'glass_ui.dart';
 import 'reminder_diagnostics_section.dart';
 import 'widget_preview_section.dart';
+
+/// 与 pubspec.yaml 的 version 保持一致（不含 +build 号）。
+const appVersion = '2.0.0';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -171,7 +176,163 @@ class SettingsPage extends ConsumerWidget {
         ReminderDiagnosticsSection(events: appState.events),
         const SizedBox(height: 16),
         WidgetPreviewSection(events: appState.events, settings: settings),
+        const SizedBox(height: 16),
+        _Section(
+          title: '数据管理',
+          subtitle: '导出、导入或清除本地数据',
+          child: Column(
+            children: [
+              _SettingsActionTile(
+                icon: Icons.upload_file_outlined,
+                title: '导出数据',
+                subtitle: '将全部事件复制到剪贴板，可粘贴到备忘录备份',
+                onTap: () => _exportData(context, ref),
+              ),
+              const _InsetDivider(),
+              _SettingsActionTile(
+                icon: Icons.download_outlined,
+                title: '导入数据',
+                subtitle: '从剪贴板读取备份并合并到当前列表',
+                onTap: () => _importData(context, ref),
+              ),
+              const _InsetDivider(),
+              _SettingsActionTile(
+                icon: Icons.delete_sweep_outlined,
+                title: '清除所有事件',
+                subtitle: '删除全部事件及其提醒，可撤销',
+                onTap: () => _clearAllData(context, ref),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _Section(
+          title: '关于',
+          child: Column(
+            children: [
+              _SettingsActionTile(
+                icon: Icons.lightbulb_outline_rounded,
+                title: '萤 $appVersion',
+                subtitle: '本地优先的倒数日 · 正计时',
+              ),
+              const _InsetDivider(),
+              _SettingsActionTile(
+                icon: Icons.privacy_tip_outlined,
+                title: '数据仅保存在本机',
+                subtitle: '无账号、无服务端，删除应用前请先导出备份',
+              ),
+              const _InsetDivider(),
+              _SettingsActionTile(
+                icon: Icons.code_rounded,
+                title: 'github.com/jiuxina/ying',
+                subtitle: '开源仓库，欢迎 Star 与 Issues 反馈',
+                onTap: () => _copyLink(context, 'https://github.com/jiuxina/ying'),
+              ),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+
+  Future<void> _exportData(BuildContext context, WidgetRef ref) async {
+    final events = ref.read(appControllerProvider).events;
+    if (events.isEmpty) {
+      _showMessage(context, '还没有可导出的事件');
+      return;
+    }
+    await Clipboard.setData(
+      ClipboardData(text: CountdownEvent.encodeList(events)),
+    );
+    if (!context.mounted) return;
+    _showMessage(context, '已导出 ${events.length} 个事件到剪贴板');
+  }
+
+  Future<void> _importData(BuildContext context, WidgetRef ref) async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final source = data?.text;
+    if (source == null || source.trim().isEmpty) {
+      if (context.mounted) _showMessage(context, '剪贴板中没有可导入的数据');
+      return;
+    }
+    List<CountdownEvent> incoming;
+    try {
+      incoming = CountdownEvent.decodeList(source);
+    } catch (_) {
+      if (context.mounted) {
+        _showMessage(context, '剪贴板数据格式无效，请确认是萤导出的备份');
+      }
+      return;
+    }
+    if (incoming.isEmpty) {
+      if (context.mounted) _showMessage(context, '备份中没有事件');
+      return;
+    }
+    if (!context.mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('导入数据'),
+        content: Text(
+          '将从剪贴板导入 ${incoming.length} 个事件，与现有数据按 ID 合并（同 ID 以剪贴板为准）。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('导入'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await ref.read(appControllerProvider.notifier).importEvents(incoming);
+    if (!context.mounted) return;
+    _showMessage(context, '已导入 ${incoming.length} 个事件');
+  }
+
+  Future<void> _clearAllData(BuildContext context, WidgetRef ref) async {
+    final count = ref.read(appControllerProvider).events.length;
+    if (count == 0) {
+      _showMessage(context, '当前没有事件');
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('清除所有事件？'),
+        content: Text('将删除全部 $count 个事件及其提醒，可在 10 秒内撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('清除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await ref.read(appControllerProvider.notifier).clearAllEventsWithUndo();
+  }
+
+  Future<void> _copyLink(BuildContext context, String url) async {
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!context.mounted) return;
+    _showMessage(context, '链接已复制');
+  }
+
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 }
@@ -461,3 +622,73 @@ class _InsetDivider extends StatelessWidget {
     );
   }
 }
+
+class _SettingsActionTile extends StatelessWidget {
+  const _SettingsActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: onTap != null,
+      label: title,
+      hint: subtitle,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Icon(icon, color: scheme.onSurfaceVariant, size: 18),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (onTap != null) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: scheme.onSurfaceVariant,
+                      size: 20,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

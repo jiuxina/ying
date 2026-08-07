@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -469,6 +470,130 @@ void main() {
       expect(find.text('提醒诊断'), findsOneWidget);
       expect(find.text('通知权限'), findsOneWidget);
     });
+
+    testWidgets('数据管理与关于分区渲染', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(buildSettingsPage(controller));
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.text('数据管理'), 300);
+      expect(find.text('导出数据'), findsOneWidget);
+      expect(find.text('导入数据'), findsOneWidget);
+      expect(find.text('清除所有事件'), findsOneWidget);
+
+      await tester.scrollUntilVisible(find.text('关于'), 300);
+      expect(find.text('萤 $appVersion'), findsOneWidget);
+      expect(find.text('github.com/jiuxina/ying'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('导出数据复制事件到剪贴板', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await controller.saveEvent(makeEvent(title: '剪贴板事件'));
+      await tester.pumpWidget(buildSettingsPage(controller));
+      await flushPlatform(tester);
+
+      final calls = <MethodCall>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          calls.add(call);
+          if (call.method == 'Clipboard.getData') {
+            return {'text': (call.arguments as Map<Object?, Object?>)['text']};
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      await tester.scrollUntilVisible(find.text('导出数据'), 300);
+      await tester.ensureVisible(find.text('导出数据'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('导出数据'));
+      await tester.pumpAndSettle();
+
+      final copy = calls.firstWhere(
+        (call) => call.method == 'Clipboard.setData',
+      );
+      final text = (copy.arguments as Map<Object?, Object?>)['text'] as String;
+      expect(CountdownEvent.decodeList(text).single.title, '剪贴板事件');
+    });
+
+    testWidgets('导入数据从剪贴板合并事件', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      final backup = CountdownEvent.encodeList([makeEvent(title: '备份事件')]);
+      await tester.pumpWidget(buildSettingsPage(controller));
+      await flushPlatform(tester);
+
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.getData') {
+            return {'text': backup};
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      await tester.scrollUntilVisible(find.text('导入数据'), 300);
+      await tester.ensureVisible(find.text('导入数据'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('导入数据'));
+      await tester.pumpAndSettle();
+      expect(find.text('取消'), findsOneWidget);
+
+      await tester.tap(find.text('导入'));
+      await tester.pumpAndSettle();
+
+      expect(controller.state.events.single.title, '备份事件');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('清除所有事件需确认并执行', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await controller.saveEvent(makeEvent(title: '要被清除'));
+      await tester.pumpWidget(buildSettingsPage(controller));
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.text('清除所有事件'), 300);
+      await tester.ensureVisible(find.text('清除所有事件'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('清除所有事件'));
+      await tester.pumpAndSettle();
+      expect(find.text('清除所有事件？'), findsOneWidget);
+      await tester.tap(find.text('取消'));
+      await tester.pumpAndSettle();
+      expect(controller.state.events, hasLength(1));
+
+      await tester.ensureVisible(find.text('清除所有事件'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('清除所有事件'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('清除'));
+      await tester.pumpAndSettle();
+      expect(controller.state.events, isEmpty);
+      expect(controller.state.pendingUndos, hasLength(1));
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('事件详情页', () {
@@ -654,3 +779,5 @@ class _IdleTimer implements Timer {
   @override
   int get tick => 0;
 }
+
+

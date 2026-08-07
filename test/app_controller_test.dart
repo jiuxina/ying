@@ -172,6 +172,97 @@ void main() {
       );
       controller.dispose();
     });
+
+    test('clear completed uses a longer undo window', () async {
+      final durations = <Duration>[];
+      final controller = AppController(
+        StorageService(),
+        autoLoad: false,
+        loadEvents: () async => const [],
+        saveEvents: (_) async {},
+        loadSettings: () async => const AppSettings(),
+        saveSettings: (_) async {},
+        scheduleNotification: (_) async {},
+        cancelNotification: (_) async {},
+        syncWidget: (_, _) async {},
+        timerFactory: (duration, _) {
+          durations.add(duration);
+          return _IdleTimer();
+        },
+      );
+      await controller.saveEvent(event('Done-1', completed: true));
+      await controller.clearCompletedWithUndo();
+      expect(durations.single, const Duration(seconds: 10));
+      controller.dispose();
+    });
+
+    test('clear all events hides, stores safely, and finalizes', () async {
+      final stored = <List<CountdownEvent>>[];
+      final cancelled = <String>[];
+      final controller = AppController(
+        StorageService(),
+        autoLoad: false,
+        saveEvents: (events) async => stored.add([...events]),
+        loadEvents: () async => const [],
+        loadSettings: () async => const AppSettings(),
+        saveSettings: (_) async {},
+        scheduleNotification: (_) async {},
+        cancelNotification: (id) async => cancelled.add(id),
+        syncWidget: (_, _) async {},
+        timerFactory: (_, _) => _IdleTimer(),
+      );
+      final first = event('A-Event');
+      final second = event('B-Event');
+      await controller.saveEvent(first);
+      await controller.saveEvent(second);
+      cancelled.clear();
+      await controller.clearAllEventsWithUndo();
+      expect(controller.state.events, isEmpty);
+      expect(controller.state.pendingUndos, hasLength(1));
+      expect(stored.last, hasLength(2));
+      expect(cancelled, isEmpty);
+
+      await controller.undoLatest();
+      expect(controller.state.events, hasLength(2));
+      expect(controller.state.pendingUndos, isEmpty);
+
+      await controller.clearAllEventsWithUndo();
+      await controller.finalizeUndo(controller.state.latestUndo!.id);
+      expect(stored.last, isEmpty);
+      expect(cancelled, containsAll([first.id, second.id]));
+      controller.dispose();
+    });
+
+    test('import merges events by id and schedules reminders', () async {
+      final stored = <List<CountdownEvent>>[];
+      final scheduled = <String>[];
+      final controller = AppController(
+        StorageService(),
+        autoLoad: false,
+        saveEvents: (events) async => stored.add([...events]),
+        loadEvents: () async => const [],
+        loadSettings: () async => const AppSettings(),
+        saveSettings: (_) async {},
+        scheduleNotification: (value) async => scheduled.add(value.id),
+        cancelNotification: (_) async {},
+        syncWidget: (_, _) async {},
+        timerFactory: (_, _) => _IdleTimer(),
+      );
+      await controller.saveEvent(event('Keep-Id'));
+      scheduled.clear();
+      final updated = event('Keep-Id', reminderMinutes: 1440);
+      final fresh = event('Fresh-Id');
+      await controller.importEvents([updated, fresh]);
+
+      expect(controller.state.events, hasLength(2));
+      final kept = controller.state.events.firstWhere(
+        (value) => value.id == 'Keep-Id',
+      );
+      expect(kept.reminders.single.minutesBefore, 1440);
+      expect(scheduled, containsAll(['Keep-Id', 'Fresh-Id']));
+      expect(stored.last, hasLength(2));
+      controller.dispose();
+    });
   });
 }
 
@@ -187,3 +278,4 @@ class _IdleTimer implements Timer {
   @override
   int get tick => 0;
 }
+

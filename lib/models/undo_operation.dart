@@ -1,6 +1,6 @@
 import 'countdown_event.dart';
 
-enum UndoOperationType { delete, toggleCompleted, clearCompleted }
+enum UndoOperationType { delete, toggleCompleted, clearCompleted, clearAll }
 
 class UndoOperation {
   const UndoOperation({
@@ -19,5 +19,7 @@ class UndoOperation {
 
   bool get delaysDeletion =>
       type == UndoOperationType.delete ||
-      type == UndoOperationType.clearCompleted;
+      type == UndoOperationType.clearCompleted ||
+      type == UndoOperationType.clearAll;
 }
+

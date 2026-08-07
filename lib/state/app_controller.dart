@@ -97,6 +97,7 @@ class AppController extends StateNotifier<AppState> {
   final WidgetSynchronizer _syncWidget;
   final UndoTimerFactory _timerFactory;
   final Duration _undoDuration;
+  static const _batchUndoDuration = Duration(seconds: 10);
   final Map<String, Timer> _undoTimers = {};
   int _operationSequence = 0;
   int? _notificationActionRevision;
@@ -128,6 +129,22 @@ class AppController extends StateNotifier<AppState> {
     }
     await _commitVisibleEvents(events);
     await _scheduleNotification(event);
+  }
+
+  /// 导入备份：按 ID 合并到现有列表，剪贴板数据优先。
+  Future<void> importEvents(List<CountdownEvent> incoming) async {
+    if (incoming.isEmpty) return;
+    final byId = <String, CountdownEvent>{
+      for (final value in state.events) value.id: value,
+    };
+    for (final event in incoming) {
+      byId[event.id] = event;
+    }
+    final events = byId.values.toList();
+    await _commitVisibleEvents(events);
+    for (final event in incoming) {
+      await _scheduleNotification(event);
+    }
   }
 
   Future<void> deleteEvent(CountdownEvent event) => deleteEventWithUndo(event);
@@ -188,11 +205,25 @@ class AppController extends StateNotifier<AppState> {
       type: UndoOperationType.clearCompleted,
       eventsBefore: completed,
       message: '已清理 ${completed.length} 个完成事件',
+      duration: _batchUndoDuration,
     );
     final visible = state.events.where((event) => !event.isCompleted).toList();
-    _appendUndo(operation, visible);
+    _appendUndo(operation, visible, duration: _batchUndoDuration);
     await _persistSafeEvents();
     await _syncWidget(visible, state.settings);
+  }
+
+  Future<void> clearAllEventsWithUndo() async {
+    if (state.events.isEmpty) return;
+    final operation = _newOperation(
+      type: UndoOperationType.clearAll,
+      eventsBefore: [...state.events],
+      message: '已清除 ${state.events.length} 个事件',
+      duration: _batchUndoDuration,
+    );
+    _appendUndo(operation, const [], duration: _batchUndoDuration);
+    await _persistSafeEvents();
+    await _syncWidget(const [], state.settings);
   }
 
   Future<void> undoLatest() async {
@@ -253,6 +284,7 @@ class AppController extends StateNotifier<AppState> {
     required UndoOperationType type,
     required List<CountdownEvent> eventsBefore,
     required String message,
+    Duration? duration,
   }) {
     final now = DateTime.now();
     return UndoOperation(
@@ -260,17 +292,21 @@ class AppController extends StateNotifier<AppState> {
       type: type,
       eventsBefore: List.unmodifiable(eventsBefore),
       message: message,
-      expiresAt: now.add(_undoDuration),
+      expiresAt: now.add(duration ?? _undoDuration),
     );
   }
 
-  void _appendUndo(UndoOperation operation, List<CountdownEvent> events) {
+  void _appendUndo(
+    UndoOperation operation,
+    List<CountdownEvent> events, {
+    Duration? duration,
+  }) {
     state = state.copyWith(
       events: events,
       pendingUndos: [...state.pendingUndos, operation],
     );
     _undoTimers[operation.id] = _timerFactory(
-      _undoDuration,
+      duration ?? _undoDuration,
       () => unawaited(finalizeUndo(operation.id)),
     );
   }
@@ -318,3 +354,5 @@ final appControllerProvider = StateNotifierProvider<AppController, AppState>(
 final themeModeProvider = Provider<ThemeMode>(
   (ref) => ref.watch(appControllerProvider).settings.themeMode,
 );
+
+
