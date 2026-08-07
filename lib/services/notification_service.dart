@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -116,6 +117,18 @@ class NotificationService {
       sound: true,
     );
     return androidGranted ?? iosGranted ?? true;
+  }
+  static const _settingsChannel = MethodChannel('ying/settings');
+
+  /// 打开系统通知设置页，用于通知权限被拒后的引导。
+  Future<void> openAppNotificationSettings() async {
+    try {
+      await _settingsChannel.invokeMethod<void>('openAppNotificationSettings');
+    } on MissingPluginException {
+      // 桌面或测试环境没有原生实现，静默忽略。
+    } catch (_) {
+      // 打开失败不打断当前流程。
+    }
   }
 
   Future<void> schedule(CountdownEvent event) async {
@@ -373,3 +386,4 @@ Future<void> notificationBackgroundResponse(
     await storage.markNotificationAction();
   }
 }
+

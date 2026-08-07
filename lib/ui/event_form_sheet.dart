@@ -400,8 +400,10 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
   Future<void> _save() async {
     if (!formKey.currentState!.validate()) return;
     setState(() => isSaving = true);
+    var notificationsAllowed = true;
     if (selectedReminders.isNotEmpty) {
-      await NotificationService.instance.requestPermission();
+      notificationsAllowed =
+          await NotificationService.instance.requestPermission();
     }
     final existing = widget.event;
     final event = CountdownEvent(
@@ -425,7 +427,22 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
       createdAt: existing?.createdAt ?? DateTime.now(),
     );
     await ref.read(appControllerProvider.notifier).saveEvent(event);
-    if (mounted) Navigator.pop(context);
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.pop(context);
+    if (selectedReminders.isNotEmpty && !notificationsAllowed) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: const Text('通知权限未开启，提醒可能无法送达'),
+          action: SnackBarAction(
+            label: '去设置',
+            onPressed: () {
+              NotificationService.instance.openAppNotificationSettings();
+            },
+          ),
+        ),
+      );
+    }
   }
 }
 
@@ -656,3 +673,4 @@ class _FormChoiceSheet<T> extends StatelessWidget {
     ),
   );
 }
+
