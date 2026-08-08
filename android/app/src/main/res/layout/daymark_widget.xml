@@ -12,11 +12,13 @@
         android:importantForAccessibility="no"
         android:scaleType="fitXY" />
 
-    <FrameLayout
+    <ImageView
         android:id="@+id/widget_scrim"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/daymark_widget_scrim"
+        android:contentDescription="@null"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
         android:visibility="gone" />
 
     <LinearLayout
@@ -45,8 +47,7 @@
                 android:shadowRadius="2"
                 android:text="DAYMARK"
                 android:textColor="#D9FFFFFF"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+                android:textSize="14sp" />
             <TextView
                 android:id="@+id/widget_holiday_badge"
                 android:layout_width="wrap_content"
@@ -148,6 +149,6 @@
             android:shadowDy="1"
             android:shadowRadius="2"
             android:textColor="#D9FFFFFF"
-            android:textSize="13sp" />
+            android:textSize="14sp" />
     </LinearLayout>
 </FrameLayout>

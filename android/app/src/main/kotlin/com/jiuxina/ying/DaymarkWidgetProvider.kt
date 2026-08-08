@@ -10,7 +10,9 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.Path
 import android.net.Uri
 import android.view.View
 import android.widget.RemoteViews
@@ -110,7 +112,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
                     },
                 )
                 if (!compact && widgetData.getBoolean("widget_show_category", true)) {
-                    views.setTextViewText(R.id.widget_category, event.category.uppercase())
+                    views.setTextViewText(R.id.widget_category, event.category)
                     views.setViewVisibility(R.id.widget_category, View.VISIBLE)
                 } else {
                     views.setViewVisibility(R.id.widget_category, View.INVISIBLE)
@@ -170,13 +172,14 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
             darkSurface -> Color.rgb(28, 28, 30)
             else -> Color.WHITE
         }
-        val secondaryText = withAlpha(primaryText, 0xB8)
+        val secondaryText = withAlpha(primaryText, 0xBD)
 
         val backdrop = buildBackdrop(
             context,
             style,
             baseColor,
             accent,
+            primaryText,
             data.getString("widget_background_path", ""),
         )
         if (backdrop == null) {
@@ -186,8 +189,13 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
             views.setImageViewBitmap(R.id.widget_backdrop, backdrop)
         }
         val scrimVisible = style == WidgetStyle.sticker ||
-            (style == WidgetStyle.photo && backdrop != null)
-        views.setViewVisibility(R.id.widget_scrim, if (scrimVisible) View.VISIBLE else View.GONE)
+            style == WidgetStyle.photo
+        if (scrimVisible) {
+            views.setImageViewBitmap(R.id.widget_scrim, scrimBitmap(320, 240))
+            views.setViewVisibility(R.id.widget_scrim, View.VISIBLE)
+        } else {
+            views.setViewVisibility(R.id.widget_scrim, View.GONE)
+        }
 
         val holidayVisible = holiday.isNotEmpty() && !compact
         if (holidayVisible) {
@@ -202,9 +210,6 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         views.setTextColor(R.id.widget_unit, secondaryText)
         views.setTextColor(R.id.widget_category, secondaryText)
         views.setTextColor(R.id.widget_note, secondaryText)
-        if (style == WidgetStyle.neon || style == WidgetStyle.pixel) {
-            views.setTextColor(R.id.widget_days, accent)
-        }
         views.setInt(R.id.widget_previous, "setColorFilter", secondaryText)
         views.setInt(R.id.widget_next, "setColorFilter", secondaryText)
         views.setInt(R.id.widget_complete, "setColorFilter", secondaryText)
@@ -212,9 +217,9 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         val scale = java.lang.Double.longBitsToDouble(
             data.getLong("widget_font_scale", java.lang.Double.doubleToRawLongBits(1.0)),
         ).toFloat()
-        views.setTextViewTextSize(R.id.widget_title, 2, (if (compact) 17f else 20f) * scale)
+        views.setTextViewTextSize(R.id.widget_title, 2, 18f * scale)
         views.setTextViewTextSize(R.id.widget_days, 2, (if (compact) 38f else 44f) * scale)
-        views.setTextViewTextSize(R.id.widget_note, 2, 13f * scale)
+        views.setTextViewTextSize(R.id.widget_note, 2, 14f)
     }
 
     private fun buildBackdrop(
@@ -222,6 +227,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         style: WidgetStyle,
         baseColor: Int,
         accent: Int,
+        textColor: Int,
         photoPath: String?,
     ): Bitmap? {
         val width = 320
@@ -236,38 +242,41 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
             )
             WidgetStyle.sticker -> null
             WidgetStyle.photo -> {
-                loadPhotoBitmap(photoPath) ?: roundedRectBitmap(
-                    width,
-                    height,
-                    baseColor,
-                    10f * density,
-                )
+                loadPhotoBitmap(photoPath, 10f * density)
+                    ?: photoPlaceholderBitmap(width, height, accent, 10f * density)
             }
             WidgetStyle.glass -> roundedRectBitmap(
                 width,
                 height,
-                0x99FFFFFF.toInt(),
+                0xB8FFFFFF.toInt(),
                 10f * density,
-                borderColor = 0x33FFFFFF,
-                borderWidth = 2f * density,
+                borderColor = 0xBFFFFFFF.toInt(),
+                borderWidth = 1f * density,
             )
-            WidgetStyle.polaroid -> polaroidBitmap(width, height)
+            WidgetStyle.polaroid -> polaroidBitmap(width, height, 4f * density)
             WidgetStyle.neon -> roundedRectBitmap(
                 width,
                 height,
                 0xFF0A0F1E.toInt(),
                 8f * density,
                 borderColor = accent,
-                borderWidth = 3f * density,
+                borderWidth = 1f * density,
             )
-            WidgetStyle.pixel -> pixelBitmap(width, height, accent)
+            WidgetStyle.pixel -> roundedRectBitmap(
+                width,
+                height,
+                0xFF141414.toInt(),
+                0f,
+                borderColor = withAlpha(accent, 0xE6),
+                borderWidth = 1f * density,
+            )
             WidgetStyle.minimal -> roundedRectBitmap(
                 width,
                 height,
                 0x00000000,
                 8f * density,
-                borderColor = 0x661C1C1E.toInt(),
-                borderWidth = 2f * density,
+                borderColor = withAlpha(textColor, 0x66),
+                borderWidth = 1f * density,
             )
         }
     }
@@ -304,44 +313,67 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         return bitmap
     }
 
-    private fun polaroidBitmap(width: Int, height: Int): Bitmap {
+    private fun polaroidBitmap(width: Int, height: Int, radius: Float): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val white = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
         val band = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(240, 237, 230) }
-        val radius = 6f
         canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), radius, radius, white)
-        val bandTop = height - (height * 0.16f).toInt()
+        val bandTop = height - (height * 0.17f).toInt()
         canvas.drawRect(0f, bandTop.toFloat(), width.toFloat(), height.toFloat(), band)
         return bitmap
     }
 
-    private fun pixelBitmap(width: Int, height: Int, accent: Int): Bitmap {
+    private fun photoPlaceholderBitmap(
+        width: Int,
+        height: Int,
+        accent: Int,
+        radius: Float,
+    ): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val dark = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(20, 20, 20) }
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), dark)
-        val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accent }
-        val thickness = 8f
-        val step = 28f
-        var y = 0f
-        while (y < height) {
-            val block = minOf(step, height - y)
-            canvas.drawRect(0f, y, thickness, y + block, edge)
-            canvas.drawRect(width - thickness, y, width.toFloat(), y + block, edge)
-            y += step
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = android.graphics.LinearGradient(
+                0f,
+                0f,
+                width.toFloat(),
+                height.toFloat(),
+                withAlpha(accent, 0x8C),
+                withAlpha(accent, 0x4D),
+                android.graphics.Shader.TileMode.CLAMP,
+            )
         }
-        var x = 0f
-        while (x < width) {
-            val block = minOf(step, width - x)
-            canvas.drawRect(x, 0f, x + block, thickness, edge)
-            canvas.drawRect(x, height - thickness, x + block, height.toFloat(), edge)
-            x += step
-        }
+        canvas.drawRoundRect(
+            0f,
+            0f,
+            width.toFloat(),
+            height.toFloat(),
+            radius,
+            radius,
+            paint,
+        )
         return bitmap
     }
 
-    private fun loadPhotoBitmap(path: String?): Bitmap? {
+    private fun scrimBitmap(width: Int, height: Int): Bitmap {
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val paint = Paint().apply {
+            shader = android.graphics.LinearGradient(
+                0f,
+                0f,
+                0f,
+                height.toFloat(),
+                intArrayOf(0x00000000, 0x66000000.toInt()),
+                floatArrayOf(0.35f, 1f),
+                android.graphics.Shader.TileMode.CLAMP,
+            )
+        }
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+        return bitmap
+    }
+
+    private fun loadPhotoBitmap(path: String?, radius: Float): Bitmap? {
         if (path.isNullOrBlank()) return null
         val file = File(path)
         if (!file.exists()) return null
@@ -357,7 +389,35 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
                 inSampleSize = sampleSize
                 inPreferredConfig = Bitmap.Config.RGB_565
             }
-            BitmapFactory.decodeFile(path, options)
+            val source = BitmapFactory.decodeFile(path, options) ?: return null
+            val output = Bitmap.createBitmap(320, 240, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(output)
+            val clip = Path().apply {
+                addRoundRect(
+                    0f,
+                    0f,
+                    320f,
+                    240f,
+                    radius,
+                    radius,
+                    Path.Direction.CW,
+                )
+            }
+            canvas.clipPath(clip)
+            val scale = maxOf(320f / source.width, 240f / source.height)
+            val matrix = Matrix().apply {
+                setScale(scale, scale)
+                postTranslate(
+                    (320f - source.width * scale) / 2f,
+                    (240f - source.height * scale) / 2f,
+                )
+            }
+            val paint = Paint(
+                Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG,
+            )
+            canvas.drawBitmap(source, matrix, paint)
+            source.recycle()
+            output
         } catch (_: Exception) {
             null
         }
