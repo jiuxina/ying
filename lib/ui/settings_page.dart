@@ -1,14 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 
 import '../app_version.dart';
+import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
 import '../state/app_controller.dart';
+import '../services/photo_background_service.dart';
+import '../services/wallpaper_color_service.dart';
 import 'glass_ui.dart';
 import 'reminder_diagnostics_section.dart';
 import 'update_dialog.dart';
 import 'widget_preview_section.dart';
+import 'widget_style_presets.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -85,10 +91,28 @@ class SettingsPage extends ConsumerWidget {
         const SizedBox(height: 16),
         _Section(
           title: '小部件样式',
-          subtitle: '主色与文字缩放',
+          subtitle: '预设、主色与文字缩放',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: widgetStylePresets
+                    .map(
+                      (preset) => _StyleOption(
+                        style: preset.$1,
+                        label: preset.$2,
+                        icon: preset.$3,
+                        selected: settings.widgetStyle == preset.$1,
+                        onTap: () => controller.updateSettings(
+                          settings.copyWith(widgetStyle: preset.$1),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+              const _InsetDivider(),
               Wrap(
                 spacing: 13,
                 runSpacing: 13,
@@ -146,6 +170,44 @@ class SettingsPage extends ConsumerWidget {
                   ),
                 ),
               ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _Section(
+          title: '小部件背景',
+          subtitle: '壁纸取色与相册背景',
+          child: Column(
+            children: [
+              _SettingSwitch(
+                icon: Icons.wallpaper_rounded,
+                title: '跟随壁纸颜色',
+                subtitle: '读取当前壁纸主色并自动生成对比文字色',
+                value: settings.widgetWallpaperColor != -1,
+                onChanged: (value) => unawaited(
+                  _toggleWallpaperColors(context, ref, settings, value),
+                ),
+              ),
+              const _InsetDivider(),
+              _SettingsActionTile(
+                icon: Icons.add_photo_alternate_outlined,
+                title: '选择照片背景',
+                subtitle: settings.widgetBackgroundPath.isEmpty
+                    ? '从相册挑选一张作为小部件背景'
+                    : '已设置照片背景，点击可重新选择',
+                onTap: () => unawaited(_pickBackgroundPhoto(context, ref)),
+              ),
+              if (settings.widgetBackgroundPath.isNotEmpty) ...[
+                const _InsetDivider(),
+                _SettingsActionTile(
+                  icon: Icons.hide_image_outlined,
+                  title: '清除照片背景',
+                  subtitle: '恢复为样式默认背景',
+                  onTap: () => controller.updateSettings(
+                    settings.copyWith(widgetBackgroundPath: ''),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -353,6 +415,58 @@ class SettingsPage extends ConsumerWidget {
     await Clipboard.setData(ClipboardData(text: url));
     if (!context.mounted) return;
     _showMessage(context, '链接已复制');
+  }
+
+  Future<void> _toggleWallpaperColors(
+    BuildContext context,
+    WidgetRef ref,
+    AppSettings settings,
+    bool enabled,
+  ) async {
+    final controller = ref.read(appControllerProvider.notifier);
+    if (!enabled) {
+      await controller.updateSettings(
+        settings.copyWith(
+          widgetWallpaperColor: -1,
+          widgetWallpaperDarkColor: -1,
+          widgetWallpaperTextColor: -1,
+        ),
+      );
+      return;
+    }
+    final colors = await WallpaperColorService.fetch();
+    if (colors == null) {
+      if (context.mounted) {
+        _showMessage(context, '无法读取壁纸颜色，请稍后再试');
+      }
+      return;
+    }
+    await controller.updateSettings(
+      settings.copyWith(
+        widgetWallpaperColor: colors.primary,
+        widgetWallpaperDarkColor: colors.dark,
+        widgetWallpaperTextColor: colors.text,
+      ),
+    );
+  }
+
+  Future<void> _pickBackgroundPhoto(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final controller = ref.read(appControllerProvider.notifier);
+    final settings = ref.read(appControllerProvider).settings;
+    try {
+      final path = await pickAndCacheWidgetBackground();
+      await controller.updateSettings(
+        settings.copyWith(widgetBackgroundPath: path),
+      );
+      if (context.mounted) _showMessage(context, '照片背景已更新');
+    } on PhotoBackgroundException catch (error) {
+      if (context.mounted) _showMessage(context, error.message);
+    } catch (_) {
+      if (context.mounted) _showMessage(context, '选择照片失败，请重试');
+    }
   }
 
   void _showMessage(BuildContext context, String message) {
@@ -615,6 +729,82 @@ class _ThemeOption extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StyleOption extends StatelessWidget {
+  const _StyleOption({
+    required this.style,
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final WidgetStyle style;
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '小部件样式：$label',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: AnimatedContainer(
+            duration: motionDuration(
+              context,
+              const Duration(milliseconds: 180),
+            ),
+            constraints: const BoxConstraints(minHeight: 46, minWidth: 76),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: selected
+                  ? scheme.primary.withValues(alpha: 0.10)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: selected
+                    ? scheme.primary.withValues(alpha: 0.38)
+                    : scheme.outlineVariant.withValues(alpha: 0.5),
+              ),
+            ),
+            child: ExcludeSemantics(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 17,
+                    color: selected
+                        ? scheme.primary
+                        : scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: selected
+                          ? scheme.primary
+                          : scheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

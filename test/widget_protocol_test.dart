@@ -147,7 +147,7 @@ void main() {
 
     test('preference values include protocol version and every key', () {
       final values = widgetPreferenceValues(const AppSettings());
-      expect(values['widget_protocol_version'], 2);
+      expect(values['widget_protocol_version'], 3);
       expect(values['widget_color'], 'ff0f766e');
       expect(
         values.keys,
@@ -170,8 +170,17 @@ void main() {
           'widget_wallpaper_color',
           'widget_wallpaper_dark_color',
           'widget_wallpaper_text_color',
+          'widget_holiday',
         ]),
       );
+    });
+
+    test('preference values compute holiday for the given date', () {
+      final values = widgetPreferenceValues(
+        const AppSettings(),
+        now: DateTime(2026, 12, 25),
+      );
+      expect(values['widget_holiday'], 'christmas');
     });
 
     test('preference values reflect custom settings', () {

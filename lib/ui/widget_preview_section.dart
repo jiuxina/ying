@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
+import '../models/widget_holiday.dart';
+import '../services/background_image_provider.dart';
 import '../services/widget_service.dart';
 import 'glass_ui.dart';
 
@@ -225,86 +227,303 @@ class _WidgetPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = settings.widgetFontScale;
+    final style = settings.widgetStyle;
+    final holiday = combinedHoliday(event, DateTime.now());
+    final darkSurface = style == WidgetStyle.glass ||
+        style == WidgetStyle.polaroid ||
+        style == WidgetStyle.minimal;
+    final wallpaperText = settings.widgetWallpaperTextColor == -1
+        ? null
+        : Color(settings.widgetWallpaperTextColor);
+    final primaryText = wallpaperText ??
+        (darkSurface ? const Color(0xFF1C1C1E) : Colors.white);
+    final secondaryText = primaryText.withValues(alpha: 0.74);
+    final accent = _holidayAccent(holiday) ?? Color(settings.widgetColor);
+    final borderColor = style == WidgetStyle.minimal
+        ? primaryText.withValues(alpha: 0.4)
+        : style == WidgetStyle.glass
+        ? Colors.white.withValues(alpha: 0.75)
+        : style == WidgetStyle.neon
+        ? accent
+        : style == WidgetStyle.pixel
+        ? accent.withValues(alpha: 0.9)
+        : null;
+    final withShadow = style == WidgetStyle.sticker ||
+        style == WidgetStyle.photo ||
+        style == WidgetStyle.neon ||
+        style == WidgetStyle.pixel;
+    final shadow = withShadow
+        ? const [
+            Shadow(
+              color: Colors.black54,
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ]
+        : null;
     return Semantics(
       label: compact ? '小号小部件预览' : '中号小部件预览',
       child: Container(
-        // 桌面小部件是固定尺寸，这里用固定高度，避免在无界约束（ListView）
-        // 下内部 Column 的 Spacer 拿到无限高度而崩溃。
         height: compact ? 150 : 170,
-        padding: const EdgeInsets.all(15),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(
+            style == WidgetStyle.pixel ? 6 : 24,
+          ),
+          border: borderColor == null ? null : Border.all(color: borderColor),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
-        child: event == null
-            ? const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('萤', style: TextStyle(color: Colors.white70)),
-                  Spacer(),
-                  Text(
-                    '添加一个倒数日',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (settings.widgetShowCategory && !compact)
-                    Text(
-                      event!.category,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                  Text(
-                    event!.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18 * scale,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${event!.displayDays}',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: (compact ? 38 : 44) * scale,
-                          fontWeight: FontWeight.w800,
-                          height: 0.95,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          '天',
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (!compact &&
-                      settings.widgetShowNote &&
-                      event!.note.isNotEmpty)
-                    Text(
-                      event!.note,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                ],
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _PreviewBackdrop(
+              style: style,
+              color: color,
+              accent: accent,
+              imageProvider: widgetBackgroundImage(
+                settings.widgetBackgroundPath,
               ),
+            ),
+            if (style == WidgetStyle.sticker || style == WidgetStyle.photo)
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Color(0x66000000)],
+                    stops: [0.35, 1],
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(15),
+              child: event == null
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '萤',
+                          style: TextStyle(color: secondaryText),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '添加一个倒数日',
+                          style: TextStyle(
+                            color: primaryText,
+                            fontWeight: FontWeight.w700,
+                            shadows: shadow,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (!compact)
+                          Row(
+                            children: [
+                              if (settings.widgetShowCategory)
+                                Expanded(
+                                  child: Text(
+                                    event!.category,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: secondaryText,
+                                      shadows: shadow,
+                                    ),
+                                  ),
+                                ),
+                              if (holiday != WidgetHoliday.none) ...[
+                                const SizedBox(width: 8),
+                                _HolidayBadge(
+                                  holiday: holiday,
+                                  accent: accent,
+                                ),
+                              ],
+                            ],
+                          ),
+                        const SizedBox(height: 2),
+                        Text(
+                          event!.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: primaryText,
+                            fontSize: 18 * scale,
+                            fontWeight: FontWeight.w700,
+                            shadows: shadow,
+                          ),
+                        ),
+                        const Spacer(),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '${event!.displayDays}',
+                              style: TextStyle(
+                                color: primaryText,
+                                fontSize: (compact ? 38 : 44) * scale,
+                                fontWeight: FontWeight.w800,
+                                height: 0.95,
+                                shadows: shadow,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Text(
+                                '天',
+                                style: TextStyle(
+                                  color: secondaryText,
+                                  shadows: shadow,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (!compact &&
+                            settings.widgetShowNote &&
+                            event!.note.isNotEmpty)
+                          Text(
+                            event!.note,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: secondaryText,
+                              shadows: shadow,
+                            ),
+                          ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+}
+
+class _PreviewBackdrop extends StatelessWidget {
+  const _PreviewBackdrop({
+    required this.style,
+    required this.color,
+    required this.accent,
+    required this.imageProvider,
+  });
+
+  final WidgetStyle style;
+  final Color color;
+  final Color accent;
+  final ImageProvider? imageProvider;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (style) {
+      case WidgetStyle.card:
+        return ColoredBox(color: color);
+      case WidgetStyle.sticker:
+      case WidgetStyle.minimal:
+        return const SizedBox.shrink();
+      case WidgetStyle.photo:
+        final image = imageProvider;
+        if (image != null) {
+          return Image(
+            image: image,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => _photoPlaceholder(accent),
+          );
+        }
+        return _photoPlaceholder(accent);
+      case WidgetStyle.glass:
+        return ColoredBox(color: Colors.white.withValues(alpha: 0.72));
+      case WidgetStyle.polaroid:
+        return Column(
+          children: [
+            const Expanded(child: ColoredBox(color: Colors.white)),
+            ColoredBox(
+              color: const Color(0xFFF0EDE6),
+              child: const SizedBox(height: 30),
+            ),
+          ],
+        );
+      case WidgetStyle.neon:
+        return ColoredBox(color: const Color(0xFF0A0F1E));
+      case WidgetStyle.pixel:
+        return ColoredBox(color: const Color(0xFF141414));
+    }
+  }
+
+  Widget _photoPlaceholder(Color accent) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [accent.withValues(alpha: 0.55), accent.withValues(alpha: 0.3)],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.photo_outlined,
+          color: Colors.white.withValues(alpha: 0.85),
+          size: 30,
+        ),
+      ),
+    );
+  }
+}
+
+class _HolidayBadge extends StatelessWidget {
+  const _HolidayBadge({required this.holiday, required this.accent});
+
+  final WidgetHoliday holiday;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.20),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: accent.withValues(alpha: 0.55)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        child: Text(
+          holiday.label,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            shadows: const [
+              Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 1)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Color? _holidayAccent(WidgetHoliday holiday) {
+  switch (holiday) {
+    case WidgetHoliday.newYear:
+      return const Color(0xFFE11D48);
+    case WidgetHoliday.christmas:
+      return const Color(0xFF16A34A);
+    case WidgetHoliday.midAutumn:
+      return const Color(0xFFD97706);
+    case WidgetHoliday.birthday:
+      return const Color(0xFFEC4899);
+    case WidgetHoliday.none:
+      return null;
   }
 }
 

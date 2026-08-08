@@ -1,97 +1,153 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/daymark_widget_background"
-    android:gravity="center_vertical"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/widget_backdrop"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY" />
+
+    <View
+        android:id="@+id/widget_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/daymark_widget_scrim"
+        android:visibility="gone" />
 
     <LinearLayout
+        android:id="@+id/widget_content"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
-        <TextView
-            android:id="@+id/widget_category"
-            android:layout_width="0dp"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/widget_category"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:shadowColor="#33000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="2"
+                android:text="DAYMARK"
+                android:textColor="#D9FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/widget_holiday_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/daymark_holiday_badge"
+                android:paddingStart="8dp"
+                android:paddingTop="2dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="2dp"
+                android:text="圣诞"
+                android:textColor="#FFFFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+            <ImageButton
+                android:id="@+id/widget_previous"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="上一个事件"
+                android:src="@android:drawable/ic_media_previous"
+                android:tint="#FFFFFFFF" />
+            <ImageButton
+                android:id="@+id/widget_next"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="下一个事件"
+                android:src="@android:drawable/ic_media_next"
+                android:tint="#FFFFFFFF" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
             android:maxLines="1"
-            android:text="DAYMARK"
-            android:textColor="#D9FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-        <ImageButton
-            android:id="@+id/widget_previous"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="@android:color/transparent"
-            android:contentDescription="上一个事件"
-            android:src="@android:drawable/ic_media_previous"
-            android:tint="#FFFFFFFF" />
-        <ImageButton
-            android:id="@+id/widget_next"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="@android:color/transparent"
-            android:contentDescription="下一个事件"
-            android:src="@android:drawable/ic_media_next"
-            android:tint="#FFFFFFFF" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/widget_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="添加一个倒数日"
-        android:textColor="#FFFFFFFF"
-        android:textSize="20sp"
-        android:textStyle="bold" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="bottom|center_vertical"
-        android:orientation="horizontal">
-        <TextView
-            android:id="@+id/widget_days"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="--"
+            android:shadowColor="#40000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="3"
+            android:text="添加一个倒数日"
             android:textColor="#FFFFFFFF"
-            android:textSize="44sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
-        <TextView
-            android:id="@+id/widget_unit"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:paddingBottom="6dp"
-            android:text="天"
-            android:textColor="#D9FFFFFF"
-            android:textSize="14sp" />
-        <ImageButton
-            android:id="@+id/widget_complete"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="@android:color/transparent"
-            android:contentDescription="标记完成"
-            android:src="@android:drawable/checkbox_off_background"
-            android:tint="#FFFFFFFF" />
-    </LinearLayout>
 
-    <TextView
-        android:id="@+id/widget_note"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:textColor="#D9FFFFFF"
-        android:textSize="13sp" />
-</LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="bottom|center_vertical"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/widget_days"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:shadowColor="#40000000"
+                android:shadowDx="0"
+                android:shadowDy="2"
+                android:shadowRadius="4"
+                android:text="--"
+                android:textColor="#FFFFFFFF"
+                android:textSize="44sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/widget_unit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:paddingBottom="6dp"
+                android:shadowColor="#33000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="2"
+                android:text="天"
+                android:textColor="#D9FFFFFF"
+                android:textSize="14sp" />
+            <ImageButton
+                android:id="@+id/widget_complete"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="标记完成"
+                android:src="@android:drawable/checkbox_off_background"
+                android:tint="#FFFFFFFF" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:shadowColor="#33000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#D9FFFFFF"
+            android:textSize="13sp" />
+    </LinearLayout>
+</FrameLayout>

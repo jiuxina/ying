@@ -424,8 +424,27 @@ void main() {
       await tester.tap(find.text('减少透明度'));
       await tester.pumpAndSettle();
       expect(controller.state.settings.reduceTransparency, isTrue);
-      // 手机竖屏视口下四个开关同屏可见：透明度、动画、分类标签、事件备注。
-      expect(find.byType(GlassSwitch), findsNWidgets(4));
+      // 手机竖屏视口下五个开关同屏可见：透明度、动画、分类、备注、壁纸取色。
+      expect(find.byType(GlassSwitch), findsNWidgets(5));
+    });
+
+    testWidgets('切换小部件样式预设并持久化', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(buildSettingsPage(controller));
+      await flushPlatform(tester);
+
+      await tester.tap(find.bySemanticsLabel('小部件样式：贴纸'));
+      await tester.pumpAndSettle();
+      expect(controller.state.settings.widgetStyle, WidgetStyle.sticker);
+      expect(saved.last.widgetStyle, WidgetStyle.sticker);
+
+      await tester.tap(find.bySemanticsLabel('小部件样式：霓虹'));
+      await tester.pumpAndSettle();
+      expect(controller.state.settings.widgetStyle, WidgetStyle.neon);
+      handle.dispose();
     });
 
     testWidgets('主题选择与色卡选择带选中语义', (tester) async {
@@ -461,6 +480,12 @@ void main() {
       await tester.pumpWidget(buildSettingsPage(controller));
       await flushPlatform(tester);
 
+      await tester.scrollUntilVisible(find.text('刷新状态'), 300);
+      await tester.ensureVisible(find.text('刷新状态'));
+      await flushPlatform(tester);
+      // 滚动后诊断区与预览区可能同时重建，用定长 pump 避免等待
+      // 测试环境永不完成的平台通道 Future。
+      await tester.pump(const Duration(milliseconds: 400));
       expect(find.text('提醒诊断'), findsOneWidget);
       expect(find.text('刷新状态'), findsOneWidget);
 
@@ -520,6 +545,7 @@ void main() {
 
       await tester.scrollUntilVisible(find.text('导出数据'), 300);
       await tester.ensureVisible(find.text('导出数据'));
+      await flushPlatform(tester);
       await tester.pumpAndSettle();
       await tester.tap(find.text('导出数据'));
       await tester.pumpAndSettle();
@@ -557,6 +583,7 @@ void main() {
 
       await tester.scrollUntilVisible(find.text('导入数据'), 300);
       await tester.ensureVisible(find.text('导入数据'));
+      await flushPlatform(tester);
       await tester.pumpAndSettle();
       await tester.tap(find.text('导入数据'));
       await tester.pumpAndSettle();
@@ -579,6 +606,7 @@ void main() {
 
       await tester.scrollUntilVisible(find.text('清除所有事件'), 300);
       await tester.ensureVisible(find.text('清除所有事件'));
+      await flushPlatform(tester);
       await tester.pumpAndSettle();
       await tester.tap(find.text('清除所有事件'));
       await tester.pumpAndSettle();

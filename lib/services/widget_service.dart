@@ -6,6 +6,7 @@ import 'package:home_widget/home_widget.dart';
 
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
+import '../models/widget_holiday.dart';
 import '../utils/event_repeat_utils.dart';
 import 'notification_service.dart';
 import 'storage_service.dart';
@@ -98,7 +99,7 @@ class WidgetService {
   );
 }
 
-/// 把可见事件编码为小部件 v2 JSON：每个事件含 [CountdownEvent.icon] 与
+/// 把可见事件编码为小部件 JSON：每个事件含 [CountdownEvent.icon] 与
 /// [CountdownEvent.createdAt]（毫秒时间戳），并保持置顶优先、距离近优先的排序。
 String encodeWidgetEvents(List<CountdownEvent> events) {
   final visible = events.where((event) => !event.isCompleted).toList()
@@ -124,10 +125,14 @@ String encodeWidgetEvents(List<CountdownEvent> events) {
   );
 }
 
-/// 小部件 v2 偏好键值对；协议版本与全部新字段缺失时由 Android 侧回退默认值。
-Map<String, Object?> widgetPreferenceValues(AppSettings settings) {
+/// 小部件偏好键值对；协议版本与全部新字段缺失时由 Android 侧回退默认值。
+Map<String, Object?> widgetPreferenceValues(
+  AppSettings settings, {
+  DateTime? now,
+}) {
+  final today = now ?? DateTime.now();
   return {
-    'widget_protocol_version': 2,
+    'widget_protocol_version': 3,
     'widget_color': settings.widgetColor.toRadixString(16).padLeft(8, '0'),
     'widget_font_scale': settings.widgetFontScale,
     'widget_show_note': settings.widgetShowNote,
@@ -145,6 +150,7 @@ Map<String, Object?> widgetPreferenceValues(AppSettings settings) {
     'widget_wallpaper_color': settings.widgetWallpaperColor,
     'widget_wallpaper_dark_color': settings.widgetWallpaperDarkColor,
     'widget_wallpaper_text_color': settings.widgetWallpaperTextColor,
+    'widget_holiday': holidayFor(today).wireName,
   };
 }
 
