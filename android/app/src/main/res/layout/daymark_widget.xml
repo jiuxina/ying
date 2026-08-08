@@ -12,7 +12,7 @@
         android:importantForAccessibility="no"
         android:scaleType="fitXY" />
 
-    <View
+    <FrameLayout
         android:id="@+id/widget_scrim"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
