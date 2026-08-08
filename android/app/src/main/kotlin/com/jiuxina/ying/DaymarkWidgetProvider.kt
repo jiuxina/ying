@@ -232,7 +232,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
                 width,
                 height,
                 baseColor,
-                24f * density,
+                16f * density,
             )
             WidgetStyle.sticker -> null
             WidgetStyle.photo -> {
@@ -240,14 +240,14 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
                     width,
                     height,
                     baseColor,
-                    24f * density,
+                    16f * density,
                 )
             }
             WidgetStyle.glass -> roundedRectBitmap(
                 width,
                 height,
                 0x99FFFFFF.toInt(),
-                24f * density,
+                16f * density,
                 borderColor = 0x33FFFFFF,
                 borderWidth = 2f * density,
             )
@@ -256,7 +256,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
                 width,
                 height,
                 0xFF0A0F1E.toInt(),
-                18f * density,
+                12f * density,
                 borderColor = accent,
                 borderWidth = 3f * density,
             )
@@ -265,7 +265,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
                 width,
                 height,
                 0x00000000,
-                18f * density,
+                12f * density,
                 borderColor = 0x661C1C1E.toInt(),
                 borderWidth = 2f * density,
             )

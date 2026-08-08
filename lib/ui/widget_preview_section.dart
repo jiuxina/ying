@@ -268,7 +268,13 @@ class _WidgetPreview extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(
-            style == WidgetStyle.pixel ? 6 : 24,
+            switch (style) {
+              WidgetStyle.pixel ||
+              WidgetStyle.polaroid => 6,
+              WidgetStyle.neon ||
+              WidgetStyle.minimal => 12,
+              _ => 16,
+            },
           ),
           border: borderColor == null ? null : Border.all(color: borderColor),
           boxShadow: const [
