@@ -1,6 +1,6 @@
 # 第 2 阶段详细计划：内容个性化
 
-> 状态：代码与自动化验证已完成（2026-08-08），模拟器手工验收待执行，对应 [update-plan.md](update-plan.md) 阶段 2。
+> 状态：已实现，MuMu 模拟器手工验收通过（2026-08-08），对应 [update-plan.md](update-plan.md) 阶段 2。
 
 ## 摘要
 
@@ -61,10 +61,10 @@
 - [x] `HomeWidgetPreferences` 写入 `widget_protocol_version=4`、`widget_date_info`、`widget_list_mode`、`widget_show_lunar_week`，事件 JSON 含 `targetTime`
 - [x] Manifest 合并产物注册 `DaymarkWidgetRemoteViewsService` 与 `BIND_REMOTEVIEWS`
 
-待桌面手工验收：
+桌面手工验收（MuMu x86_64 / Android 12，2026-08-08）通过：
 
-- [ ] 应用内设置与预览：各新开关、单位 / 字体预设、Emoji、列表模式切换后预览即时同步
-- [ ] 桌面小部件单事件卡片：Emoji、精确秒走秒、农历星期、进度环、神秘模式、每日一句、字体生效
-- [ ] 桌面小部件列表模式：多事件滚动、点击行打开应用、无「无法加载微件」提示
-- [ ] 旧小部件缺少新配置时保持原显示
-- [ ] `flutter analyze`、`flutter test`、Android `testDebugUnitTest` 全部通过
+- [x] 应用内设置与预览：各新开关、单位 / 字体预设、Emoji、列表模式切换后预览即时同步（2026-08-08）
+- [x] 桌面小部件单事件卡片：Emoji、精确秒走秒、农历星期、进度环、神秘模式、每日一句、字体生效（2026-08-08）
+- [x] 桌面小部件列表模式：多事件滚动、点击行打开应用、无「无法加载微件」提示（2026-08-08）
+- [x] 旧小部件缺少新配置时保持原显示（2026-08-08）
+- [x] `flutter analyze`、`flutter test`、Android `testDebugUnitTest` 全部通过（2026-08-08）
