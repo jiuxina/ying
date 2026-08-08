@@ -269,11 +269,11 @@ class _WidgetPreview extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(
             switch (style) {
-              WidgetStyle.pixel ||
-              WidgetStyle.polaroid => 6,
+              WidgetStyle.pixel => 0,
+              WidgetStyle.polaroid => 4,
               WidgetStyle.neon ||
-              WidgetStyle.minimal => 12,
-              _ => 16,
+              WidgetStyle.minimal => 8,
+              _ => 10,
             },
           ),
           border: borderColor == null ? null : Border.all(color: borderColor),

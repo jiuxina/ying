@@ -13,7 +13,7 @@
 - 新增 `WidgetStyle` 枚举（card / sticker / photo / glass / polaroid / neon / pixel / minimal），未知值统一回退 `card`。
 - 设置页「小部件样式」区块提供 8 个入口，选择后立即持久化并同步预览与小部件；`lib/ui/widget_style_presets.dart` 集中维护入口元数据。
 - Android `DaymarkWidgetProvider` 按样式生成背景位图：卡片主色圆角、贴纸透明、照片图、玻璃半透明白、拍立得白底下沿、霓虹深色描边、像素深色块状边框、极简透明细边框。
-- 圆角按小部件实际尺寸收敛：卡片 / 玻璃 / 照片 16dp，霓虹 / 极简 12dp，拍立得 / 像素保持小圆角，预览与 Android 侧同步。
+- 圆角按小部件实际尺寸收敛：卡片 / 玻璃 / 照片 10dp，霓虹 / 极简 8dp，拍立得 4dp，像素直角，预览与 Android 侧同步。
 
 ### 2. 壁纸取色
 
