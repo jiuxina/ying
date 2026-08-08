@@ -176,6 +176,8 @@ flutter build apk --release --split-per-abi \
 ```
 
 > 仓库根目录提供 `build_abi_release.bat`，一键完成 clean → pub get → 分架构构建。
+> Release 构建时出现 `MaterialIcons-Regular.otf was tree-shaken` 是 Flutter 默认且预期的优化日志，
+> 说明只保留了实际用到的图标；不要为了消除该日志在正式包中加 `--no-tree-shake-icons`。
 
 ### 验证
 
