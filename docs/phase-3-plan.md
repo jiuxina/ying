@@ -41,5 +41,14 @@
 ## 假设与注意事项
 
 - RemoteViews 不支持手势，复制 / 撤销均用按钮与背景回调实现；分享先用复制到剪贴板，不调用系统分享面板。
-- 连点彩蛋与列表行长按分享留待后续版本；列表滚动本身由 `RemoteViewsService` 提供。
+- 连点彩蛋与列表行长按分享留待后续版本；列表模式目前静态展示最多 4 个事件，滚动列表待后续版本。
 - 撤销窗口固定 6 秒，过期后由闹钟刷新清理，普通轮询刷新也会兜底。
+
+## 验收修复记录（2026-08-08）
+
+- 撤销面板原布局含 RemoteViews 不允许的 `android.widget.Space`，勾选完成后 Launcher 报
+  “Class not allowed to be inflated”，表现为“无法加载微件”；已替换为 `LinearLayout` 权重占位。
+- MuMu/Lawnchair 上 `RemoteViewsService` 集合项点击不触发，列表模式改为静态渲染最多 4 行，
+  行内完成 / 打开详情与单事件模式一样直接绑定 PendingIntent。
+- 列表「+」原先悬浮在首行上方，改为固定头部行，不再遮挡第一行完成按钮。
+- 所有前台启动 PendingIntent 分配独立 requestCode，避免互相覆盖；启动 URI 处理增加短时去重。

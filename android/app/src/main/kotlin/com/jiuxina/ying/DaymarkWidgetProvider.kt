@@ -1,7 +1,8 @@
 package com.jiuxina.ying
 
-import android.app.PendingIntent
 import android.app.AlarmManager
+import android.app.ActivityOptions
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -20,7 +21,6 @@ import android.os.Build
 import android.os.SystemClock
 import android.view.View
 import android.widget.RemoteViews
-import android.widget.RemoteViewsService
 import android.widget.Toast
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
@@ -35,6 +35,41 @@ import java.util.Date
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToLong
+
+private const val LAUNCH_REQUEST_ROOT = 0
+private const val LAUNCH_REQUEST_ADD = 1
+private const val LAUNCH_REQUEST_OPEN = 2
+private const val ROW_LAUNCH_REQUEST_BASE = 0x10000000
+private const val MAX_LIST_ROWS = 4
+
+internal fun launchIntent(
+    context: Context,
+    uri: String?,
+    requestCode: Int,
+): PendingIntent {
+    val intent = Intent(context, MainActivity::class.java).apply {
+        data = uri?.let { Uri.parse(it) }
+        action = HomeWidgetLaunchIntent.HOME_WIDGET_LAUNCH_ACTION
+    }
+    var flags = PendingIntent.FLAG_UPDATE_CURRENT
+    if (Build.VERSION.SDK_INT >= 23) {
+        flags = flags or PendingIntent.FLAG_IMMUTABLE
+    }
+    return if (Build.VERSION.SDK_INT < 34) {
+        PendingIntent.getActivity(context, requestCode, intent, flags)
+    } else {
+        val options = ActivityOptions.makeBasic()
+        if (Build.VERSION.SDK_INT >= 35) {
+            options.setPendingIntentCreatorBackgroundActivityStartMode(
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED,
+            )
+        } else {
+            options.pendingIntentBackgroundActivityStartMode =
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+        }
+        PendingIntent.getActivity(context, requestCode, intent, flags, options.toBundle())
+    }
+}
 
 class DaymarkWidgetProvider : HomeWidgetProvider() {
     override fun onUpdate(
@@ -119,11 +154,11 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
                 )
                 views.setOnClickPendingIntent(
                     R.id.widget_add,
-                    launchIntent(context, "ying://add"),
+                    launchIntent(context, "ying://add", LAUNCH_REQUEST_ADD),
                 )
                 views.setOnClickPendingIntent(
                     R.id.widget_root,
-                    HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
+                    launchIntent(context, null, LAUNCH_REQUEST_ROOT),
                 )
                 appWidgetManager.updateAppWidget(widgetId, views)
             }
@@ -144,7 +179,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
                 events.getOrNull(widgetData.getInt("daymark_widget_index_$widgetId", 0)),
             )
             if (listMode) {
-                updateListWidget(context, views, widgetData, widgetId, style)
+                updateListWidget(context, views, widgetData, style)
             } else {
                 updateSingleWidget(
                     context,
@@ -159,12 +194,6 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
             }
             appWidgetManager.updateAppWidget(widgetId, views)
         }
-        if (listMode && appWidgetIds.isNotEmpty()) {
-            appWidgetManager.notifyAppWidgetViewDataChanged(
-                appWidgetIds,
-                R.id.widget_event_list,
-            )
-        }
     }
 
     private fun updateSingleWidget(
@@ -177,11 +206,13 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         style: WidgetStyle,
         holiday: String,
     ) {
-        val launchIntent = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
-        views.setOnClickPendingIntent(R.id.widget_root, launchIntent)
+        views.setOnClickPendingIntent(
+            R.id.widget_root,
+            launchIntent(context, null, LAUNCH_REQUEST_ROOT),
+        )
         views.setOnClickPendingIntent(
             R.id.widget_add,
-            launchIntent(context, "ying://add"),
+            launchIntent(context, "ying://add", LAUNCH_REQUEST_ADD),
         )
         val indexKey = "daymark_widget_index_$widgetId"
         val requestedIndex = widgetData.getInt(indexKey, 0)
@@ -190,7 +221,11 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         if (event != null) {
             views.setOnClickPendingIntent(
                 R.id.widget_title_row,
-                launchIntent(context, "ying://open?id=${Uri.encode(event.id)}"),
+                launchIntent(
+                    context,
+                    "ying://open?id=${Uri.encode(event.id)}",
+                    LAUNCH_REQUEST_OPEN,
+                ),
             )
         }
         applyAppearance(context, views, widgetData, compact, style, holiday)
@@ -344,30 +379,83 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         context: Context,
         views: RemoteViews,
         widgetData: SharedPreferences,
-        widgetId: Int,
         style: WidgetStyle,
     ) {
-        val launchIntent = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
-        views.setOnClickPendingIntent(R.id.widget_root, launchIntent)
-        applyBackdrop(context, views, widgetData, style)
-        val adapterIntent = Intent(context, DaymarkWidgetRemoteViewsService::class.java).apply {
-            data = Uri.parse("ying://widget/$widgetId")
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
-        }
-        views.setRemoteAdapter(R.id.widget_event_list, adapterIntent)
-        views.setEmptyView(R.id.widget_event_list, R.id.widget_empty)
+        views.setOnClickPendingIntent(
+            R.id.widget_root,
+            launchIntent(context, null, LAUNCH_REQUEST_ROOT),
+        )
         views.setOnClickPendingIntent(
             R.id.widget_add,
-            launchIntent(context, "ying://add"),
+            launchIntent(context, "ying://add", LAUNCH_REQUEST_ADD),
+        )
+        applyBackdrop(context, views, widgetData, style)
+        val events = parseEvents(widgetData.getString("widget_events", "[]") ?: "[]")
+        val colors = resolveTextColors(widgetData, style)
+        val showIcon = widgetData.getBoolean("widget_show_icon", false)
+        val mystery = widgetData.getBoolean("widget_mystery_mode", false)
+        val preset = widgetData.getString("widget_unit_text", "")
+        val showCategory = widgetData.getBoolean("widget_show_category", true)
+        val showPrecise = widgetData.getBoolean("widget_show_precise_time", false)
+        var visibleCount = 0
+        repeat(MAX_LIST_ROWS) { rowIndex ->
+            val ids = widgetRowIds(rowIndex + 1)
+            val event = events.getOrNull(rowIndex)
+            if (event == null) {
+                views.setViewVisibility(ids.root, View.GONE)
+                return@repeat
+            }
+            visibleCount++
+            views.setViewVisibility(ids.root, View.VISIBLE)
+            views.setTextViewText(ids.title, event.title)
+            views.setTextColor(ids.title, colors.primary)
+            views.setTextColor(ids.days, colors.primary)
+            views.setTextColor(ids.unit, colors.secondary)
+            views.setTextColor(ids.subtitle, colors.secondary)
+            if (showIcon && event.icon.isNotBlank()) {
+                views.setTextViewText(ids.icon, event.icon)
+                views.setViewVisibility(ids.icon, View.VISIBLE)
+            } else {
+                views.setViewVisibility(ids.icon, View.GONE)
+            }
+            val days = event.daysFromToday()
+            val countUp = event.isCountUp || days < 0
+            views.setTextViewText(
+                ids.days,
+                if (mystery) "🕯️" else countMainText(event, preset, days),
+            )
+            views.setTextViewText(
+                ids.unit,
+                if (mystery) "快到了" else countUnitText(event, preset, days, countUp),
+            )
+            val subtitle = buildList {
+                if (showCategory) add(event.category)
+                if (showPrecise) add(preciseTimeText(event, System.currentTimeMillis()))
+            }.joinToString(" · ")
+            if (subtitle.isNotEmpty()) {
+                views.setTextViewText(ids.subtitle, subtitle)
+                views.setViewVisibility(ids.subtitle, View.VISIBLE)
+            } else {
+                views.setViewVisibility(ids.subtitle, View.GONE)
+            }
+            views.setOnClickPendingIntent(
+                ids.complete,
+                backgroundIntent(context, "complete", event.id),
+            )
+            views.setOnClickPendingIntent(
+                ids.root,
+                launchIntent(
+                    context,
+                    "ying://open?id=${Uri.encode(event.id)}",
+                    rowLaunchRequestCode(event.id),
+                ),
+            )
+        }
+        views.setViewVisibility(
+            R.id.widget_empty,
+            if (visibleCount == 0) View.VISIBLE else View.GONE,
         )
     }
-
-    private fun launchIntent(context: Context, uri: String): PendingIntent =
-        HomeWidgetLaunchIntent.getActivity(
-            context,
-            MainActivity::class.java,
-            Uri.parse(uri),
-        )
 
     private fun showPendingToast(context: Context, data: SharedPreferences) {
         val message = data.getString(TOAST_KEY, "") ?: ""
@@ -817,95 +905,57 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
     }
 }
 
-class DaymarkWidgetRemoteViewsService : RemoteViewsService() {
-    override fun onGetViewFactory(intent: Intent): RemoteViewsFactory =
-        DaymarkWidgetRemoteViewsFactory(applicationContext)
+private data class WidgetRowIds(
+    val root: Int,
+    val icon: Int,
+    val title: Int,
+    val subtitle: Int,
+    val days: Int,
+    val unit: Int,
+    val complete: Int,
+)
+
+private fun widgetRowIds(row: Int): WidgetRowIds = when (row) {
+    1 -> WidgetRowIds(
+        R.id.widget_row_1_root,
+        R.id.widget_row_1_icon,
+        R.id.widget_row_1_title,
+        R.id.widget_row_1_subtitle,
+        R.id.widget_row_1_days,
+        R.id.widget_row_1_unit,
+        R.id.widget_row_1_complete,
+    )
+    2 -> WidgetRowIds(
+        R.id.widget_row_2_root,
+        R.id.widget_row_2_icon,
+        R.id.widget_row_2_title,
+        R.id.widget_row_2_subtitle,
+        R.id.widget_row_2_days,
+        R.id.widget_row_2_unit,
+        R.id.widget_row_2_complete,
+    )
+    3 -> WidgetRowIds(
+        R.id.widget_row_3_root,
+        R.id.widget_row_3_icon,
+        R.id.widget_row_3_title,
+        R.id.widget_row_3_subtitle,
+        R.id.widget_row_3_days,
+        R.id.widget_row_3_unit,
+        R.id.widget_row_3_complete,
+    )
+    else -> WidgetRowIds(
+        R.id.widget_row_4_root,
+        R.id.widget_row_4_icon,
+        R.id.widget_row_4_title,
+        R.id.widget_row_4_subtitle,
+        R.id.widget_row_4_days,
+        R.id.widget_row_4_unit,
+        R.id.widget_row_4_complete,
+    )
 }
 
-class DaymarkWidgetRemoteViewsFactory(
-    private val context: Context,
-) : RemoteViewsService.RemoteViewsFactory {
-    private val events = mutableListOf<WidgetEvent>()
-    private var data: SharedPreferences? = null
-
-    override fun onCreate() {
-        data = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    }
-
-    override fun onDataSetChanged() {
-        val source = data?.getString("widget_events", "[]") ?: "[]"
-        events.clear()
-        events.addAll(parseEvents(source))
-    }
-
-    override fun getCount(): Int = events.size
-
-    override fun getViewAt(position: Int): RemoteViews {
-        val event = events.getOrNull(position) ?: return RemoteViews(
-            context.packageName,
-            R.layout.daymark_widget_list_item,
-        )
-        val views = RemoteViews(context.packageName, R.layout.daymark_widget_list_item)
-        val prefs = data ?: return views
-        val style = parseWidgetStyle(prefs.getString("widget_style", "card"))
-        val colors = resolveTextColors(prefs, style)
-        val days = event.daysFromToday()
-        val countUp = event.isCountUp || days < 0
-        val preset = prefs.getString("widget_unit_text", "")
-        val mystery = prefs.getBoolean("widget_mystery_mode", false)
-        val showIcon = prefs.getBoolean("widget_show_icon", false)
-        views.setTextViewText(R.id.widget_row_title, event.title)
-        views.setTextColor(R.id.widget_row_title, colors.primary)
-        views.setTextColor(R.id.widget_row_days, colors.primary)
-        views.setTextColor(R.id.widget_row_unit, colors.secondary)
-        views.setTextColor(R.id.widget_row_subtitle, colors.secondary)
-        if (showIcon && event.icon.isNotBlank()) {
-            views.setTextViewText(R.id.widget_row_icon, event.icon)
-            views.setViewVisibility(R.id.widget_row_icon, View.VISIBLE)
-        } else {
-            views.setViewVisibility(R.id.widget_row_icon, View.GONE)
-        }
-        views.setTextViewText(
-            R.id.widget_row_days,
-            if (mystery) "🕯️" else countMainText(event, preset, days),
-        )
-        views.setTextViewText(
-            R.id.widget_row_unit,
-            if (mystery) "快到了" else countUnitText(event, preset, days, countUp),
-        )
-        val subtitle = buildList {
-            if (prefs.getBoolean("widget_show_category", true)) add(event.category)
-            if (prefs.getBoolean("widget_show_precise_time", false)) {
-                add(preciseTimeText(event, System.currentTimeMillis()))
-            }
-        }.joinToString(" · ")
-        if (subtitle.isNotEmpty()) {
-            views.setTextViewText(R.id.widget_row_subtitle, subtitle)
-            views.setViewVisibility(R.id.widget_row_subtitle, View.VISIBLE)
-        } else {
-            views.setViewVisibility(R.id.widget_row_subtitle, View.GONE)
-        }
-        views.setOnClickPendingIntent(
-            R.id.widget_row_root,
-            HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
-        )
-        views.setOnClickPendingIntent(
-            R.id.widget_row_complete,
-            backgroundIntent(context, "complete", event.id),
-        )
-        return views
-    }
-
-    override fun getLoadingView(): RemoteViews? = null
-
-    override fun getViewTypeCount(): Int = 1
-
-    override fun getItemId(position: Int): Long = position.toLong()
-
-    override fun hasStableIds(): Boolean = true
-
-    override fun onDestroy() = Unit
-}
+internal fun rowLaunchRequestCode(eventId: String): Int =
+    ROW_LAUNCH_REQUEST_BASE + (eventId.hashCode() and 0x0FFFFFFF)
 
 internal fun backgroundIntent(
     context: Context,
@@ -916,7 +966,7 @@ internal fun backgroundIntent(
         this.action = "es.antonborri.home_widget.action.BACKGROUND"
         data = Uri.parse("ying://$action?id=${Uri.encode(eventId)}")
     }
-    val requestCode = eventId.hashCode() and 0x7FFFFFFF
+    val requestCode = eventId.hashCode() and 0x0FFFFFFF
     return PendingIntent.getBroadcast(
         context,
         requestCode,

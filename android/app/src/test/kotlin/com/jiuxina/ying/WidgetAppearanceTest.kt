@@ -3,6 +3,7 @@ package com.jiuxina.ying
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 import java.time.LocalDate
 
 class WidgetAppearanceTest {
@@ -196,6 +197,25 @@ class WidgetAppearanceTest {
         assertTrue(pendingUndoPayload("") == null)
         assertTrue(pendingUndoPayload("not-json") == null)
         assertTrue(pendingUndoPayload("""{"event":{}}""") == null)
+    }
+
+    @Test
+    fun widgetLayoutsAvoidUnsupportedRemoteViewsClasses() {
+        val undo = File("src/main/res/layout/daymark_widget_undo.xml").readText()
+        val list = File("src/main/res/layout/daymark_widget_list.xml").readText()
+        assertTrue(
+            "undo layout must not use RemoteViews-unsupported Space",
+            "android.widget.Space" !in undo,
+        )
+        assertTrue("list layout should keep an empty-state view", "widget_empty" in list)
+        assertTrue("list layout should have a header row", "widget_list_header" in list)
+        assertTrue("list layout should render static rows", "widget_row_1_complete" in list)
+        val addIndex = list.indexOf("widget_add")
+        val rowIndex = list.indexOf("widget_row_1_root")
+        assertTrue(
+            "add button must sit in the header above the rows",
+            addIndex in 0 until rowIndex,
+        )
     }
 
     private fun eventAt(iso: String): WidgetEvent {
