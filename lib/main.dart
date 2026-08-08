@@ -75,7 +75,7 @@ class _DaymarkAppState extends ConsumerState<DaymarkApp>
       _openEventId = eventId;
       navigator
           .push<void>(
-            MaterialPageRoute(
+            GlassPageRoute(
               builder: (context) => EventDetailPage(eventId: eventId),
             ),
           )

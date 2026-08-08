@@ -26,7 +26,6 @@ class EventDetailPage extends ConsumerWidget {
     if (event == null) {
       if (state.isLoading) {
         return const Scaffold(
-          backgroundColor: Colors.transparent,
           body: LiquidBackground(
             child: Center(child: CircularProgressIndicator.adaptive()),
           ),
@@ -57,7 +56,6 @@ class EventDetailPage extends ConsumerWidget {
               .join('、');
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       body: LiquidBackground(
         child: SafeArea(
           child: CustomScrollView(

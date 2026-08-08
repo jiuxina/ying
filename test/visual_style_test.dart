@@ -10,6 +10,7 @@ import 'package:ying/models/countdown_event.dart';
 import 'package:ying/services/storage_service.dart';
 import 'package:ying/state/app_controller.dart';
 import 'package:ying/ui/app_theme.dart';
+import 'package:ying/ui/glass_ui.dart';
 import 'package:ying/ui/home_page.dart';
 
 void main() {
@@ -106,6 +107,47 @@ void main() {
     expect(find.text('毕业'), findsOneWidget);
     expect(find.text('已完成 1'), findsNothing);
     expect(controller.state.events.single.isCompleted, isFalse);
+  });
+
+  testWidgets('点击事件卡片以玻璃路由打开不透明详情页', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final base = DateTime.now();
+    final today = DateTime(base.year, base.month, base.day);
+    final event = CountdownEvent(
+      id: 'evt-detail',
+      title: '毕业',
+      targetDate: today.add(const Duration(days: 29)),
+      category: '生活',
+      createdAt: today.subtract(const Duration(days: 2)),
+    );
+    final controller = AppController(
+      StorageService(),
+      loadEvents: () async => [event],
+      saveEvents: (_) async {},
+      loadSettings: () async => const AppSettings(),
+      saveSettings: (_) async {},
+      scheduleNotification: (_) async {},
+      cancelNotification: (_) async {},
+      syncWidget: (_, _) async {},
+      timerFactory: (_, _) => _IdleTimer(),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [appControllerProvider.overrideWith((ref) => controller)],
+        child: MaterialApp(theme: AppTheme.light(), home: const HomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('毕业'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('标记完成'), findsOneWidget);
+    final route = ModalRoute.of(tester.element(find.text('标记完成')));
+    expect(route, isA<GlassPageRoute<void>>());
+    final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).last);
+    expect(scaffold.backgroundColor, isNull);
   });
 }
 

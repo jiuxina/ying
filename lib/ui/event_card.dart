@@ -43,14 +43,14 @@ class _EventCardState extends State<EventCard> {
       label:
           '${event.title}，${event.statusLabel}${event.displayDays}天，${event.category}${event.isPinned ? '，已置顶' : ''}${event.repeatsYearly ? '，每年重复' : ''}',
       hint:
-          '点击查看详情；更多操作菜单提供置顶、编辑和删除；右侧按钮可${event.repeatsYearly && !event.isCompleted
+          '点击查看详情；长按卡片可置顶、编辑或删除；右侧按钮可${event.repeatsYearly && !event.isCompleted
               ? '进入下一年'
               : event.isCompleted
               ? '恢复'
               : '完成'}',
       onTap: widget.onOpen,
       onIncrease: widget.onToggle,
-      onLongPress: widget.onEdit,
+      onLongPress: _showCardMenu,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -75,6 +75,7 @@ class _EventCardState extends State<EventCard> {
             behavior: HitTestBehavior.translucent,
             onHorizontalDragUpdate: _onDragUpdate,
             onHorizontalDragEnd: _onDragEnd,
+            onLongPress: _showCardMenu,
             child: AnimatedContainer(
               duration: reduceMotion
                   ? Duration.zero
@@ -90,13 +91,7 @@ class _EventCardState extends State<EventCard> {
                   radius: 24,
                   onTap: dragOffset == 0 ? widget.onOpen : _closeActions,
                   padding: const EdgeInsets.fromLTRB(20, 18, 10, 18),
-                  child: _CardContent(
-                    event: event,
-                    onEdit: widget.onEdit,
-                    onDelete: widget.onDelete,
-                    onToggle: widget.onToggle,
-                    onTogglePinned: widget.onTogglePinned,
-                  ),
+                  child: _CardContent(event: event, onToggle: widget.onToggle),
                 ),
               ),
             ),
@@ -132,6 +127,145 @@ class _EventCardState extends State<EventCard> {
   }
 
   void _closeActions() => setState(() => dragOffset = 0);
+
+  Future<void> _showCardMenu() async {
+    if (dragOffset != 0) {
+      _closeActions();
+      return;
+    }
+    HapticFeedback.mediumImpact();
+    final action = await showModalBottomSheet<_CardAction>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _CardActionSheet(event: widget.event),
+    );
+    if (!mounted || action == null) return;
+    HapticFeedback.lightImpact();
+    if (action == _CardAction.pin) {
+      widget.onTogglePinned();
+    } else if (action == _CardAction.edit) {
+      widget.onEdit();
+    } else {
+      widget.onDelete();
+    }
+  }
+}
+
+enum _CardAction { pin, edit, delete }
+
+class _CardActionSheet extends StatelessWidget {
+  const _CardActionSheet({required this.event});
+
+  final CountdownEvent event;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        child: GlassSurface(
+          radius: 24,
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: scheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text('事件操作', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 10),
+              _CardActionRow(
+                icon: event.isPinned
+                    ? Icons.push_pin_rounded
+                    : Icons.push_pin_outlined,
+                label: event.isPinned ? '取消置顶' : '置顶',
+                onTap: () => Navigator.pop(context, _CardAction.pin),
+              ),
+              _CardActionRow(
+                icon: Icons.edit_outlined,
+                label: '编辑',
+                onTap: () => Navigator.pop(context, _CardAction.edit),
+              ),
+              _CardActionRow(
+                icon: Icons.delete_outline_rounded,
+                label: '删除',
+                color: scheme.error,
+                onTap: () => Navigator.pop(context, _CardAction.delete),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CardActionRow extends StatelessWidget {
+  const _CardActionRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final accent = color ?? scheme.onSurfaceVariant;
+    return Semantics(
+      button: true,
+      label: label,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 48),
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: scheme.outlineVariant.withValues(alpha: 0.45),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(icon, size: 20, color: accent),
+                  const SizedBox(width: 11),
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: color ?? scheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _SwipeActions extends StatelessWidget {
@@ -244,19 +378,10 @@ class _ActionButton extends StatelessWidget {
 }
 
 class _CardContent extends StatelessWidget {
-  const _CardContent({
-    required this.event,
-    required this.onEdit,
-    required this.onDelete,
-    required this.onToggle,
-    required this.onTogglePinned,
-  });
+  const _CardContent({required this.event, required this.onToggle});
 
   final CountdownEvent event;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
   final VoidCallback onToggle;
-  final VoidCallback onTogglePinned;
 
   @override
   Widget build(BuildContext context) {
@@ -325,10 +450,7 @@ class _CardContent extends StatelessWidget {
               Row(
                 children: [
                   if (event.icon.isNotEmpty) ...[
-                    Text(
-                      event.icon,
-                      style: const TextStyle(fontSize: 17),
-                    ),
+                    Text(event.icon, style: const TextStyle(fontSize: 17)),
                     const SizedBox(width: 6),
                   ],
                   Expanded(
@@ -344,28 +466,6 @@ class _CardContent extends StatelessWidget {
                             : null,
                       ),
                     ),
-                  ),
-                  PopupMenuButton<String>(
-                    tooltip: '更多操作',
-                    icon: Icon(
-                      Icons.more_horiz_rounded,
-                      color: scheme.onSurfaceVariant,
-                      size: 20,
-                    ),
-                    onSelected: (value) {
-                      HapticFeedback.lightImpact();
-                      if (value == 'pin') onTogglePinned();
-                      if (value == 'edit') onEdit();
-                      if (value == 'delete') onDelete();
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'pin',
-                        child: Text(event.isPinned ? '取消置顶' : '置顶'),
-                      ),
-                      const PopupMenuItem(value: 'edit', child: Text('编辑')),
-                      const PopupMenuItem(value: 'delete', child: Text('删除')),
-                    ],
                   ),
                 ],
               ),

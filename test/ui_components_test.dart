@@ -197,8 +197,10 @@ void main() {
       expect(edits, 1);
     });
 
-    testWidgets('更多操作菜单提供置顶入口', (tester) async {
+    testWidgets('长按卡片打开操作菜单，可置顶、编辑和删除', (tester) async {
       var pins = 0;
+      var edits = 0;
+      var deletes = 0;
       await tester.pumpWidget(
         glassApp(
           Scaffold(
@@ -207,9 +209,9 @@ void main() {
                 EventCard(
                   event: makeEvent(),
                   onOpen: () {},
-                  onEdit: () {},
+                  onEdit: () => edits++,
                   onToggle: () {},
-                  onDelete: () {},
+                  onDelete: () => deletes++,
                   onTogglePinned: () => pins++,
                 ),
               ],
@@ -219,11 +221,29 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byTooltip('更多操作'));
+      await tester.longPress(find.byType(EventCard));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('置顶').last);
+      expect(find.text('事件操作'), findsOneWidget);
+      expect(find.text('置顶'), findsOneWidget);
+      // 菜单行之外，左滑操作区里的同名按钮也在组件树中。
+      expect(find.text('编辑'), findsNWidgets(2));
+      expect(find.text('删除'), findsNWidgets(2));
+
+      await tester.tap(find.text('置顶'));
       await tester.pumpAndSettle();
       expect(pins, 1);
+
+      await tester.longPress(find.byType(EventCard));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('编辑').last);
+      await tester.pumpAndSettle();
+      expect(edits, 1);
+
+      await tester.longPress(find.byType(EventCard));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('删除').last);
+      await tester.pumpAndSettle();
+      expect(deletes, 1);
     });
   });
 
@@ -770,6 +790,25 @@ void main() {
       expect(find.text('打开详情'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('详情页使用不透明应用背景，避免黑底', (tester) async {
+      final controller = buildController();
+      final event = makeEvent(title: '背景事件');
+      await controller.saveEvent(event);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [appControllerProvider.overrideWith((ref) => controller)],
+          child: glassApp(EventDetailPage(eventId: event.id)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+      // null 表示使用主题脚手架背景（不透明），而不是透明背景。
+      expect(scaffold.backgroundColor, isNull);
+      expect(find.text('背景事件'), findsOneWidget);
+    });
   });
 
   group('小组件预览与同步状态', () {
@@ -918,5 +957,3 @@ class _IdleTimer implements Timer {
   @override
   int get tick => 0;
 }
-
-

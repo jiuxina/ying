@@ -12,25 +12,45 @@ class GlassPageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> animation,
     Animation<double> secondaryAnimation,
     Widget child,
-  ) {
-    final duration = motionDuration(context, const Duration(milliseconds: 260));
-    if (duration == Duration.zero) return child;
-    final curved = CurvedAnimation(
-      parent: animation,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    );
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0.02, end: 1).animate(curved),
-      child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 0.035),
-          end: Offset.zero,
-        ).animate(curved),
-        child: child,
-      ),
-    );
-  }
+  ) => glassPageTransition(context, animation, secondaryAnimation, child);
+}
+
+Widget glassPageTransition(
+  BuildContext context,
+  Animation<double> animation,
+  Animation<double> secondaryAnimation,
+  Widget child,
+) {
+  final duration = motionDuration(context, const Duration(milliseconds: 260));
+  if (duration == Duration.zero) return child;
+  final curved = CurvedAnimation(
+    parent: animation,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
+  return FadeTransition(
+    opacity: Tween<double>(begin: 0.02, end: 1).animate(curved),
+    child: SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, 0.035),
+        end: Offset.zero,
+      ).animate(curved),
+      child: child,
+    ),
+  );
+}
+
+/// 详情等整页跳转使用非不透明路由，推入/退出时首页仍留在下层绘制，
+/// 避免不透明路由配合淡入动画时露出平台黑底。
+class GlassPageRoute<T> extends PageRouteBuilder<T> {
+  GlassPageRoute({required WidgetBuilder builder, super.settings})
+    : super(
+        opaque: false,
+        barrierColor: Colors.transparent,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            builder(context),
+        transitionsBuilder: glassPageTransition,
+      );
 }
 
 class AccessibleAppearance extends InheritedWidget {

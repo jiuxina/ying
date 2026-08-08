@@ -443,7 +443,7 @@ class _EventsPageState extends ConsumerState<_EventsPage> {
       event: event,
       onOpen: () => Navigator.push<void>(
         context,
-        MaterialPageRoute(
+        GlassPageRoute(
           builder: (context) => EventDetailPage(eventId: event.id),
         ),
       ),
