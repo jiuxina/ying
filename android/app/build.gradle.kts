@@ -51,6 +51,8 @@ android {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     testImplementation("junit:junit:4.13.2")
+    // 单元测试使用真实 org.json 实现，避免 android.jar 的 not mocked 桩方法。
+    testImplementation("org.json:json:20180813")
 }
 
 flutter {

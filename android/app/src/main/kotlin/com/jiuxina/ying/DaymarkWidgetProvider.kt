@@ -13,9 +13,13 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RectF
 import android.net.Uri
+import android.os.Build
+import android.os.SystemClock
 import android.view.View
 import android.widget.RemoteViews
+import android.widget.RemoteViewsService
 import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
@@ -26,6 +30,9 @@ import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.Calendar
 import java.util.Date
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.roundToLong
 
 class DaymarkWidgetProvider : HomeWidgetProvider() {
     override fun onUpdate(
@@ -70,79 +77,186 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         widgetData: SharedPreferences,
     ) {
         val events = parseEvents(widgetData.getString("widget_events", "[]") ?: "[]")
+        val listMode = widgetData.getBoolean("widget_list_mode", false)
         appWidgetIds.forEach { widgetId ->
-            val indexKey = "daymark_widget_index_$widgetId"
-            val requestedIndex = widgetData.getInt(indexKey, 0)
-            val index = if (events.isEmpty()) 0 else requestedIndex.coerceIn(0, events.lastIndex)
-            val event = events.getOrNull(index)
-            val views = RemoteViews(context.packageName, R.layout.daymark_widget)
+            val views = RemoteViews(
+                context.packageName,
+                if (listMode) R.layout.daymark_widget_list else R.layout.daymark_widget,
+            )
             val options = appWidgetManager.getAppWidgetOptions(widgetId)
             val compact = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250) < 220 ||
                 options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 130) < 120
-            val launchIntent = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
-            views.setOnClickPendingIntent(R.id.widget_root, launchIntent)
             val style = parseWidgetStyle(widgetData.getString("widget_style", "card"))
             val holiday = resolveHoliday(
                 widgetData.getString("widget_holiday", ""),
                 LocalDate.now(),
-                event,
+                events.getOrNull(widgetData.getInt("daymark_widget_index_$widgetId", 0)),
             )
-            applyAppearance(context, views, widgetData, compact, style, holiday)
-            views.setViewVisibility(R.id.widget_previous, if (compact) View.GONE else View.VISIBLE)
-            views.setViewVisibility(R.id.widget_next, if (compact) View.GONE else View.VISIBLE)
-
-            if (event == null) {
-                views.setTextViewText(R.id.widget_title, "添加一个倒数日")
-                views.setTextViewText(R.id.widget_days, "--")
-                views.setTextViewText(R.id.widget_unit, "天")
-                views.setTextViewText(R.id.widget_category, "萤")
-                views.setViewVisibility(R.id.widget_note, View.GONE)
-                views.setViewVisibility(R.id.widget_complete, View.GONE)
+            if (listMode) {
+                updateListWidget(context, views, widgetData, widgetId, style)
             } else {
-                val days = event.daysFromToday()
-                val countUp = event.isCountUp || days < 0
-                views.setTextViewText(R.id.widget_title, event.title)
-                views.setTextViewText(R.id.widget_days, kotlin.math.abs(days).toString())
-                views.setTextViewText(
-                    R.id.widget_unit,
-                    when {
-                        days == 0L -> "就是今天"
-                        countUp -> "天 · 已经"
-                        else -> "天 · 还有"
-                    },
-                )
-                if (!compact && widgetData.getBoolean("widget_show_category", true)) {
-                    views.setTextViewText(R.id.widget_category, event.category)
-                    views.setViewVisibility(R.id.widget_category, View.VISIBLE)
-                } else {
-                    views.setViewVisibility(R.id.widget_category, View.INVISIBLE)
-                }
-                if (!compact && widgetData.getBoolean("widget_show_note", true) && event.note.isNotBlank()) {
-                    views.setTextViewText(R.id.widget_note, event.note)
-                    views.setViewVisibility(R.id.widget_note, View.VISIBLE)
-                } else {
-                    views.setViewVisibility(R.id.widget_note, View.GONE)
-                }
-                views.setViewVisibility(R.id.widget_complete, View.VISIBLE)
-                views.setOnClickPendingIntent(
-                    R.id.widget_complete,
-                    HomeWidgetBackgroundIntent.getBroadcast(
-                        context,
-                        Uri.parse("ying://complete?id=${Uri.encode(event.id)}"),
-                    ),
+                updateSingleWidget(
+                    context,
+                    views,
+                    widgetData,
+                    widgetId,
+                    events,
+                    compact,
+                    style,
+                    holiday,
                 )
             }
-
-            views.setOnClickPendingIntent(
-                R.id.widget_previous,
-                navigationIntent(context, widgetId, index - 1, events.size),
-            )
-            views.setOnClickPendingIntent(
-                R.id.widget_next,
-                navigationIntent(context, widgetId, index + 1, events.size),
-            )
             appWidgetManager.updateAppWidget(widgetId, views)
         }
+        if (listMode && appWidgetIds.isNotEmpty()) {
+            appWidgetManager.notifyAppWidgetViewDataChanged(
+                appWidgetIds,
+                R.id.widget_event_list,
+            )
+        }
+    }
+
+    private fun updateSingleWidget(
+        context: Context,
+        views: RemoteViews,
+        widgetData: SharedPreferences,
+        widgetId: Int,
+        events: List<WidgetEvent>,
+        compact: Boolean,
+        style: WidgetStyle,
+        holiday: String,
+    ) {
+        val launchIntent = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
+        views.setOnClickPendingIntent(R.id.widget_root, launchIntent)
+        val indexKey = "daymark_widget_index_$widgetId"
+        val requestedIndex = widgetData.getInt(indexKey, 0)
+        val index = if (events.isEmpty()) 0 else requestedIndex.coerceIn(0, events.lastIndex)
+        val event = events.getOrNull(index)
+        applyAppearance(context, views, widgetData, compact, style, holiday)
+        views.setViewVisibility(R.id.widget_previous, if (compact) View.GONE else View.VISIBLE)
+        views.setViewVisibility(R.id.widget_next, if (compact) View.GONE else View.VISIBLE)
+
+        if (event == null) {
+            views.setTextViewText(R.id.widget_title, "添加一个倒数日")
+            setDaysText(views, "--", widgetData, compact)
+            views.setTextViewText(R.id.widget_unit, "天")
+            views.setTextViewText(R.id.widget_category, "萤")
+            views.setViewVisibility(R.id.widget_icon, View.GONE)
+            views.setViewVisibility(R.id.widget_note, View.GONE)
+            views.setViewVisibility(R.id.widget_complete, View.GONE)
+            views.setViewVisibility(R.id.widget_precise, View.GONE)
+            views.setViewVisibility(R.id.widget_date_info, View.GONE)
+            views.setViewVisibility(R.id.widget_progress_ring, View.GONE)
+            views.setViewVisibility(R.id.widget_progress_text, View.GONE)
+            return
+        }
+
+        val days = event.daysFromToday()
+        val countUp = event.isCountUp || days < 0
+        val preset = widgetData.getString("widget_unit_text", "")
+        val mystery = widgetData.getBoolean("widget_mystery_mode", false)
+        views.setTextViewText(R.id.widget_title, event.title)
+        if (widgetData.getBoolean("widget_show_icon", false) && event.icon.isNotBlank()) {
+            views.setTextViewText(R.id.widget_icon, event.icon)
+            views.setViewVisibility(R.id.widget_icon, View.VISIBLE)
+        } else {
+            views.setViewVisibility(R.id.widget_icon, View.GONE)
+        }
+        setDaysText(
+            views,
+            if (mystery) "🕯️" else countMainText(event, preset, days),
+            widgetData,
+            compact,
+        )
+        views.setTextViewText(
+            R.id.widget_unit,
+            if (mystery) "快到了" else countUnitText(event, preset, days, countUp),
+        )
+        if (!compact && widgetData.getBoolean("widget_show_category", true)) {
+            views.setTextViewText(R.id.widget_category, event.category)
+            views.setViewVisibility(R.id.widget_category, View.VISIBLE)
+        } else {
+            views.setViewVisibility(R.id.widget_category, View.INVISIBLE)
+        }
+
+        if (widgetData.getBoolean("widget_show_precise_time", false)) {
+            applyPreciseTime(views, event)
+        } else {
+            views.setViewVisibility(R.id.widget_precise, View.GONE)
+        }
+        if (!compact && widgetData.getBoolean("widget_show_lunar_week", false)) {
+            val info = widgetData.getString("widget_date_info", "")
+                ?.takeIf { it.isNotBlank() }
+                ?: widgetDateInfo(LocalDate.now())
+            views.setTextViewText(R.id.widget_date_info, info)
+            views.setViewVisibility(R.id.widget_date_info, View.VISIBLE)
+        } else {
+            views.setViewVisibility(R.id.widget_date_info, View.GONE)
+        }
+        if (!compact && widgetData.getBoolean("widget_show_progress", false)) {
+            val progress = progressOf(event, System.currentTimeMillis())
+            views.setImageViewBitmap(
+                R.id.widget_progress_ring,
+                progressRingBitmap(context, progress, accentColor(widgetData, holiday)),
+            )
+            views.setTextViewText(
+                R.id.widget_progress_text,
+                "${(progress * 100).toInt()}%",
+            )
+            views.setViewVisibility(R.id.widget_progress_ring, View.VISIBLE)
+            views.setViewVisibility(R.id.widget_progress_text, View.VISIBLE)
+        } else {
+            views.setViewVisibility(R.id.widget_progress_ring, View.GONE)
+            views.setViewVisibility(R.id.widget_progress_text, View.GONE)
+        }
+
+        val quote = if (widgetData.getBoolean("widget_quote_mode", false)) {
+            quoteText(event, LocalDate.now())
+        } else {
+            ""
+        }
+        val showNote = widgetData.getBoolean("widget_show_note", true)
+        if (!compact && (quote.isNotEmpty() || (showNote && event.note.isNotBlank()))) {
+            views.setTextViewText(R.id.widget_note, quote.ifEmpty { event.note })
+            views.setViewVisibility(R.id.widget_note, View.VISIBLE)
+        } else {
+            views.setViewVisibility(R.id.widget_note, View.GONE)
+        }
+        views.setViewVisibility(R.id.widget_complete, View.VISIBLE)
+        views.setOnClickPendingIntent(
+            R.id.widget_complete,
+            HomeWidgetBackgroundIntent.getBroadcast(
+                context,
+                Uri.parse("ying://complete?id=${Uri.encode(event.id)}"),
+            ),
+        )
+
+        views.setOnClickPendingIntent(
+            R.id.widget_previous,
+            navigationIntent(context, widgetId, index - 1, events.size),
+        )
+        views.setOnClickPendingIntent(
+            R.id.widget_next,
+            navigationIntent(context, widgetId, index + 1, events.size),
+        )
+    }
+
+    private fun updateListWidget(
+        context: Context,
+        views: RemoteViews,
+        widgetData: SharedPreferences,
+        widgetId: Int,
+        style: WidgetStyle,
+    ) {
+        val launchIntent = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
+        views.setOnClickPendingIntent(R.id.widget_root, launchIntent)
+        applyBackdrop(context, views, widgetData, style)
+        val adapterIntent = Intent(context, DaymarkWidgetRemoteViewsService::class.java).apply {
+            data = Uri.parse("ying://widget/$widgetId")
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+        }
+        views.setRemoteAdapter(R.id.widget_event_list, adapterIntent)
+        views.setEmptyView(R.id.widget_event_list, R.id.widget_empty)
     }
 
     private fun applyAppearance(
@@ -153,49 +267,8 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         style: WidgetStyle,
         holiday: String,
     ) {
-        val baseColor = try {
-            data.getString("widget_color", "ff0f766e")?.toLong(16)?.toInt()
-                ?: Color.rgb(15, 118, 110)
-        } catch (_: Exception) {
-            Color.rgb(15, 118, 110)
-        }
-        val wallpaperTextColor = data.getInt("widget_wallpaper_text_color", -1)
-        val accent = holidayAccent(holiday) ?: baseColor
-        val darkSurface = style == WidgetStyle.glass ||
-            style == WidgetStyle.polaroid ||
-            style == WidgetStyle.minimal
-        val wallpaperText = if (wallpaperTextColor != -1) wallpaperTextColor else -1
-        val primaryText = when {
-            wallpaperText != -1 && (style == WidgetStyle.sticker ||
-                style == WidgetStyle.photo ||
-                style == WidgetStyle.minimal) -> wallpaperText
-            darkSurface -> Color.rgb(28, 28, 30)
-            else -> Color.WHITE
-        }
-        val secondaryText = withAlpha(primaryText, 0xBD)
-
-        val backdrop = buildBackdrop(
-            context,
-            style,
-            baseColor,
-            accent,
-            primaryText,
-            data.getString("widget_background_path", ""),
-        )
-        if (backdrop == null) {
-            views.setViewVisibility(R.id.widget_backdrop, View.GONE)
-        } else {
-            views.setViewVisibility(R.id.widget_backdrop, View.VISIBLE)
-            views.setImageViewBitmap(R.id.widget_backdrop, backdrop)
-        }
-        val scrimVisible = style == WidgetStyle.sticker ||
-            style == WidgetStyle.photo
-        if (scrimVisible) {
-            views.setImageViewBitmap(R.id.widget_scrim, scrimBitmap(320, 240))
-            views.setViewVisibility(R.id.widget_scrim, View.VISIBLE)
-        } else {
-            views.setViewVisibility(R.id.widget_scrim, View.GONE)
-        }
+        val colors = resolveTextColors(data, style)
+        applyBackdrop(context, views, data, style)
 
         val holidayVisible = holiday.isNotEmpty() && !compact
         if (holidayVisible) {
@@ -205,21 +278,61 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
             views.setViewVisibility(R.id.widget_holiday_badge, View.GONE)
         }
 
-        views.setTextColor(R.id.widget_title, primaryText)
-        views.setTextColor(R.id.widget_days, primaryText)
-        views.setTextColor(R.id.widget_unit, secondaryText)
-        views.setTextColor(R.id.widget_category, secondaryText)
-        views.setTextColor(R.id.widget_note, secondaryText)
-        views.setInt(R.id.widget_previous, "setColorFilter", secondaryText)
-        views.setInt(R.id.widget_next, "setColorFilter", secondaryText)
-        views.setInt(R.id.widget_complete, "setColorFilter", secondaryText)
+        views.setTextColor(R.id.widget_title, colors.primary)
+        views.setTextColor(R.id.widget_unit, colors.secondary)
+        views.setTextColor(R.id.widget_category, colors.secondary)
+        views.setTextColor(R.id.widget_note, colors.secondary)
+        views.setTextColor(R.id.widget_icon, colors.primary)
+        views.setTextColor(R.id.widget_precise, colors.secondary)
+        views.setTextColor(R.id.widget_date_info, colors.secondary)
+        views.setTextColor(R.id.widget_progress_text, colors.secondary)
+        listOf(
+            R.id.widget_days,
+            R.id.widget_days_mono,
+            R.id.widget_days_pixel,
+            R.id.widget_days_hand,
+        ).forEach { id -> views.setTextColor(id, colors.primary) }
+        views.setInt(R.id.widget_previous, "setColorFilter", colors.secondary)
+        views.setInt(R.id.widget_next, "setColorFilter", colors.secondary)
+        views.setInt(R.id.widget_complete, "setColorFilter", colors.secondary)
 
         val scale = java.lang.Double.longBitsToDouble(
             data.getLong("widget_font_scale", java.lang.Double.doubleToRawLongBits(1.0)),
         ).toFloat()
         views.setTextViewTextSize(R.id.widget_title, 2, 18f * scale)
-        views.setTextViewTextSize(R.id.widget_days, 2, (if (compact) 38f else 44f) * scale)
-        views.setTextViewTextSize(R.id.widget_note, 2, 14f)
+        views.setTextViewTextSize(R.id.widget_note, 2, 14f * scale)
+    }
+
+    private fun applyBackdrop(
+        context: Context,
+        views: RemoteViews,
+        data: SharedPreferences,
+        style: WidgetStyle,
+    ) {
+        val colors = resolveTextColors(data, style)
+        val baseColor = baseColor(data)
+        val accent = accentColor(data, "")
+        val backdrop = buildBackdrop(
+            context,
+            style,
+            baseColor,
+            accent,
+            colors.primary,
+            data.getString("widget_background_path", ""),
+        )
+        if (backdrop == null) {
+            views.setViewVisibility(R.id.widget_backdrop, View.GONE)
+        } else {
+            views.setViewVisibility(R.id.widget_backdrop, View.VISIBLE)
+            views.setImageViewBitmap(R.id.widget_backdrop, backdrop)
+        }
+        val scrimVisible = style == WidgetStyle.sticker || style == WidgetStyle.photo
+        if (scrimVisible) {
+            views.setImageViewBitmap(R.id.widget_scrim, scrimBitmap(320, 240))
+            views.setViewVisibility(R.id.widget_scrim, View.VISIBLE)
+        } else {
+            views.setViewVisibility(R.id.widget_scrim, View.GONE)
+        }
     }
 
     private fun buildBackdrop(
@@ -316,8 +429,8 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
     private fun polaroidBitmap(width: Int, height: Int, radius: Float): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val white = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
-        val band = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(240, 237, 230) }
+        val white = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = Color.WHITE }
+        val band = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = Color.rgb(240, 237, 230) }
         canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), radius, radius, white)
         val bandTop = height - (height * 0.17f).toInt()
         canvas.drawRect(0f, bandTop.toFloat(), width.toFloat(), height.toFloat(), band)
@@ -423,6 +536,95 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         }
     }
 
+    private fun setDaysText(
+        views: RemoteViews,
+        text: String,
+        data: SharedPreferences,
+        compact: Boolean,
+    ) {
+        val scale = java.lang.Double.longBitsToDouble(
+            data.getLong("widget_font_scale", java.lang.Double.doubleToRawLongBits(1.0)),
+        ).toFloat()
+        val size = if (text.length > 3) {
+            26f * scale
+        } else {
+            (if (compact) 38f else 44f) * scale
+        }
+        listOf(
+            R.id.widget_days,
+            R.id.widget_days_mono,
+            R.id.widget_days_pixel,
+            R.id.widget_days_hand,
+        ).forEach { id ->
+            views.setTextViewText(id, text)
+            views.setTextViewTextSize(id, 2, size)
+        }
+        applyFontVariant(views, data.getString("widget_font_family", "system"))
+    }
+
+    private fun applyFontVariant(views: RemoteViews, family: String?) {
+        val selected = when (family) {
+            "mono" -> R.id.widget_days_mono
+            "pixel" -> R.id.widget_days_pixel
+            "hand" -> R.id.widget_days_hand
+            else -> R.id.widget_days
+        }
+        listOf(
+            R.id.widget_days,
+            R.id.widget_days_mono,
+            R.id.widget_days_pixel,
+            R.id.widget_days_hand,
+        ).forEach { id ->
+            views.setViewVisibility(id, if (id == selected) View.VISIBLE else View.GONE)
+        }
+    }
+
+    private fun applyPreciseTime(views: RemoteViews, event: WidgetEvent) {
+        val target = event.targetTimeMillis
+        val now = System.currentTimeMillis()
+        val countUp = event.isCountUp || event.daysFromToday() < 0
+        val remaining = if (countUp) now - target else target - now
+        if (Build.VERSION.SDK_INT >= 24) {
+            val base = SystemClock.elapsedRealtime() + (if (countUp) -remaining else remaining)
+            views.setChronometer(R.id.widget_precise, base, "%s", true)
+            views.setChronometerCountDown(R.id.widget_precise, !countUp)
+            views.setViewVisibility(R.id.widget_precise, View.VISIBLE)
+        } else {
+            views.setTextViewText(R.id.widget_precise, preciseTimeText(event, now))
+            views.setViewVisibility(R.id.widget_precise, View.VISIBLE)
+        }
+    }
+
+    private fun progressRingBitmap(context: Context, progress: Float, color: Int): Bitmap {
+        val density = context.resources.displayMetrics.density
+        val size = (42 * density).toInt().coerceAtLeast(24)
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val strokeWidth = 4f * density
+        val center = size / 2f
+        val radius = center - strokeWidth / 2f
+        val track = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            this.strokeWidth = strokeWidth
+            this.color = 0x38FFFFFF.toInt()
+        }
+        canvas.drawCircle(center, center, radius, track)
+        val arc = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            this.strokeWidth = strokeWidth
+            strokeCap = Paint.Cap.ROUND
+            this.color = color
+        }
+        val bounds = RectF(
+            center - radius,
+            center - radius,
+            center + radius,
+            center + radius,
+        )
+        canvas.drawArc(bounds, -90f, 360f * progress.coerceIn(0f, 1f), false, arc)
+        return bitmap
+    }
+
     private fun navigationIntent(
         context: Context,
         widgetId: Int,
@@ -444,29 +646,6 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         )
     }
 
-    private fun parseEvents(raw: String): List<WidgetEvent> = try {
-        val array = JSONArray(raw)
-        buildList {
-            for (index in 0 until array.length()) {
-                val value = array.getJSONObject(index)
-                add(
-                    WidgetEvent(
-                        id = value.getString("id"),
-                        title = value.getString("title"),
-                        targetDate = value.getLong("targetDate"),
-                        category = value.optString("category", "生活"),
-                        note = value.optString("note", ""),
-                        icon = value.optString("icon", ""),
-                        createdAt = value.optLong("createdAt", 0L),
-                        isCountUp = value.optBoolean("isCountUp", false),
-                    ),
-                )
-            }
-        }
-    } catch (_: Exception) {
-        emptyList()
-    }
-
     companion object {
         private const val PREFS_NAME = "HomeWidgetPreferences"
         private const val ACTION_NAVIGATE = "com.jiuxina.ying.NAVIGATE"
@@ -481,6 +660,92 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
             DaymarkWidgetProvider().updateWidgets(context, manager, ids, data)
         }
     }
+}
+
+class DaymarkWidgetRemoteViewsService : RemoteViewsService() {
+    override fun onGetViewFactory(intent: Intent): RemoteViewsFactory =
+        DaymarkWidgetRemoteViewsFactory(applicationContext)
+}
+
+class DaymarkWidgetRemoteViewsFactory(
+    private val context: Context,
+) : RemoteViewsService.RemoteViewsFactory {
+    private val events = mutableListOf<WidgetEvent>()
+    private var data: SharedPreferences? = null
+
+    override fun onCreate() {
+        data = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    }
+
+    override fun onDataSetChanged() {
+        val source = data?.getString("widget_events", "[]") ?: "[]"
+        events.clear()
+        events.addAll(parseEvents(source))
+    }
+
+    override fun getCount(): Int = events.size
+
+    override fun getViewAt(position: Int): RemoteViews {
+        val event = events.getOrNull(position) ?: return RemoteViews(
+            context.packageName,
+            R.layout.daymark_widget_list_item,
+        )
+        val views = RemoteViews(context.packageName, R.layout.daymark_widget_list_item)
+        val prefs = data ?: return views
+        val style = parseWidgetStyle(prefs.getString("widget_style", "card"))
+        val colors = resolveTextColors(prefs, style)
+        val days = event.daysFromToday()
+        val countUp = event.isCountUp || days < 0
+        val preset = prefs.getString("widget_unit_text", "")
+        val mystery = prefs.getBoolean("widget_mystery_mode", false)
+        val showIcon = prefs.getBoolean("widget_show_icon", false)
+        views.setTextViewText(R.id.widget_row_title, event.title)
+        views.setTextColor(R.id.widget_row_title, colors.primary)
+        views.setTextColor(R.id.widget_row_days, colors.primary)
+        views.setTextColor(R.id.widget_row_unit, colors.secondary)
+        views.setTextColor(R.id.widget_row_subtitle, colors.secondary)
+        if (showIcon && event.icon.isNotBlank()) {
+            views.setTextViewText(R.id.widget_row_icon, event.icon)
+            views.setViewVisibility(R.id.widget_row_icon, View.VISIBLE)
+        } else {
+            views.setViewVisibility(R.id.widget_row_icon, View.GONE)
+        }
+        views.setTextViewText(
+            R.id.widget_row_days,
+            if (mystery) "🕯️" else countMainText(event, preset, days),
+        )
+        views.setTextViewText(
+            R.id.widget_row_unit,
+            if (mystery) "快到了" else countUnitText(event, preset, days, countUp),
+        )
+        val subtitle = buildList {
+            if (prefs.getBoolean("widget_show_category", true)) add(event.category)
+            if (prefs.getBoolean("widget_show_precise_time", false)) {
+                add(preciseTimeText(event, System.currentTimeMillis()))
+            }
+        }.joinToString(" · ")
+        if (subtitle.isNotEmpty()) {
+            views.setTextViewText(R.id.widget_row_subtitle, subtitle)
+            views.setViewVisibility(R.id.widget_row_subtitle, View.VISIBLE)
+        } else {
+            views.setViewVisibility(R.id.widget_row_subtitle, View.GONE)
+        }
+        views.setOnClickPendingIntent(
+            R.id.widget_row_root,
+            HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
+        )
+        return views
+    }
+
+    override fun getLoadingView(): RemoteViews? = null
+
+    override fun getViewTypeCount(): Int = 1
+
+    override fun getItemId(position: Int): Long = position.toLong()
+
+    override fun hasStableIds(): Boolean = true
+
+    override fun onDestroy() = Unit
 }
 
 enum class WidgetStyle {
@@ -501,6 +766,182 @@ enum class WidgetStyle {
 }
 
 internal fun parseWidgetStyle(value: String?): WidgetStyle = WidgetStyle.fromName(value)
+
+internal data class WidgetTextColors(
+    val primary: Int,
+    val secondary: Int,
+)
+
+internal fun resolveTextColors(
+    data: SharedPreferences,
+    style: WidgetStyle,
+): WidgetTextColors {
+    val wallpaperTextColor = data.getInt("widget_wallpaper_text_color", -1)
+    val darkSurface = style == WidgetStyle.glass ||
+        style == WidgetStyle.polaroid ||
+        style == WidgetStyle.minimal
+    val primary = when {
+        wallpaperTextColor != -1 && (style == WidgetStyle.sticker ||
+            style == WidgetStyle.photo ||
+            style == WidgetStyle.minimal) -> wallpaperTextColor
+        darkSurface -> Color.rgb(28, 28, 30)
+        else -> Color.WHITE
+    }
+    return WidgetTextColors(primary, withAlpha(primary, 0xBD))
+}
+
+internal fun baseColor(data: SharedPreferences): Int = try {
+    data.getString("widget_color", "ff0f766e")?.toLong(16)?.toInt()
+        ?: Color.rgb(15, 118, 110)
+} catch (_: Exception) {
+    Color.rgb(15, 118, 110)
+}
+
+internal fun accentColor(data: SharedPreferences, holiday: String): Int =
+    holidayAccent(holiday) ?: baseColor(data)
+
+internal fun countMainText(event: WidgetEvent, preset: String?, days: Long): String {
+    if (preset == "weeks" && days != 0L) return "约${weekCount(days)}周"
+    return abs(days).toString()
+}
+
+internal fun countUnitText(
+    event: WidgetEvent,
+    preset: String?,
+    days: Long,
+    countUp: Boolean,
+): String {
+    if (preset == "weeks" && days != 0L) return ""
+    val verb = when (preset) {
+        "remaining" -> "还有"
+        "only" -> "只剩"
+        "distance" -> "距离"
+        "elapsed" -> "已经"
+        else -> when {
+            days == 0L -> "就是今天"
+            countUp -> "已经"
+            else -> "还有"
+        }
+    }
+    return if (verb == "就是今天") "就是今天" else "天 · $verb"
+}
+
+internal fun weekCount(days: Long): Long =
+    (abs(days) / 7.0).roundToLong().coerceAtLeast(1)
+
+internal fun preciseTimeText(event: WidgetEvent, nowMillis: Long): String {
+    val target = event.targetTimeMillis
+    val difference = if (event.isCountUp || target < nowMillis) {
+        nowMillis - target
+    } else {
+        target - nowMillis
+    }
+    val totalSeconds = (difference / 1000).coerceAtLeast(0)
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return "%02d:%02d:%02d".format(hours, minutes, seconds)
+}
+
+internal fun progressOf(event: WidgetEvent, nowMillis: Long): Float {
+    val createdAt = event.createdAt
+    val target = event.targetTimeMillis
+    if (target <= createdAt) return 1f
+    val ratio = (nowMillis - createdAt).toFloat() / (target - createdAt).toFloat()
+    return ratio.coerceIn(0f, 1f)
+}
+
+private val builtInQuotes = listOf(
+    "把日子过成诗",
+    "今天也值得纪念",
+    "慢慢来，比较快",
+    "每个今天都是礼物",
+    "好事会发生",
+    "记得抬头看月亮",
+    "认真生活的你闪闪发光",
+    "向前走，别回头",
+)
+
+internal fun quoteText(event: WidgetEvent?, date: LocalDate): String {
+    val note = event?.note?.trim().orEmpty()
+    val dayNumber = date.toEpochDay()
+    return if (note.isNotEmpty() && dayNumber % 2 == 0L) {
+        note
+    } else {
+        builtInQuotes[Math.floorMod(dayNumber, builtInQuotes.size.toLong()).toInt()]
+    }
+}
+
+private val chineseMonths = listOf(
+    "",
+    "正",
+    "二",
+    "三",
+    "四",
+    "五",
+    "六",
+    "七",
+    "八",
+    "九",
+    "十",
+    "冬",
+    "腊",
+)
+
+private val chineseDays = listOf(
+    "",
+    "初一",
+    "初二",
+    "初三",
+    "初四",
+    "初五",
+    "初六",
+    "初七",
+    "初八",
+    "初九",
+    "初十",
+    "十一",
+    "十二",
+    "十三",
+    "十四",
+    "十五",
+    "十六",
+    "十七",
+    "十八",
+    "十九",
+    "二十",
+    "廿一",
+    "廿二",
+    "廿三",
+    "廿四",
+    "廿五",
+    "廿六",
+    "廿七",
+    "廿八",
+    "廿九",
+    "三十",
+)
+
+internal fun widgetDateInfo(date: LocalDate): String = try {
+    val calendar = android.icu.util.ChineseCalendar()
+    calendar.time = Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant())
+    val month = calendar.get(Calendar.MONTH) + 1
+    val day = calendar.get(Calendar.DAY_OF_MONTH)
+    val weekday = when (date.dayOfWeek) {
+        java.time.DayOfWeek.MONDAY -> "星期一"
+        java.time.DayOfWeek.TUESDAY -> "星期二"
+        java.time.DayOfWeek.WEDNESDAY -> "星期三"
+        java.time.DayOfWeek.THURSDAY -> "星期四"
+        java.time.DayOfWeek.FRIDAY -> "星期五"
+        java.time.DayOfWeek.SATURDAY -> "星期六"
+        java.time.DayOfWeek.SUNDAY -> "星期日"
+    }
+    val monthName = chineseMonths.getOrElse(month) { "" }
+    val dayName = chineseDays.getOrElse(day) { "" }
+    "农历${monthName}月$dayName · $weekday"
+} catch (_: Exception) {
+    ""
+}
 
 internal fun holidayForDate(date: LocalDate): String = when {
     date.monthValue == 1 && date.dayOfMonth == 1 -> "new_year"
@@ -593,6 +1034,7 @@ internal data class WidgetEvent(
     val id: String,
     val title: String,
     val targetDate: Long,
+    val targetTimeMillis: Long,
     val category: String,
     val note: String,
     val icon: String,
@@ -600,8 +1042,36 @@ internal data class WidgetEvent(
     val isCountUp: Boolean,
 ) {
     fun daysFromToday(): Long {
-        val target = java.time.Instant.ofEpochMilli(targetDate)
-            .atZone(ZoneId.systemDefault()).toLocalDate()
+        val target = java.time.Instant.ofEpochMilli(targetTimeMillis)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
         return ChronoUnit.DAYS.between(LocalDate.now(), target)
     }
 }
+
+internal fun parseEvents(raw: String): List<WidgetEvent> = try {
+    val array = JSONArray(raw)
+    buildList {
+        for (index in 0 until array.length()) {
+            val value = array.getJSONObject(index)
+            val targetDate = value.getLong("targetDate")
+            add(
+                WidgetEvent(
+                    id = value.getString("id"),
+                    title = value.getString("title"),
+                    targetDate = targetDate,
+                    targetTimeMillis = value.optLong("targetTime", targetDate),
+                    category = value.optString("category", "生活"),
+                    note = value.optString("note", ""),
+                    icon = value.optString("icon", ""),
+                    createdAt = value.optLong("createdAt", 0L),
+                    isCountUp = value.optBoolean("isCountUp", false),
+                ),
+            )
+        }
+    }
+} catch (_: Exception) {
+    emptyList()
+}
+
+private const val PREFS_NAME = "HomeWidgetPreferences"

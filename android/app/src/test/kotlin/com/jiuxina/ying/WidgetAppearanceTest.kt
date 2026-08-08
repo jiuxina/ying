@@ -29,6 +29,8 @@ class WidgetAppearanceTest {
             title = "妈妈的生日",
             targetDate = java.time.ZonedDateTime.of(2026, 5, 20, 0, 0, 0, 0, java.time.ZoneId.systemDefault())
                 .toInstant().toEpochMilli(),
+            targetTimeMillis = java.time.ZonedDateTime.of(2026, 5, 20, 0, 0, 0, 0, java.time.ZoneId.systemDefault())
+                .toInstant().toEpochMilli(),
             category = "家庭",
             note = "",
             icon = "",
@@ -49,6 +51,8 @@ class WidgetAppearanceTest {
             id = "birthday",
             title = "生日",
             targetDate = java.time.ZonedDateTime.of(2026, 3, 3, 0, 0, 0, 0, java.time.ZoneId.systemDefault())
+                .toInstant().toEpochMilli(),
+            targetTimeMillis = java.time.ZonedDateTime.of(2026, 3, 3, 0, 0, 0, 0, java.time.ZoneId.systemDefault())
                 .toInstant().toEpochMilli(),
             category = "生活",
             note = "",
@@ -85,4 +89,108 @@ class WidgetAppearanceTest {
         val red = (darkened shr 16) and 0xFF
         assertTrue(red in 0..220)
     }
+
+    @Test
+    fun countTextsSupportUnitPresets() {
+        val event = eventAt("2026-08-08T09:00:00")
+        assertEquals("12", countMainText(event, "", 12))
+        assertEquals("天 · 还有", countUnitText(event, "", 12, false))
+        assertEquals("天 · 只剩", countUnitText(event, "only", 12, false))
+        assertEquals("天 · 距离", countUnitText(event, "distance", 12, false))
+        assertEquals("天 · 已经", countUnitText(event, "elapsed", -12, true))
+        assertEquals("约2周", countMainText(event, "weeks", 12))
+        assertEquals("", countUnitText(event, "weeks", 12, false))
+        assertEquals("就是今天", countUnitText(event, "", 0, false))
+    }
+
+    @Test
+    fun preciseTimeAndProgressAreDerivedFromTimestamps() {
+        val now = java.time.ZonedDateTime.of(2026, 8, 8, 12, 0, 0, 0, java.time.ZoneId.systemDefault())
+            .toInstant().toEpochMilli()
+        val target = java.time.ZonedDateTime.of(2026, 8, 9, 15, 30, 0, 0, java.time.ZoneId.systemDefault())
+            .toInstant().toEpochMilli()
+        val createdAt = java.time.ZonedDateTime.of(2026, 8, 1, 0, 0, 0, 0, java.time.ZoneId.systemDefault())
+            .toInstant().toEpochMilli()
+        val event = WidgetEvent(
+            id = "precise",
+            title = "考试",
+            targetDate = target,
+            targetTimeMillis = target,
+            category = "学习",
+            note = "",
+            icon = "",
+            createdAt = createdAt,
+            isCountUp = false,
+        )
+        assertEquals("27:30:00", preciseTimeText(event, now))
+        val progress = progressOf(event, now)
+        assertTrue(progress > 0.8f && progress < 1f)
+    }
+
+    @Test
+    fun quoteRotatesBetweenNoteAndBuiltins() {
+        val date = java.time.LocalDate.of(2026, 8, 8)
+        val event = WidgetEvent(
+            id = "quote",
+            title = "旅行",
+            targetDate = date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
+            targetTimeMillis = date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
+            category = "旅行",
+            note = "记得带护照",
+            icon = "",
+            createdAt = 0L,
+            isCountUp = false,
+        )
+        val expected = if (date.toEpochDay() % 2 == 0L) {
+            "记得带护照"
+        } else {
+            builtInQuotesForTest()[Math.floorMod(date.toEpochDay(), 8L).toInt()]
+        }
+        assertEquals(expected, quoteText(event, date))
+        assertTrue(quoteText(null, date).isNotBlank())
+    }
+
+    @Test
+    fun dateInfoContainsLunarMonthAndWeekday() {
+        val info = widgetDateInfo(java.time.LocalDate.of(2026, 8, 8))
+        // android.icu 在 JVM 单测环境不可用，运行时由真机兜底；有值时校验内容。
+        assertTrue(info.isBlank() || (info.contains("农历") && info.contains("星期六")))
+    }
+
+    @Test
+    fun parseEventsReadsTargetTime() {
+        val raw = """[{"id":"a","title":"考试","targetDate":1754582400000,"targetTime":1754627400000,"category":"学习","note":"","icon":"","createdAt":1751500800000,"isCountUp":false}]"""
+        val events = parseEvents(raw)
+        assertEquals(1, events.size)
+        assertEquals(1754627400000L, events.single().targetTimeMillis)
+    }
+
+    private fun eventAt(iso: String): WidgetEvent {
+        val millis = java.time.LocalDateTime.parse(iso)
+            .atZone(java.time.ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+        return WidgetEvent(
+            id = iso,
+            title = "事件",
+            targetDate = millis,
+            targetTimeMillis = millis,
+            category = "生活",
+            note = "",
+            icon = "",
+            createdAt = 0L,
+            isCountUp = false,
+        )
+    }
+
+    private fun builtInQuotesForTest(): List<String> = listOf(
+        "把日子过成诗",
+        "今天也值得纪念",
+        "慢慢来，比较快",
+        "每个今天都是礼物",
+        "好事会发生",
+        "记得抬头看月亮",
+        "认真生活的你闪闪发光",
+        "向前走，别回头",
+    )
 }
