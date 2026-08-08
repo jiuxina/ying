@@ -7,10 +7,8 @@ import 'package:home_widget/home_widget.dart';
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
 import '../models/widget_holiday.dart';
-import '../utils/event_repeat_utils.dart';
 import '../utils/widget_content_utils.dart';
-import 'notification_service.dart';
-import 'storage_service.dart';
+import 'widget_interaction_service.dart' show widgetBackgroundCallback;
 
 class WidgetStatus {
   const WidgetStatus({
@@ -43,10 +41,29 @@ class WidgetService {
   static Future<void> sync(
     List<CountdownEvent> events,
     AppSettings settings,
-  ) async {
+  ) =>
+      syncWithFlip(events, settings, flipDay: null);
+
+  /// 同步小部件数据；天数变化时把旧天数写入翻牌字段，
+  /// Android 侧先显示旧值，再在短窗口后切到新天数。
+  static Future<void> syncWithFlip(
+    List<CountdownEvent> events,
+    AppSettings settings, {
+    int? flipDay,
+  }) async {
     await HomeWidget.setAppGroupId(appGroupId);
     final visible = events.where((event) => !event.isCompleted).toList()
       ..sort(_compareEvents);
+    final previousFlipDay = await HomeWidget.getWidgetData<int>(
+      'widget_flip_day',
+    );
+    final activeDay = visible.isEmpty ? null : visible.first.dayDelta();
+    final resolvedFlipDay = flipDay ??
+        (previousFlipDay != null &&
+                activeDay != null &&
+                previousFlipDay != activeDay
+            ? previousFlipDay
+            : null);
     final encoded = encodeWidgetEvents(visible);
     await Future.wait([
       HomeWidget.saveWidgetData<String>('widget_events', encoded),
@@ -55,6 +72,7 @@ class WidgetService {
         'widget_synced_at',
         DateTime.now().millisecondsSinceEpoch,
       ),
+      HomeWidget.saveWidgetData<int>('widget_flip_day', resolvedFlipDay),
       for (final entry in widgetPreferenceValues(settings).entries)
         HomeWidget.saveWidgetData(entry.key, entry.value),
     ]);
@@ -98,6 +116,15 @@ class WidgetService {
   static Future<void> requestPin() => HomeWidget.requestPinWidget(
     qualifiedAndroidName: qualifiedAndroidWidgetName,
   );
+
+  /// 只刷新已保存的小部件数据（不重写事件与偏好），用于 Toast 等轻量更新。
+  static Future<void> syncWidgetDataOnly() async {
+    await HomeWidget.setAppGroupId(appGroupId);
+    await HomeWidget.updateWidget(
+      qualifiedAndroidName: qualifiedAndroidWidgetName,
+      iOSName: iOSWidgetName,
+    );
+  }
 }
 
 /// 把可见事件编码为小部件 JSON：每个事件含 [CountdownEvent.icon] 与
@@ -166,27 +193,4 @@ int _compareEvents(CountdownEvent a, CountdownEvent b) {
   final distance = aDays.compareTo(bDays);
   if (distance != 0) return distance;
   return a.targetDate.compareTo(b.targetDate);
-}
-
-@pragma('vm:entry-point')
-FutureOr<void> widgetBackgroundCallback(Uri? uri) async {
-  if (uri == null || uri.host != 'complete') return;
-  final id = uri.queryParameters['id'];
-  if (id == null) return;
-
-  final storage = StorageService();
-  final events = await storage.loadEvents();
-  final index = events.indexWhere((event) => event.id == id);
-  if (index < 0) return;
-  final updated = completeEvent(events[index]);
-  events[index] = updated;
-  await storage.saveEvents(events);
-  if (updated.repeatsYearly) {
-    await NotificationService.instance.schedule(updated);
-  } else {
-    await NotificationService.instance.cancel(updated.id);
-  }
-  final settings = await storage.loadSettings();
-  await WidgetService.sync(events, settings);
-  await storage.markNotificationAction();
 }

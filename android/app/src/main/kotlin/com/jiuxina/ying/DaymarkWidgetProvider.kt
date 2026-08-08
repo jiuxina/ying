@@ -1,6 +1,7 @@
 package com.jiuxina.ying
 
 import android.app.PendingIntent
+import android.app.AlarmManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -20,10 +21,11 @@ import android.os.SystemClock
 import android.view.View
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
-import es.antonborri.home_widget.HomeWidgetBackgroundIntent
+import android.widget.Toast
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
 import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.time.LocalDate
 import java.time.ZoneId
@@ -57,6 +59,8 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
                 return
             }
             MidnightRefreshScheduler.ACTION_MIDNIGHT_REFRESH,
+            ACTION_REFRESH_PENDING_UNDO,
+            ACTION_REFRESH_FLIP,
             Intent.ACTION_DATE_CHANGED,
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED,
@@ -67,6 +71,12 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
                 return
             }
         }
+        if (intent.action == ACTION_REFRESH_FLIP) {
+            val data = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            data.edit().remove(FLIP_DAY_KEY).apply()
+            updateAllWidgets(context)
+            return
+        }
         super.onReceive(context, intent)
     }
 
@@ -76,8 +86,49 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         appWidgetIds: IntArray,
         widgetData: SharedPreferences,
     ) {
+        showPendingToast(context, widgetData)
         val events = parseEvents(widgetData.getString("widget_events", "[]") ?: "[]")
         val listMode = widgetData.getBoolean("widget_list_mode", false)
+        val rawPending = widgetData.getString(PENDING_UNDO_KEY, "")
+        val expired = pendingUndoPayload(rawPending)?.takeIf { it.isExpired() }
+        if (expired != null) {
+            widgetData.edit().remove(PENDING_UNDO_KEY).apply()
+        }
+        val pendingUndo = pendingUndoPayload(widgetData.getString(PENDING_UNDO_KEY, ""))
+        if (pendingUndo != null) {
+            scheduleUndoExpiry(context, pendingUndo)
+            appWidgetIds.forEach { widgetId ->
+                val views = RemoteViews(
+                    context.packageName,
+                    R.layout.daymark_widget_undo,
+                )
+                applyBackdrop(
+                    context,
+                    views,
+                    widgetData,
+                    parseWidgetStyle(widgetData.getString("widget_style", "card")),
+                )
+                views.setTextViewText(R.id.widget_title, pendingUndo.title)
+                views.setOnClickPendingIntent(
+                    R.id.widget_undo,
+                    backgroundIntent(
+                        context,
+                        "undo",
+                        pendingUndo.eventId,
+                    ),
+                )
+                views.setOnClickPendingIntent(
+                    R.id.widget_add,
+                    launchIntent(context, "ying://add"),
+                )
+                views.setOnClickPendingIntent(
+                    R.id.widget_root,
+                    HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
+                )
+                appWidgetManager.updateAppWidget(widgetId, views)
+            }
+            return
+        }
         appWidgetIds.forEach { widgetId ->
             val views = RemoteViews(
                 context.packageName,
@@ -128,10 +179,20 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
     ) {
         val launchIntent = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
         views.setOnClickPendingIntent(R.id.widget_root, launchIntent)
+        views.setOnClickPendingIntent(
+            R.id.widget_add,
+            launchIntent(context, "ying://add"),
+        )
         val indexKey = "daymark_widget_index_$widgetId"
         val requestedIndex = widgetData.getInt(indexKey, 0)
         val index = if (events.isEmpty()) 0 else requestedIndex.coerceIn(0, events.lastIndex)
         val event = events.getOrNull(index)
+        if (event != null) {
+            views.setOnClickPendingIntent(
+                R.id.widget_title_row,
+                launchIntent(context, "ying://open?id=${Uri.encode(event.id)}"),
+            )
+        }
         applyAppearance(context, views, widgetData, compact, style, holiday)
         views.setViewVisibility(R.id.widget_previous, if (compact) View.GONE else View.VISIBLE)
         views.setViewVisibility(R.id.widget_next, if (compact) View.GONE else View.VISIBLE)
@@ -139,6 +200,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         if (event == null) {
             views.setTextViewText(R.id.widget_title, "添加一个倒数日")
             setDaysText(views, "--", widgetData, compact)
+            views.setViewVisibility(R.id.widget_days_old, View.GONE)
             views.setTextViewText(R.id.widget_unit, "天")
             views.setTextViewText(R.id.widget_category, "萤")
             views.setViewVisibility(R.id.widget_icon, View.GONE)
@@ -155,6 +217,20 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         val countUp = event.isCountUp || days < 0
         val preset = widgetData.getString("widget_unit_text", "")
         val mystery = widgetData.getBoolean("widget_mystery_mode", false)
+        val flipDay = widgetData.getInt(FLIP_DAY_KEY, -1)
+        if (flipDay >= 0 && abs(days.toInt()) != flipDay && !mystery) {
+            views.setTextViewText(R.id.widget_days_old, countMainText(event, preset, flipDay.toLong()))
+            views.setTextViewTextSize(
+                R.id.widget_days_old,
+                2,
+                (if (flipDay.toString().length > 3) 26f else 44f) *
+                    widgetFontScale(widgetData),
+            )
+            views.setViewVisibility(R.id.widget_days_old, View.VISIBLE)
+            scheduleFlipRefresh(context)
+        } else {
+            views.setViewVisibility(R.id.widget_days_old, View.GONE)
+        }
         views.setTextViewText(R.id.widget_title, event.title)
         if (widgetData.getBoolean("widget_show_icon", false) && event.icon.isNotBlank()) {
             views.setTextViewText(R.id.widget_icon, event.icon)
@@ -225,10 +301,11 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         views.setViewVisibility(R.id.widget_complete, View.VISIBLE)
         views.setOnClickPendingIntent(
             R.id.widget_complete,
-            HomeWidgetBackgroundIntent.getBroadcast(
-                context,
-                Uri.parse("ying://complete?id=${Uri.encode(event.id)}"),
-            ),
+            backgroundIntent(context, "complete", event.id),
+        )
+        views.setOnClickPendingIntent(
+            R.id.widget_date_row,
+            backgroundIntent(context, "copy", event.id),
         )
 
         views.setOnClickPendingIntent(
@@ -238,6 +315,28 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         views.setOnClickPendingIntent(
             R.id.widget_next,
             navigationIntent(context, widgetId, index + 1, events.size),
+        )
+    }
+
+    private fun widgetFontScale(data: SharedPreferences): Float =
+        java.lang.Double.longBitsToDouble(
+            data.getLong("widget_font_scale", java.lang.Double.doubleToRawLongBits(1.0)),
+        ).toFloat()
+
+    private fun scheduleFlipRefresh(context: Context) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, DaymarkWidgetProvider::class.java).apply {
+            action = ACTION_REFRESH_FLIP
+        }
+        alarmManager.set(
+            AlarmManager.RTC,
+            System.currentTimeMillis() + FLIP_WINDOW_MILLIS,
+            PendingIntent.getBroadcast(
+                context,
+                FLIP_REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            ),
         )
     }
 
@@ -257,6 +356,59 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         }
         views.setRemoteAdapter(R.id.widget_event_list, adapterIntent)
         views.setEmptyView(R.id.widget_event_list, R.id.widget_empty)
+        views.setOnClickPendingIntent(
+            R.id.widget_add,
+            launchIntent(context, "ying://add"),
+        )
+    }
+
+    private fun launchIntent(context: Context, uri: String): PendingIntent =
+        HomeWidgetLaunchIntent.getActivity(
+            context,
+            MainActivity::class.java,
+            Uri.parse(uri),
+        )
+
+    private fun showPendingToast(context: Context, data: SharedPreferences) {
+        val message = data.getString(TOAST_KEY, "") ?: ""
+        if (message.isBlank()) return
+        data.edit().remove(TOAST_KEY).apply()
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun scheduleUndoExpiry(context: Context, pending: PendingUndoPayload) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, DaymarkWidgetProvider::class.java).apply {
+            action = ACTION_REFRESH_PENDING_UNDO
+            data = Uri.parse("ying://undo-expire/${pending.eventId}")
+        }
+        val requestCode = pending.eventId.hashCode() and 0x7FFFFFFF
+        alarmManager.set(
+            AlarmManager.RTC,
+            pending.expiresAt + 500,
+            PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            ),
+        )
+    }
+
+    private fun cancelUndoExpiry(context: Context, eventId: String) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, DaymarkWidgetProvider::class.java).apply {
+            action = ACTION_REFRESH_PENDING_UNDO
+            data = Uri.parse("ying://undo-expire/$eventId")
+        }
+        alarmManager.cancel(
+            PendingIntent.getBroadcast(
+                context,
+                eventId.hashCode() and 0x7FFFFFFF,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            ),
+        )
     }
 
     private fun applyAppearance(
@@ -296,9 +448,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         views.setInt(R.id.widget_next, "setColorFilter", colors.secondary)
         views.setInt(R.id.widget_complete, "setColorFilter", colors.secondary)
 
-        val scale = java.lang.Double.longBitsToDouble(
-            data.getLong("widget_font_scale", java.lang.Double.doubleToRawLongBits(1.0)),
-        ).toFloat()
+        val scale = widgetFontScale(data)
         views.setTextViewTextSize(R.id.widget_title, 2, 18f * scale)
         views.setTextViewTextSize(R.id.widget_note, 2, 14f * scale)
     }
@@ -542,9 +692,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         data: SharedPreferences,
         compact: Boolean,
     ) {
-        val scale = java.lang.Double.longBitsToDouble(
-            data.getLong("widget_font_scale", java.lang.Double.doubleToRawLongBits(1.0)),
-        ).toFloat()
+        val scale = widgetFontScale(data)
         val size = if (text.length > 3) {
             26f * scale
         } else {
@@ -649,7 +797,14 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
     companion object {
         private const val PREFS_NAME = "HomeWidgetPreferences"
         private const val ACTION_NAVIGATE = "com.jiuxina.ying.NAVIGATE"
+        private const val ACTION_REFRESH_PENDING_UNDO = "com.jiuxina.ying.REFRESH_PENDING_UNDO"
+        private const val ACTION_REFRESH_FLIP = "com.jiuxina.ying.REFRESH_FLIP"
         private const val EXTRA_INDEX = "index"
+        private const val FLIP_REQUEST_CODE = 9107
+        private const val FLIP_WINDOW_MILLIS = 400L
+        internal const val FLIP_DAY_KEY = "widget_flip_day"
+        internal const val PENDING_UNDO_KEY = "widget_pending_undo"
+        internal const val TOAST_KEY = "widget_toast"
 
         fun updateAllWidgets(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
@@ -734,6 +889,10 @@ class DaymarkWidgetRemoteViewsFactory(
             R.id.widget_row_root,
             HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
         )
+        views.setOnClickPendingIntent(
+            R.id.widget_row_complete,
+            backgroundIntent(context, "complete", event.id),
+        )
         return views
     }
 
@@ -746,6 +905,47 @@ class DaymarkWidgetRemoteViewsFactory(
     override fun hasStableIds(): Boolean = true
 
     override fun onDestroy() = Unit
+}
+
+internal fun backgroundIntent(
+    context: Context,
+    action: String,
+    eventId: String,
+): PendingIntent {
+    val intent = Intent(context, es.antonborri.home_widget.HomeWidgetBackgroundReceiver::class.java).apply {
+        this.action = "es.antonborri.home_widget.action.BACKGROUND"
+        data = Uri.parse("ying://$action?id=${Uri.encode(eventId)}")
+    }
+    val requestCode = eventId.hashCode() and 0x7FFFFFFF
+    return PendingIntent.getBroadcast(
+        context,
+        requestCode,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+}
+
+internal data class PendingUndoPayload(
+    val eventId: String,
+    val title: String,
+    val expiresAt: Long,
+) {
+    fun isExpired(): Boolean = System.currentTimeMillis() >= expiresAt
+}
+
+internal fun pendingUndoPayload(raw: String?): PendingUndoPayload? {
+    if (raw.isNullOrBlank()) return null
+    return try {
+        val json = JSONObject(raw)
+        val event = json.getJSONObject("event")
+        PendingUndoPayload(
+            eventId = event.getString("id"),
+            title = event.optString("title", "已标记完成"),
+            expiresAt = json.getLong("expiresAt"),
+        )
+    } catch (_: Exception) {
+        null
+    }
 }
 
 enum class WidgetStyle {

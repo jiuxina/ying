@@ -165,6 +165,39 @@ class WidgetAppearanceTest {
         assertEquals(1754627400000L, events.single().targetTimeMillis)
     }
 
+    @Test
+    fun pendingUndoParsesEventTitleAndExpiry() {
+        val eventJson = """{"id":"evt-undo","title":"旅行","targetDate":1754582400000,"category":"旅行","note":"","icon":"","createdAt":1751500800000}"""
+        val payload = pendingUndoPayload("""{"event":$eventJson,"expiresAt":9999999999999}""")
+        assertTrue(payload != null)
+        assertEquals("evt-undo", payload!!.eventId)
+        assertEquals("旅行", payload.title)
+        assertEquals(9999999999999L, payload.expiresAt)
+    }
+
+    @Test
+    fun pendingUndoExpiryUsesCurrentTime() {
+        val future = PendingUndoPayload(
+            eventId = "future",
+            title = "未来",
+            expiresAt = System.currentTimeMillis() + 5_000,
+        )
+        val past = PendingUndoPayload(
+            eventId = "past",
+            title = "已过期",
+            expiresAt = System.currentTimeMillis() - 1_000,
+        )
+        assertTrue(!future.isExpired())
+        assertTrue(past.isExpired())
+    }
+
+    @Test
+    fun pendingUndoRejectsMalformedJson() {
+        assertTrue(pendingUndoPayload("") == null)
+        assertTrue(pendingUndoPayload("not-json") == null)
+        assertTrue(pendingUndoPayload("""{"event":{}}""") == null)
+    }
+
     private fun eventAt(iso: String): WidgetEvent {
         val millis = java.time.LocalDateTime.parse(iso)
             .atZone(java.time.ZoneId.systemDefault())

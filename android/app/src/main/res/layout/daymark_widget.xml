@@ -79,12 +79,23 @@
                 android:contentDescription="下一个事件"
                 android:src="@android:drawable/ic_media_next"
                 android:tint="#FFFFFFFF" />
+            <ImageButton
+                android:id="@+id/widget_add"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="新建倒数日"
+                android:src="@android:drawable/ic_menu_add"
+                android:tint="#FFFFFFFF" />
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/widget_title_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
             android:orientation="horizontal">
             <TextView
                 android:id="@+id/widget_icon"
@@ -111,9 +122,12 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/widget_date_row"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="bottom|center_vertical"
             android:orientation="horizontal">
             <ImageView
@@ -149,6 +163,20 @@
                 android:textColor="#FFFFFFFF"
                 android:textSize="44sp"
                 android:textStyle="bold" />
+            <TextView
+                android:id="@+id/widget_days_old"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:alpha="0.45"
+                android:shadowColor="#40000000"
+                android:shadowDx="0"
+                android:shadowDy="2"
+                android:shadowRadius="4"
+                android:text="--"
+                android:textColor="#FFFFFFFF"
+                android:textSize="44sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
             <TextView
                 android:id="@+id/widget_days_mono"
                 android:layout_width="wrap_content"

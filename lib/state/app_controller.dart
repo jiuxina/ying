@@ -26,6 +26,8 @@ typedef UndoTimerFactory =
     Timer Function(Duration duration, void Function() run);
 typedef UpdateChecker =
     Future<UpdateCheckResult> Function(String currentVersion);
+typedef BeforeWidgetSync =
+    Future<void> Function(List<CountdownEvent> events);
 
 class AppState {
   const AppState({
@@ -127,7 +129,7 @@ class AppController extends StateNotifier<AppState> {
   int _operationSequence = 0;
   int? _notificationActionRevision;
 
-  Future<void> load() async {
+  Future<void> load({bool runAutoCheck = true}) async {
     _cancelAllUndoTimers();
     final events = await _loadEvents();
     final settings = await _loadSettings();
@@ -141,7 +143,9 @@ class AppController extends StateNotifier<AppState> {
     _notificationActionRevision = await _storage
         .loadNotificationActionRevision();
     await _syncWidget(events, settings);
-    unawaited(autoCheckForUpdate());
+    if (runAutoCheck) {
+      unawaited(autoCheckForUpdate());
+    }
   }
 
   Future<void> reloadAfterNotificationAction() async {
@@ -199,7 +203,10 @@ class AppController extends StateNotifier<AppState> {
   Future<void> toggleCompleted(CountdownEvent event) =>
       toggleCompletedWithUndo(event);
 
-  Future<void> toggleCompletedWithUndo(CountdownEvent event) async {
+  Future<void> toggleCompletedWithUndo(
+    CountdownEvent event, {
+    BeforeWidgetSync? beforeWidgetSync,
+  }) async {
     final index = state.events.indexWhere((value) => value.id == event.id);
     if (index < 0) return;
     final current = state.events[index];
@@ -218,6 +225,9 @@ class AppController extends StateNotifier<AppState> {
     );
     _appendUndo(operation, events);
     await _persistSafeEvents();
+    if (beforeWidgetSync != null) {
+      await beforeWidgetSync(events);
+    }
     await _syncWidget(events, state.settings);
     await _scheduleNotification(updated);
   }

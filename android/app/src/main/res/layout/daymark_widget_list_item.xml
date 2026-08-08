@@ -73,4 +73,14 @@
         android:shadowRadius="2"
         android:textColor="#D9FFFFFF"
         android:textSize="11sp" />
+
+    <ImageButton
+        android:id="@+id/widget_row_complete"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginStart="6dp"
+        android:background="@android:color/transparent"
+        android:contentDescription="标记完成"
+        android:src="@android:drawable/checkbox_off_background"
+        android:tint="#FFFFFFFF" />
 </LinearLayout>

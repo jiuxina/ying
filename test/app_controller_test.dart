@@ -198,6 +198,33 @@ void main() {
       controller.dispose();
     });
 
+    test('beforeWidgetSync runs before widget sync for widget completes', () async {
+      final order = <String>[];
+      final controller = AppController(
+        StorageService(),
+        autoLoad: false,
+        saveEvents: (_) async => order.add('persist'),
+        loadEvents: () async => const [],
+        loadSettings: () async => const AppSettings(),
+        saveSettings: (_) async {},
+        scheduleNotification: (_) async {},
+        cancelNotification: (_) async {},
+        syncWidget: (_, _) async => order.add('sync'),
+        timerFactory: (_, _) => _IdleTimer(),
+      );
+      final original = event('Widget-Complete');
+      await controller.saveEvent(original);
+      order.clear();
+
+      await controller.toggleCompletedWithUndo(
+        original,
+        beforeWidgetSync: (_) async => order.add('undo-payload'),
+      );
+      expect(order, ['persist', 'undo-payload', 'sync']);
+      expect(controller.state.events.single.isCompleted, isTrue);
+      controller.dispose();
+    });
+
     test('clear all events hides, stores safely, and finalizes', () async {
       final stored = <List<CountdownEvent>>[];
       final cancelled = <String>[];

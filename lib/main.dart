@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'app_navigator.dart';
 import 'services/notification_service.dart';
+import 'services/widget_launch_actions.dart';
 import 'services/widget_service.dart';
 import 'state/app_controller.dart';
 import 'ui/app_theme.dart';
@@ -13,14 +16,24 @@ import 'ui/event_detail_page.dart';
 import 'ui/glass_ui.dart';
 import 'ui/home_page.dart';
 
-final appNavigatorKey = GlobalKey<NavigatorState>();
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('zh_CN');
   await NotificationService.instance.initialize();
   await WidgetService.initialize();
+  _listenForWidgetLaunches();
   runApp(const ProviderScope(child: DaymarkApp()));
+}
+
+void _listenForWidgetLaunches() {
+  HomeWidget.widgetClicked.listen((uri) {
+    if (uri != null && uri.scheme == 'ying') {
+      unawaited(handleWidgetLaunchUri(uri));
+    }
+  });
+  unawaited(
+    HomeWidget.initiallyLaunchedFromHomeWidget().then(handleWidgetLaunchUri),
+  );
 }
 
 class DaymarkApp extends ConsumerStatefulWidget {
