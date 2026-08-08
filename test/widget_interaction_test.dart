@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ying/models/app_settings.dart';
 import 'package:ying/models/countdown_event.dart';
+import 'package:ying/services/storage_service.dart';
 import 'package:ying/services/widget_service.dart';
 import 'package:ying/services/widget_interaction_service.dart';
+import 'package:ying/state/app_controller.dart';
 
 void main() {
   CountdownEvent event({
@@ -132,4 +137,80 @@ void main() {
       );
     });
   });
+
+  group('completeEventFromWidget', () {
+    test('syncs the updated list without the completed event', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferences.setMockInitialValues({});
+      final messenger = TestDefaultBinaryMessengerBinding
+          .instance
+          .defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(
+        const MethodChannel('home_widget'),
+        (call) async {
+          if (call.method == 'getWidgetData') return null;
+          if (call.method == 'saveWidgetData') return true;
+          if (call.method == 'updateWidget') return true;
+          if (call.method == 'setAppGroupId') return true;
+          return null;
+        },
+      );
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(
+          const MethodChannel('home_widget'),
+          null,
+        ),
+      );
+
+      final storage = StorageService();
+      final source = CountdownEvent(
+        id: 'complete-sync',
+        title: '考试',
+        targetDate: DateTime(2026, 9, 1),
+        category: '学习',
+        createdAt: DateTime(2026, 8, 1),
+      );
+      await storage.saveEvents([source]);
+      final controller = AppController(
+        storage,
+        autoLoad: false,
+        scheduleNotification: (_) async {},
+        syncWidget: (_, _) async {},
+        timerFactory: (_, _) => _IdleTimer(),
+      );
+      await controller.load(runAutoCheck: false);
+
+      final synced = <List<CountdownEvent>>[];
+      int? recordedFlipDay;
+      await completeEventFromWidget(
+        storage: storage,
+        controller: controller,
+        event: source,
+        settings: const AppSettings(),
+        syncWidget: (events, settings, {flipDay}) async {
+          synced.add([...events]);
+          recordedFlipDay = flipDay;
+        },
+      );
+
+      expect(controller.state.events.single.isCompleted, isTrue);
+      expect(synced, hasLength(1));
+      expect(synced.single.any((event) => event.id == source.id), isFalse);
+      expect(recordedFlipDay, source.dayDelta());
+      controller.dispose();
+    });
+  });
+}
+
+class _IdleTimer implements Timer {
+  bool _active = true;
+
+  @override
+  void cancel() => _active = false;
+
+  @override
+  bool get isActive => _active;
+
+  @override
+  int get tick => 0;
 }

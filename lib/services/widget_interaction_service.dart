@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 
+import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
 import '../state/app_controller.dart';
 import 'storage_service.dart';
@@ -21,6 +23,13 @@ const widgetUndoWindow = Duration(seconds: 6);
 
 const widgetPendingUndoKey = 'widget_pending_undo';
 const widgetToastKey = 'widget_toast';
+
+typedef WidgetFlipSynchronizer =
+    Future<void> Function(
+      List<CountdownEvent> events,
+      AppSettings settings, {
+      int? flipDay,
+    });
 
 class PendingUndoPayload {
   const PendingUndoPayload({
@@ -88,6 +97,24 @@ Future<void> _handleComplete(Uri uri) async {
   final event = events.where((value) => value.id == id).firstOrNull;
   if (event == null || event.isCompleted) return;
 
+  await completeEventFromWidget(
+    storage: storage,
+    controller: controller,
+    event: event,
+    settings: settings,
+  );
+}
+
+/// 小部件完成回调的公共逻辑：完成事件后，用完成后的最新列表再次同步小部件，
+/// 避免把已勾选事件重新写回列表。
+@visibleForTesting
+Future<void> completeEventFromWidget({
+  required StorageService storage,
+  required AppController controller,
+  required CountdownEvent event,
+  required AppSettings settings,
+  WidgetFlipSynchronizer? syncWidget,
+}) async {
   final expiresAt = DateTime.now().add(widgetUndoWindow);
   await controller.toggleCompletedWithUndo(
     event,
@@ -95,8 +122,9 @@ Future<void> _handleComplete(Uri uri) async {
       await _savePendingUndo(event, expiresAt);
     },
   );
-  await WidgetService.syncWithFlip(
-    events,
+  final updatedEvents = await storage.loadEvents();
+  await (syncWidget ?? WidgetService.syncWithFlip)(
+    updatedEvents,
     settings,
     flipDay: event.dayDelta(),
   );
