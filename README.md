@@ -55,6 +55,7 @@
 - [权限说明](#权限说明)
 - [常见问题](#常见问题)
 - [反馈与支持](#反馈与支持)
+- [更新计划](#更新计划)
 - [版本计划](#版本计划)
 - [开源协议](#开源协议)
 
@@ -304,6 +305,12 @@ Flutter 官方支持通过 Android Gradle Plugin 的 `abiFilters` 限定 `x86_64
 欢迎通过 [Issues](https://github.com/jiuxina/ying/issues) 提交问题和建议。
 
 如果这个项目对你有帮助，也欢迎点个 Star 支持一下。
+
+---
+
+## 更新计划
+
+Android 桌面小部件的个性化路线图、开发顺序、注意事项与完成标记见 [docs/update-plan.md](docs/update-plan.md)。
 
 ---
 
