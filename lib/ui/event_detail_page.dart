@@ -140,11 +140,27 @@ class EventDetailPage extends ConsumerWidget {
                             ],
                           ),
                           const SizedBox(height: 10),
-                          Text(
-                            current.title,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.w500),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (current.icon.isNotEmpty) ...[
+                                Text(
+                                  current.icon,
+                                  style: const TextStyle(fontSize: 26),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Flexible(
+                                child: Text(
+                                  current.title,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

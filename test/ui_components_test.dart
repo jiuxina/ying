@@ -367,6 +367,25 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(saved.single.title, '无障碍提交');
     });
+
+    testWidgets('选择 Emoji 图标后保存到事件', (tester) async {
+      phoneViewport(tester);
+      final saved = <CountdownEvent>[];
+      final controller = buildController(saved);
+      await openSheet(tester, controller);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('打开表单'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).first, '旅行');
+      await tester.tap(find.bySemanticsLabel('图标：✈️'));
+      await revealSubmitButton(tester);
+      await tester.tap(find.text('创建日子'));
+      await tester.pumpAndSettle();
+
+      expect(saved, hasLength(1));
+      expect(saved.single.icon, '✈️');
+    });
   });
 
   group('设置页', () {
@@ -424,8 +443,10 @@ void main() {
       await tester.tap(find.text('减少透明度'));
       await tester.pumpAndSettle();
       expect(controller.state.settings.reduceTransparency, isTrue);
-      // 手机竖屏视口下五个开关同屏可见：透明度、动画、分类、备注、壁纸取色。
-      expect(find.byType(GlassSwitch), findsNWidgets(5));
+      // 阶段 2 后开关数量增加，只校验可见的基础开关与新内容开关。
+      expect(find.byType(GlassSwitch), findsAtLeastNWidgets(5));
+      expect(find.text('事件图标'), findsOneWidget);
+      expect(find.text('进度百分比'), findsOneWidget);
     });
 
     testWidgets('切换小部件样式预设并持久化', (tester) async {
@@ -471,6 +492,48 @@ void main() {
       final themeNode = tester.getSemantics(find.bySemanticsLabel('主题：深色'));
       expect(themeNode.flagsCollection.isSelected, isTrue);
       handle.dispose();
+    });
+
+    testWidgets('单位文案与数字字体预设持久化', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(buildSettingsPage(controller));
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.bySemanticsLabel('单位文案：只剩'), 300);
+      await tester.ensureVisible(find.bySemanticsLabel('单位文案：只剩'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.bySemanticsLabel('单位文案：只剩'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(controller.state.settings.widgetUnitText, 'only');
+      expect(saved.last.widgetUnitText, 'only');
+
+      await tester.scrollUntilVisible(find.bySemanticsLabel('数字字体：等宽'), 300);
+      await tester.ensureVisible(find.bySemanticsLabel('数字字体：等宽'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.bySemanticsLabel('数字字体：等宽'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(controller.state.settings.widgetFontFamily, 'mono');
+      expect(saved.last.widgetFontFamily, 'mono');
+      handle.dispose();
+    });
+
+    testWidgets('事件列表模式开关持久化', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(buildSettingsPage(controller));
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.text('事件列表模式'), 300);
+      await tester.ensureVisible(find.text('事件列表模式'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('事件列表模式'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(controller.state.settings.widgetListMode, isTrue);
+      expect(saved.last.widgetListMode, isTrue);
     });
 
     testWidgets('提醒诊断刷新重新加载状态', (tester) async {
@@ -747,6 +810,51 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('刷新失败'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('内容个性化设置渲染预览不抛异常', (tester) async {
+      await tester.pumpWidget(
+        glassApp(
+          Scaffold(
+            body: SingleChildScrollView(
+              child: WidgetPreviewSection(
+                events: [makeEvent()],
+                settings: const AppSettings(
+                  widgetShowIcon: true,
+                  widgetShowPreciseTime: true,
+                  widgetShowLunarWeek: true,
+                  widgetShowProgress: true,
+                  widgetMysteryMode: true,
+                  widgetQuoteMode: true,
+                  widgetUnitText: 'only',
+                  widgetFontFamily: 'mono',
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(find.text('桌面小部件'), findsOneWidget);
+    });
+
+    testWidgets('列表模式显示事件列表预览', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        glassApp(
+          Scaffold(
+            body: WidgetPreviewSection(
+              events: [makeEvent()],
+              settings: const AppSettings(widgetListMode: true),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('考试'), findsNWidgets(2));
+      expect(find.text('学习'), findsOneWidget);
+      handle.dispose();
     });
   });
 }

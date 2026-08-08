@@ -9,6 +9,7 @@ import '../models/event_repeat.dart';
 import '../services/notification_service.dart';
 import '../state/app_controller.dart';
 import '../utils/event_date_utils.dart';
+import '../utils/widget_content_utils.dart';
 import 'glass_ui.dart';
 import 'reminder_editor.dart';
 
@@ -38,6 +39,7 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
   late final TextEditingController noteController;
   late DateTime targetDate;
   late String category;
+  late String icon;
   late CountDirection direction;
   late bool isAllDay;
   late EventRepeatType repeatType;
@@ -62,6 +64,7 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
         ? const TimeOfDay(hour: 9, minute: 0)
         : TimeOfDay.fromDateTime(event.targetDate);
     category = event?.category ?? categories.first;
+    icon = event?.icon ?? '';
     direction = event?.direction ?? CountDirection.auto;
     selectedReminders = [...?event?.reminders];
   }
@@ -177,6 +180,19 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
                       value: category,
                       selected: true,
                       onTap: _pickCategory,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '事件图标',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _EmojiPicker(
+                      value: icon,
+                      onChanged: (value) => setState(() => icon = value),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -411,6 +427,7 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
       title: titleController.text.trim(),
       targetDate: targetDate,
       category: category,
+      icon: icon,
       note: noteController.text.trim(),
       direction: direction,
       reminders: EventReminder.normalize(selectedReminders),
@@ -493,6 +510,66 @@ class _QuickDatePicker extends StatelessWidget {
             ),
           ],
         ),
+      ],
+    );
+  }
+}
+
+class _EmojiPicker extends StatelessWidget {
+  const _EmojiPicker({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final emoji in eventIconOptions)
+          Semantics(
+            button: true,
+            selected: value == emoji,
+            label: emoji.isEmpty ? '不使用图标' : '图标：$emoji',
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onChanged(emoji),
+                customBorder: const CircleBorder(),
+                child: AnimatedContainer(
+                  duration: motionDuration(
+                    context,
+                    const Duration(milliseconds: 160),
+                  ),
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: value == emoji
+                        ? scheme.primary.withValues(alpha: 0.14)
+                        : Colors.transparent,
+                    border: Border.all(
+                      color: value == emoji
+                          ? scheme.primary.withValues(alpha: 0.45)
+                          : scheme.outlineVariant.withValues(alpha: 0.45),
+                    ),
+                  ),
+                  child: ExcludeSemantics(
+                    child: emoji.isEmpty
+                        ? Icon(
+                            Icons.mood_bad_outlined,
+                            size: 18,
+                            color: scheme.onSurfaceVariant,
+                          )
+                        : Text(emoji, style: const TextStyle(fontSize: 20)),
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

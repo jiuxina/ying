@@ -10,6 +10,7 @@ import '../models/countdown_event.dart';
 import '../state/app_controller.dart';
 import '../services/photo_background_service.dart';
 import '../services/wallpaper_color_service.dart';
+import '../utils/widget_content_utils.dart';
 import 'glass_ui.dart';
 import 'reminder_diagnostics_section.dart';
 import 'update_dialog.dart';
@@ -234,6 +235,122 @@ class SettingsPage extends ConsumerWidget {
                 value: settings.widgetShowNote,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetShowNote: value),
+                ),
+              ),
+              const _InsetDivider(),
+              _SettingSwitch(
+                icon: Icons.emoji_emotions_outlined,
+                title: '事件图标',
+                subtitle: '显示事件 Emoji 图标',
+                value: settings.widgetShowIcon,
+                onChanged: (value) => controller.updateSettings(
+                  settings.copyWith(widgetShowIcon: value),
+                ),
+              ),
+              const _InsetDivider(),
+              _SettingSwitch(
+                icon: Icons.timer_outlined,
+                title: '精确到秒',
+                subtitle: '倒计时精确到时分秒',
+                value: settings.widgetShowPreciseTime,
+                onChanged: (value) => controller.updateSettings(
+                  settings.copyWith(widgetShowPreciseTime: value),
+                ),
+              ),
+              const _InsetDivider(),
+              _SettingSwitch(
+                icon: Icons.calendar_month_outlined,
+                title: '农历与星期',
+                subtitle: '显示当天农历与星期',
+                value: settings.widgetShowLunarWeek,
+                onChanged: (value) => controller.updateSettings(
+                  settings.copyWith(widgetShowLunarWeek: value),
+                ),
+              ),
+              const _InsetDivider(),
+              _SettingSwitch(
+                icon: Icons.donut_small_rounded,
+                title: '进度百分比',
+                subtitle: '从创建日到目标日的完成进度',
+                value: settings.widgetShowProgress,
+                onChanged: (value) => controller.updateSettings(
+                  settings.copyWith(widgetShowProgress: value),
+                ),
+              ),
+              const _InsetDivider(),
+              _SettingSwitch(
+                icon: Icons.visibility_off_outlined,
+                title: '神秘模式',
+                subtitle: '隐藏具体数字，只显示蜡烛与“快到了”',
+                value: settings.widgetMysteryMode,
+                onChanged: (value) => controller.updateSettings(
+                  settings.copyWith(widgetMysteryMode: value),
+                ),
+              ),
+              const _InsetDivider(),
+              _SettingSwitch(
+                icon: Icons.format_quote_outlined,
+                title: '每日一句',
+                subtitle: '备注与内置句子按天轮播',
+                value: settings.widgetQuoteMode,
+                onChanged: (value) => controller.updateSettings(
+                  settings.copyWith(widgetQuoteMode: value),
+                ),
+              ),
+              const _InsetDivider(),
+              _ChoiceSetting(
+                icon: Icons.text_fields_rounded,
+                title: '单位文案',
+                subtitle: '选择“还有、只剩、距离、已经、约 X 周”等预设',
+                options: widgetUnitPresetOptions,
+                selected: (
+                  settings.widgetUnitText,
+                  widgetUnitPresetOptions
+                      .firstWhere(
+                        (option) => option.$1 == settings.widgetUnitText,
+                        orElse: () => widgetUnitPresetOptions.first,
+                      )
+                      .$2,
+                ),
+                onSelected: (option) => controller.updateSettings(
+                  settings.copyWith(widgetUnitText: option.$1),
+                ),
+              ),
+              const _InsetDivider(),
+              _ChoiceSetting(
+                icon: Icons.pin_outlined,
+                title: '数字字体',
+                subtitle: '切换数字区域的字体风格',
+                options: widgetFontOptions,
+                selected: (
+                  settings.widgetFontFamily,
+                  widgetFontOptions
+                      .firstWhere(
+                        (option) => option.$1 == settings.widgetFontFamily,
+                        orElse: () => widgetFontOptions.first,
+                      )
+                      .$2,
+                ),
+                onSelected: (option) => controller.updateSettings(
+                  settings.copyWith(widgetFontFamily: option.$1),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _Section(
+          title: '小部件列表',
+          subtitle: '在一个小部件里滚动浏览所有事件',
+          child: Column(
+            children: [
+              _SettingSwitch(
+                icon: Icons.view_agenda_outlined,
+                title: '事件列表模式',
+                subtitle: '显示全部事件的滚动列表，关闭后回到单事件卡片',
+                value: settings.widgetListMode,
+                onChanged: (value) => controller.updateSettings(
+                  settings.copyWith(widgetListMode: value),
                 ),
               ),
             ],
@@ -938,6 +1055,78 @@ class _SettingSwitch extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ChoiceSetting extends StatelessWidget {
+  const _ChoiceSetting({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final List<(String, String)> options;
+  final (String, String) selected;
+  final ValueChanged<(String, String)> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 13),
+            child: Icon(icon, color: scheme.onSurfaceVariant, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final option in options)
+                      Semantics(
+                        button: true,
+                        selected: option.$1 == selected.$1,
+                        label: '$title：${option.$2}',
+                        child: ChoiceChip(
+                          label: Text(option.$2),
+                          selected: option.$1 == selected.$1,
+                          onSelected: (_) => onSelected(option),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

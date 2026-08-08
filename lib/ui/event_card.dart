@@ -324,6 +324,13 @@ class _CardContent extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  if (event.icon.isNotEmpty) ...[
+                    Text(
+                      event.icon,
+                      style: const TextStyle(fontSize: 17),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
                   Expanded(
                     child: Text(
                       event.title,
