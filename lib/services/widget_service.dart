@@ -45,46 +45,16 @@ class WidgetService {
     await HomeWidget.setAppGroupId(appGroupId);
     final visible = events.where((event) => !event.isCompleted).toList()
       ..sort(_compareEvents);
-    final encoded = jsonEncode(
-      visible
-          .map(
-            (event) => {
-              'id': event.id,
-              'title': event.title,
-              'targetDate': event.dateOnly.millisecondsSinceEpoch,
-              'category': event.category,
-              'note': event.note,
-              'isAllDay': event.isAllDay,
-              'isCountUp': event.isCountingUp,
-              'isPinned': event.isPinned,
-              'repeatsYearly': event.repeatsYearly,
-            },
-          )
-          .toList(),
-    );
+    final encoded = encodeWidgetEvents(visible);
     await Future.wait([
       HomeWidget.saveWidgetData<String>('widget_events', encoded),
-      HomeWidget.saveWidgetData<String>(
-        'widget_color',
-        settings.widgetColor.toRadixString(16).padLeft(8, '0'),
-      ),
-      HomeWidget.saveWidgetData<double>(
-        'widget_font_scale',
-        settings.widgetFontScale,
-      ),
-      HomeWidget.saveWidgetData<bool>(
-        'widget_show_note',
-        settings.widgetShowNote,
-      ),
-      HomeWidget.saveWidgetData<bool>(
-        'widget_show_category',
-        settings.widgetShowCategory,
-      ),
       HomeWidget.saveWidgetData<int>('widget_event_count', visible.length),
       HomeWidget.saveWidgetData<int>(
         'widget_synced_at',
         DateTime.now().millisecondsSinceEpoch,
       ),
+      for (final entry in widgetPreferenceValues(settings).entries)
+        HomeWidget.saveWidgetData(entry.key, entry.value),
     ]);
     await HomeWidget.updateWidget(
       qualifiedAndroidName: qualifiedAndroidWidgetName,
@@ -126,15 +96,65 @@ class WidgetService {
   static Future<void> requestPin() => HomeWidget.requestPinWidget(
     qualifiedAndroidName: qualifiedAndroidWidgetName,
   );
+}
 
-  static int _compareEvents(CountdownEvent a, CountdownEvent b) {
-    if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
-    final aDays = a.dayDelta().abs();
-    final bDays = b.dayDelta().abs();
-    final distance = aDays.compareTo(bDays);
-    if (distance != 0) return distance;
-    return a.targetDate.compareTo(b.targetDate);
-  }
+/// 把可见事件编码为小部件 v2 JSON：每个事件含 [CountdownEvent.icon] 与
+/// [CountdownEvent.createdAt]（毫秒时间戳），并保持置顶优先、距离近优先的排序。
+String encodeWidgetEvents(List<CountdownEvent> events) {
+  final visible = events.where((event) => !event.isCompleted).toList()
+    ..sort(_compareEvents);
+  return jsonEncode(
+    visible
+        .map(
+          (event) => {
+            'id': event.id,
+            'title': event.title,
+            'targetDate': event.dateOnly.millisecondsSinceEpoch,
+            'category': event.category,
+            'note': event.note,
+            'icon': event.icon,
+            'isAllDay': event.isAllDay,
+            'isCountUp': event.isCountingUp,
+            'isPinned': event.isPinned,
+            'repeatsYearly': event.repeatsYearly,
+            'createdAt': event.createdAt.millisecondsSinceEpoch,
+          },
+        )
+        .toList(),
+  );
+}
+
+/// 小部件 v2 偏好键值对；协议版本与全部新字段缺失时由 Android 侧回退默认值。
+Map<String, Object?> widgetPreferenceValues(AppSettings settings) {
+  return {
+    'widget_protocol_version': 2,
+    'widget_color': settings.widgetColor.toRadixString(16).padLeft(8, '0'),
+    'widget_font_scale': settings.widgetFontScale,
+    'widget_show_note': settings.widgetShowNote,
+    'widget_show_category': settings.widgetShowCategory,
+    'widget_style': settings.widgetStyle.name,
+    'widget_background_path': settings.widgetBackgroundPath,
+    'widget_unit_text': settings.widgetUnitText,
+    'widget_show_icon': settings.widgetShowIcon,
+    'widget_show_progress': settings.widgetShowProgress,
+    'widget_show_precise_time': settings.widgetShowPreciseTime,
+    'widget_mystery_mode': settings.widgetMysteryMode,
+    'widget_quote_mode': settings.widgetQuoteMode,
+    'widget_font_family': settings.widgetFontFamily,
+    'widget_text_outline': settings.widgetTextOutline,
+    'widget_wallpaper_color': settings.widgetWallpaperColor,
+    'widget_wallpaper_dark_color': settings.widgetWallpaperDarkColor,
+    'widget_wallpaper_text_color': settings.widgetWallpaperTextColor,
+  };
+}
+
+int _compareEvents(CountdownEvent a, CountdownEvent b) {
+  if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+  final aDays = a.dayDelta().abs();
+  final bDays = b.dayDelta().abs();
+  final distance = aDays.compareTo(bDays);
+  if (distance != 0) return distance;
+  return a.targetDate.compareTo(b.targetDate);
 }
 
 @pragma('vm:entry-point')

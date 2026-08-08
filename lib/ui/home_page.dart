@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
+import '../services/update_service.dart';
 import '../state/app_controller.dart';
 import '../utils/event_query.dart';
 import 'event_card.dart';
@@ -11,6 +12,7 @@ import 'event_filter_bar.dart';
 import 'event_form_sheet.dart';
 import 'glass_ui.dart';
 import 'settings_page.dart';
+import 'update_dialog.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -73,6 +75,26 @@ class _HomePageState extends ConsumerState<HomePage> {
                   onUndo: () =>
                       ref.read(appControllerProvider.notifier).undoLatest(),
                 ),
+              )
+            // 撤销横幅优先展示；无撤销项时若检测到新版本，显示更新横幅。
+            else if (state.availableRelease != null)
+              Positioned(
+                left: wide ? 122 : 18,
+                right: 18,
+                bottom: wide ? 18 : 94,
+                child: _UpdateBanner(
+                  release: state.availableRelease!,
+                  onOpen: () => showReleaseDialog(
+                    context,
+                    state.availableRelease!,
+                    onSkip: () => ref
+                        .read(appControllerProvider.notifier)
+                        .dismissUpdateRelease(skipVersion: true),
+                  ),
+                  onDismiss: () => ref
+                      .read(appControllerProvider.notifier)
+                      .dismissUpdateRelease(),
+                ),
               ),
           ],
         ),
@@ -118,7 +140,26 @@ class _EventsPage extends ConsumerStatefulWidget {
 }
 
 class _EventsPageState extends ConsumerState<_EventsPage> {
+  static const String _completedHeaderItem = '__completed_header__';
+  static const double _cardSpacing = 14;
+
   final searchController = TextEditingController();
+  final GlobalKey<SliverAnimatedListState> _listKey =
+      GlobalKey<SliverAnimatedListState>();
+
+  /// 当前列表实际渲染的条目（事件 id 或 [_completedHeaderItem]），
+  /// 与 [SliverAnimatedList] 的内部计数保持同步。
+  final List<Object> _items = [];
+
+  /// 事件快照：事件被删除/移动后，退出动画期间仍能渲染出卡片内容。
+  final Map<String, CountdownEvent> _eventSnapshots = {};
+
+  /// 上一次同步时的完成状态，用于识别"勾选完成/恢复"这类需要
+  /// 在两个分组之间搬移卡片的变更。
+  final Map<String, bool> _completionById = {};
+
+  int _completedCount = 0;
+  bool _syncScheduled = false;
   bool completedExpanded = false;
   bool searchExpanded = false;
   bool incompleteOnly = false;
@@ -143,10 +184,22 @@ class _EventsPageState extends ConsumerState<_EventsPage> {
     final categories = allEvents.map((event) => event.category).toSet().toList()
       ..sort();
     final activeEvents = events.where((event) => !event.isCompleted).toList();
-    final completedEvents = events.where((event) => event.isCompleted).toList();
     final active = activeEvents.length;
+    _completedCount = events.length - active;
+    for (final event in allEvents) {
+      _eventSnapshots[event.id] = event;
+    }
     if (widget.loading) {
       return const Center(child: CircularProgressIndicator.adaptive());
+    }
+    if (_listKey.currentState == null) {
+      // 列表尚未挂载（首帧或整页切换后）：直接同步，不做过渡动画。
+      _items
+        ..clear()
+        ..addAll(_computeTargetItems(activeEvents, events));
+      _updateCompletionSnapshot(allEvents);
+    } else {
+      _scheduleSync();
     }
     return RefreshIndicator.adaptive(
       onRefresh: ref.read(appControllerProvider.notifier).load,
@@ -208,33 +261,12 @@ class _EventsPageState extends ConsumerState<_EventsPage> {
                 20,
                 132,
               ),
-              sliver: SliverList.list(
-                children: [
-                  for (final event in activeEvents) ...[
-                    _buildEventCard(context, event),
-                    const SizedBox(height: 14),
-                  ],
-                  if (!incompleteOnly && completedEvents.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    _CompletedHeader(
-                      count: completedEvents.length,
-                      expanded: completedExpanded,
-                      onToggle: () => setState(
-                        () => completedExpanded = !completedExpanded,
-                      ),
-                      onClear: () => ref
-                          .read(appControllerProvider.notifier)
-                          .clearCompletedWithUndo(),
-                    ),
-                    if (completedExpanded) ...[
-                      const SizedBox(height: 14),
-                      for (final event in completedEvents) ...[
-                        _buildEventCard(context, event),
-                        const SizedBox(height: 14),
-                      ],
-                    ],
-                  ],
-                ],
+              sliver: SliverAnimatedList(
+                key: _listKey,
+                initialItemCount: _items.length,
+                findChildIndexCallback: _findItemIndex,
+                itemBuilder: (context, index, animation) =>
+                    _buildListItem(index, animation),
               ),
             ),
         ],
@@ -250,9 +282,164 @@ class _EventsPageState extends ConsumerState<_EventsPage> {
     });
   }
 
+  /// 按当前筛选/展开状态计算列表应有的条目顺序：
+  /// 进行中事件 → “已完成”分组头 → 已完成事件。
+  List<Object> _computeTargetItems(
+    List<CountdownEvent> activeEvents,
+    List<CountdownEvent> filteredEvents,
+  ) {
+    final completedEvents = filteredEvents
+        .where((event) => event.isCompleted)
+        .toList();
+    return [
+      for (final event in activeEvents) event.id,
+      if (!incompleteOnly && completedEvents.isNotEmpty) ...[
+        _completedHeaderItem,
+        if (completedExpanded)
+          for (final event in completedEvents) event.id,
+      ],
+    ];
+  }
+
+  void _updateCompletionSnapshot(List<CountdownEvent> events) {
+    _completionById.clear();
+    for (final event in events) {
+      _completionById[event.id] = event.isCompleted;
+    }
+  }
+
+  void _scheduleSync() {
+    if (_syncScheduled) return;
+    _syncScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncScheduled = false;
+      if (mounted) _syncItems();
+    });
+  }
+
+  /// 对比 [_items] 与目标条目，通过 [SliverAnimatedListState] 的
+  /// insert/remove 驱动过渡动画。勾选完成/恢复的事件会被强制
+  /// “移除再插入”，让卡片从一个分组搬到另一个分组，而不是原地突变。
+  void _syncItems() {
+    final allEvents = widget.events;
+    final events = queryEvents(
+      allEvents,
+      searchText: searchController.text,
+      category: selectedCategory,
+      incompleteOnly: incompleteOnly,
+      sortMode: widget.settings.eventSortMode,
+    );
+    final activeEvents = events.where((event) => !event.isCompleted).toList();
+    final target = _computeTargetItems(activeEvents, events);
+
+    final listState = _listKey.currentState;
+    if (listState == null) {
+      _items
+        ..clear()
+        ..addAll(target);
+      _updateCompletionSnapshot(allEvents);
+      return;
+    }
+
+    final toggledIds = <String>{
+      for (final event in allEvents)
+        if (_completionById.containsKey(event.id) &&
+            _completionById[event.id] != event.isCompleted)
+          event.id,
+    };
+    _updateCompletionSnapshot(allEvents);
+
+    final duration = motionDuration(context, const Duration(milliseconds: 260));
+
+    // 移除不再出现（或完成状态翻转）的条目，倒序处理避免索引错位。
+    for (var index = _items.length - 1; index >= 0; index--) {
+      final item = _items[index];
+      final kept = switch (item) {
+        final String id => target.contains(id) && !toggledIds.contains(id),
+        _ => target.contains(item),
+      };
+      if (!kept) {
+        _items.removeAt(index);
+        listState.removeItem(
+          index,
+          (context, animation) => _buildItemFrame(item, animation),
+          duration: duration,
+        );
+      }
+    }
+
+    // 插入新条目；位置变化的既有条目按“移除+插入”实现搬移动画。
+    for (var index = 0; index < target.length; index++) {
+      final item = target[index];
+      if (index < _items.length && _items[index] == item) continue;
+      final oldIndex = _items.indexOf(item, index + 1);
+      if (oldIndex != -1) {
+        _items.removeAt(oldIndex);
+        listState.removeItem(
+          oldIndex,
+          (context, animation) => _buildItemFrame(item, animation),
+          duration: duration,
+        );
+      }
+      _items.insert(index, item);
+      listState.insertItem(index, duration: duration);
+    }
+  }
+
+  int? _findItemIndex(Key key) {
+    if (key is! ValueKey<Object>) return null;
+    final index = _items.indexOf(key.value);
+    return index == -1 ? null : index;
+  }
+
+  Widget _buildListItem(int index, Animation<double> animation) {
+    return _buildItemFrame(_items[index], animation, keyed: true);
+  }
+
+  Widget _buildItemFrame(
+    Object item,
+    Animation<double> animation, {
+    bool keyed = false,
+  }) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: SizeTransition(
+        sizeFactor: curved,
+        child: _buildItemContent(item, keyed: keyed),
+      ),
+    );
+  }
+
+  Widget _buildItemContent(Object item, {required bool keyed}) {
+    if (item == _completedHeaderItem) {
+      return Padding(
+        key: keyed ? const ValueKey<String>(_completedHeaderItem) : null,
+        padding: const EdgeInsets.only(top: 4, bottom: _cardSpacing),
+        child: _CompletedHeader(
+          count: _completedCount,
+          expanded: completedExpanded,
+          onToggle: () => setState(() => completedExpanded = !completedExpanded),
+          onClear: () => ref
+              .read(appControllerProvider.notifier)
+              .clearCompletedWithUndo(),
+        ),
+      );
+    }
+    final event = _eventSnapshots[item as String];
+    if (event == null) return const SizedBox.shrink();
+    return Padding(
+      key: keyed ? ValueKey<String>(event.id) : null,
+      padding: const EdgeInsets.only(bottom: _cardSpacing),
+      child: _buildEventCard(context, event),
+    );
+  }
+
   Widget _buildEventCard(BuildContext context, CountdownEvent event) {
     final child = EventCard(
-      key: ValueKey(event.id),
       event: event,
       onOpen: () => Navigator.push<void>(
         context,
@@ -261,9 +448,14 @@ class _EventsPageState extends ConsumerState<_EventsPage> {
         ),
       ),
       onEdit: () => widget.onEdit(event),
-      onToggle: () => ref
-          .read(appControllerProvider.notifier)
-          .toggleCompletedWithUndo(event),
+      onToggle: () {
+        // 每年重复事件勾选时是“进入下一年”，仍留在进行中分组；
+        // 其余情况才真正完成，需要展开分组让卡片搬入可见。
+        if (!event.isCompleted && !event.repeatsYearly) {
+          setState(() => completedExpanded = true);
+        }
+        ref.read(appControllerProvider.notifier).toggleCompletedWithUndo(event);
+      },
       onDelete: () =>
           ref.read(appControllerProvider.notifier).deleteEventWithUndo(event),
       onTogglePinned: () =>
@@ -379,6 +571,56 @@ class _UndoBanner extends StatelessWidget {
             ),
           ),
           TextButton(onPressed: onUndo, child: const Text('撤销')),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpdateBanner extends StatelessWidget {
+  const _UpdateBanner({
+    required this.release,
+    required this.onOpen,
+    required this.onDismiss,
+  });
+
+  final ReleaseInfo release;
+  final VoidCallback onOpen;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      radius: 24,
+      opacity: Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.82,
+      glass: true,
+      padding: const EdgeInsets.fromLTRB(18, 10, 10, 10),
+      child: Row(
+        children: [
+          Icon(
+            Icons.system_update_outlined,
+            color: Theme.of(context).colorScheme.primary,
+            size: 19,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '发现新版本 v${release.version}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          TextButton(onPressed: onOpen, child: const Text('查看')),
+          IconButton(
+            onPressed: onDismiss,
+            tooltip: '关闭',
+            visualDensity: VisualDensity.compact,
+            icon: Icon(
+              Icons.close_rounded,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );

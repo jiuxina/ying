@@ -55,10 +55,20 @@ class _EventCardState extends State<EventCard> {
         alignment: Alignment.center,
         children: [
           Positioned.fill(
-            child: _SwipeActions(
-              event: event,
-              onEdit: widget.onEdit,
-              onDelete: widget.onDelete,
+            child: IgnorePointer(
+              ignoring: dragOffset == 0,
+              child: AnimatedOpacity(
+                duration: reduceMotion
+                    ? Duration.zero
+                    : const Duration(milliseconds: 190),
+                curve: Curves.easeOutCubic,
+                opacity: dragOffset == 0 ? 0 : 1,
+                child: _SwipeActions(
+                  event: event,
+                  onEdit: widget.onEdit,
+                  onDelete: widget.onDelete,
+                ),
+              ),
             ),
           ),
           GestureDetector(

@@ -2,6 +2,18 @@ import 'package:flutter/material.dart';
 
 import 'event_sort_mode.dart';
 
+/// 桌面小部件样式预设；旧配置或未知值统一回退 [WidgetStyle.card]。
+enum WidgetStyle {
+  card,
+  sticker,
+  photo,
+  glass,
+  polaroid,
+  neon,
+  pixel,
+  minimal,
+}
+
 class AppSettings {
   const AppSettings({
     this.themeMode = ThemeMode.system,
@@ -12,6 +24,20 @@ class AppSettings {
     this.eventSortMode = EventSortMode.distance,
     this.reduceTransparency = false,
     this.reduceMotion = false,
+    this.autoCheckUpdate = true,
+    this.widgetStyle = WidgetStyle.card,
+    this.widgetBackgroundPath = '',
+    this.widgetUnitText = '',
+    this.widgetShowIcon = false,
+    this.widgetShowProgress = false,
+    this.widgetShowPreciseTime = false,
+    this.widgetMysteryMode = false,
+    this.widgetQuoteMode = false,
+    this.widgetFontFamily = 'system',
+    this.widgetTextOutline = false,
+    this.widgetWallpaperColor = -1,
+    this.widgetWallpaperDarkColor = -1,
+    this.widgetWallpaperTextColor = -1,
   });
 
   final ThemeMode themeMode;
@@ -22,6 +48,20 @@ class AppSettings {
   final EventSortMode eventSortMode;
   final bool reduceTransparency;
   final bool reduceMotion;
+  final bool autoCheckUpdate;
+  final WidgetStyle widgetStyle;
+  final String widgetBackgroundPath;
+  final String widgetUnitText;
+  final bool widgetShowIcon;
+  final bool widgetShowProgress;
+  final bool widgetShowPreciseTime;
+  final bool widgetMysteryMode;
+  final bool widgetQuoteMode;
+  final String widgetFontFamily;
+  final bool widgetTextOutline;
+  final int widgetWallpaperColor;
+  final int widgetWallpaperDarkColor;
+  final int widgetWallpaperTextColor;
 
   AppSettings copyWith({
     ThemeMode? themeMode,
@@ -32,6 +72,20 @@ class AppSettings {
     EventSortMode? eventSortMode,
     bool? reduceTransparency,
     bool? reduceMotion,
+    bool? autoCheckUpdate,
+    WidgetStyle? widgetStyle,
+    String? widgetBackgroundPath,
+    String? widgetUnitText,
+    bool? widgetShowIcon,
+    bool? widgetShowProgress,
+    bool? widgetShowPreciseTime,
+    bool? widgetMysteryMode,
+    bool? widgetQuoteMode,
+    String? widgetFontFamily,
+    bool? widgetTextOutline,
+    int? widgetWallpaperColor,
+    int? widgetWallpaperDarkColor,
+    int? widgetWallpaperTextColor,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -42,6 +96,23 @@ class AppSettings {
       eventSortMode: eventSortMode ?? this.eventSortMode,
       reduceTransparency: reduceTransparency ?? this.reduceTransparency,
       reduceMotion: reduceMotion ?? this.reduceMotion,
+      autoCheckUpdate: autoCheckUpdate ?? this.autoCheckUpdate,
+      widgetStyle: widgetStyle ?? this.widgetStyle,
+      widgetBackgroundPath: widgetBackgroundPath ?? this.widgetBackgroundPath,
+      widgetUnitText: widgetUnitText ?? this.widgetUnitText,
+      widgetShowIcon: widgetShowIcon ?? this.widgetShowIcon,
+      widgetShowProgress: widgetShowProgress ?? this.widgetShowProgress,
+      widgetShowPreciseTime:
+          widgetShowPreciseTime ?? this.widgetShowPreciseTime,
+      widgetMysteryMode: widgetMysteryMode ?? this.widgetMysteryMode,
+      widgetQuoteMode: widgetQuoteMode ?? this.widgetQuoteMode,
+      widgetFontFamily: widgetFontFamily ?? this.widgetFontFamily,
+      widgetTextOutline: widgetTextOutline ?? this.widgetTextOutline,
+      widgetWallpaperColor: widgetWallpaperColor ?? this.widgetWallpaperColor,
+      widgetWallpaperDarkColor:
+          widgetWallpaperDarkColor ?? this.widgetWallpaperDarkColor,
+      widgetWallpaperTextColor:
+          widgetWallpaperTextColor ?? this.widgetWallpaperTextColor,
     );
   }
 
@@ -54,6 +125,20 @@ class AppSettings {
     'eventSortMode': eventSortMode.name,
     'reduceTransparency': reduceTransparency,
     'reduceMotion': reduceMotion,
+    'autoCheckUpdate': autoCheckUpdate,
+    'widgetStyle': widgetStyle.name,
+    'widgetBackgroundPath': widgetBackgroundPath,
+    'widgetUnitText': widgetUnitText,
+    'widgetShowIcon': widgetShowIcon,
+    'widgetShowProgress': widgetShowProgress,
+    'widgetShowPreciseTime': widgetShowPreciseTime,
+    'widgetMysteryMode': widgetMysteryMode,
+    'widgetQuoteMode': widgetQuoteMode,
+    'widgetFontFamily': widgetFontFamily,
+    'widgetTextOutline': widgetTextOutline,
+    'widgetWallpaperColor': widgetWallpaperColor,
+    'widgetWallpaperDarkColor': widgetWallpaperDarkColor,
+    'widgetWallpaperTextColor': widgetWallpaperTextColor,
   };
 
   factory AppSettings.fromMap(Map<String, Object?> map) {
@@ -72,6 +157,25 @@ class AppSettings {
       ),
       reduceTransparency: (map['reduceTransparency'] as bool?) ?? false,
       reduceMotion: (map['reduceMotion'] as bool?) ?? false,
+      autoCheckUpdate: (map['autoCheckUpdate'] as bool?) ?? true,
+      widgetStyle: WidgetStyle.values.firstWhere(
+        (style) => style.name == map['widgetStyle'],
+        orElse: () => WidgetStyle.card,
+      ),
+      widgetBackgroundPath: (map['widgetBackgroundPath'] as String?) ?? '',
+      widgetUnitText: (map['widgetUnitText'] as String?) ?? '',
+      widgetShowIcon: (map['widgetShowIcon'] as bool?) ?? false,
+      widgetShowProgress: (map['widgetShowProgress'] as bool?) ?? false,
+      widgetShowPreciseTime: (map['widgetShowPreciseTime'] as bool?) ?? false,
+      widgetMysteryMode: (map['widgetMysteryMode'] as bool?) ?? false,
+      widgetQuoteMode: (map['widgetQuoteMode'] as bool?) ?? false,
+      widgetFontFamily: (map['widgetFontFamily'] as String?) ?? 'system',
+      widgetTextOutline: (map['widgetTextOutline'] as bool?) ?? false,
+      widgetWallpaperColor: (map['widgetWallpaperColor'] as int?) ?? -1,
+      widgetWallpaperDarkColor:
+          (map['widgetWallpaperDarkColor'] as int?) ?? -1,
+      widgetWallpaperTextColor:
+          (map['widgetWallpaperTextColor'] as int?) ?? -1,
     );
   }
 }

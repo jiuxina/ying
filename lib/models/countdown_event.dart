@@ -12,6 +12,7 @@ class CountdownEvent {
     required this.targetDate,
     required this.category,
     this.note = '',
+    this.icon = '',
     this.direction = CountDirection.auto,
     this.reminders = const [],
     this.isAllDay = false,
@@ -28,6 +29,7 @@ class CountdownEvent {
   final DateTime targetDate;
   final String category;
   final String note;
+  final String icon;
   final CountDirection direction;
   final List<EventReminder> reminders;
   final bool isAllDay;
@@ -72,6 +74,7 @@ class CountdownEvent {
     DateTime? targetDate,
     String? category,
     String? note,
+    String? icon,
     CountDirection? direction,
     List<EventReminder>? reminders,
     bool? isAllDay,
@@ -88,6 +91,7 @@ class CountdownEvent {
       targetDate: targetDate ?? this.targetDate,
       category: category ?? this.category,
       note: note ?? this.note,
+      icon: icon ?? this.icon,
       direction: direction ?? this.direction,
       reminders: reminders ?? this.reminders,
       isAllDay: isAllDay ?? this.isAllDay,
@@ -106,6 +110,7 @@ class CountdownEvent {
     'targetDate': targetDate.toIso8601String(),
     'category': category,
     'note': note,
+    'icon': icon,
     'direction': direction.name,
     'reminders': reminders.map((reminder) => reminder.toJson()).toList(),
     'isAllDay': isAllDay,
@@ -139,6 +144,7 @@ class CountdownEvent {
       targetDate: targetDate,
       category: (json['category'] as String?) ?? '生活',
       note: (json['note'] as String?) ?? '',
+      icon: (json['icon'] as String?) ?? '',
       direction: CountDirection.values.firstWhere(
         (value) => value.name == json['direction'],
         orElse: () => CountDirection.auto,

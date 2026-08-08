@@ -2,6 +2,7 @@ package com.jiuxina.ying
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -19,6 +20,41 @@ import java.time.temporal.ChronoUnit
 
 class DaymarkWidgetProvider : HomeWidgetProvider() {
     override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray,
+        widgetData: SharedPreferences,
+    ) {
+        updateWidgets(context, appWidgetManager, appWidgetIds, widgetData)
+        MidnightRefreshScheduler.schedule(context)
+    }
+
+    override fun onReceive(context: Context, intent: Intent) {
+        when (intent.action) {
+            ACTION_NAVIGATE -> {
+                val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
+                val newIndex = intent.getIntExtra(EXTRA_INDEX, 0)
+                val data = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                data.edit().putInt("daymark_widget_index_$widgetId", newIndex).apply()
+                val manager = AppWidgetManager.getInstance(context)
+                onUpdate(context, manager, intArrayOf(widgetId), data)
+                return
+            }
+            MidnightRefreshScheduler.ACTION_MIDNIGHT_REFRESH,
+            Intent.ACTION_DATE_CHANGED,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED,
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_MY_PACKAGE_REPLACED -> {
+                updateAllWidgets(context)
+                MidnightRefreshScheduler.schedule(context)
+                return
+            }
+        }
+        super.onReceive(context, intent)
+    }
+
+    private fun updateWidgets(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
@@ -94,19 +130,6 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         }
     }
 
-    override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == ACTION_NAVIGATE) {
-            val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
-            val newIndex = intent.getIntExtra(EXTRA_INDEX, 0)
-            val data = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
-            data.edit().putInt("daymark_widget_index_$widgetId", newIndex).apply()
-            val manager = AppWidgetManager.getInstance(context)
-            onUpdate(context, manager, intArrayOf(widgetId), data)
-            return
-        }
-        super.onReceive(context, intent)
-    }
-
     private fun navigationIntent(
         context: Context,
         widgetId: Int,
@@ -156,6 +179,8 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
                         targetDate = value.getLong("targetDate"),
                         category = value.optString("category", "生活"),
                         note = value.optString("note", ""),
+                        icon = value.optString("icon", ""),
+                        createdAt = value.optLong("createdAt", 0L),
                         isCountUp = value.optBoolean("isCountUp", false),
                     ),
                 )
@@ -171,6 +196,8 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         val targetDate: Long,
         val category: String,
         val note: String,
+        val icon: String,
+        val createdAt: Long,
         val isCountUp: Boolean,
     ) {
         fun daysFromToday(): Long {
@@ -181,7 +208,17 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
     }
 
     companion object {
+        private const val PREFS_NAME = "HomeWidgetPreferences"
         private const val ACTION_NAVIGATE = "com.jiuxina.ying.NAVIGATE"
         private const val EXTRA_INDEX = "index"
+
+        fun updateAllWidgets(context: Context) {
+            val manager = AppWidgetManager.getInstance(context)
+            val ids = manager.getAppWidgetIds(
+                ComponentName(context, DaymarkWidgetProvider::class.java),
+            )
+            val data = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            DaymarkWidgetProvider().updateWidgets(context, manager, ids, data)
+        }
     }
 }

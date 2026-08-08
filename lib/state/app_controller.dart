@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../app_version.dart';
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
 import '../models/undo_operation.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
+import '../services/update_service.dart';
 import '../services/widget_service.dart';
 import '../utils/event_query.dart';
 import '../utils/event_repeat_utils.dart';
@@ -22,6 +24,8 @@ typedef WidgetSynchronizer =
     Future<void> Function(List<CountdownEvent> events, AppSettings settings);
 typedef UndoTimerFactory =
     Timer Function(Duration duration, void Function() run);
+typedef UpdateChecker =
+    Future<UpdateCheckResult> Function(String currentVersion);
 
 class AppState {
   const AppState({
@@ -29,12 +33,16 @@ class AppState {
     this.settings = const AppSettings(),
     this.pendingUndos = const [],
     this.isLoading = true,
+    this.availableRelease,
   });
 
   final List<CountdownEvent> events;
   final AppSettings settings;
   final List<UndoOperation> pendingUndos;
   final bool isLoading;
+
+  /// 自动/手动检测到的新版本发布，非空时首页显示更新横幅。
+  final ReleaseInfo? availableRelease;
 
   UndoOperation? get latestUndo =>
       pendingUndos.isEmpty ? null : pendingUndos.last;
@@ -47,12 +55,17 @@ class AppState {
     AppSettings? settings,
     List<UndoOperation>? pendingUndos,
     bool? isLoading,
+    ReleaseInfo? availableRelease,
+    bool clearAvailableRelease = false,
   }) {
     return AppState(
       events: events ?? this.events,
       settings: settings ?? this.settings,
       pendingUndos: pendingUndos ?? this.pendingUndos,
       isLoading: isLoading ?? this.isLoading,
+      availableRelease: clearAvailableRelease
+          ? null
+          : availableRelease ?? this.availableRelease,
     );
   }
 }
@@ -68,7 +81,9 @@ class AppController extends StateNotifier<AppState> {
     NotificationCanceller? cancelNotification,
     WidgetSynchronizer? syncWidget,
     UndoTimerFactory? timerFactory,
+    UpdateChecker? checkUpdate,
     Duration undoDuration = const Duration(seconds: 6),
+    Duration updateCheckInterval = const Duration(hours: 24),
     bool autoLoad = true,
   }) : _loadEvents = loadEvents ?? _storage.loadEvents,
        _saveEvents = saveEvents ?? _storage.saveEvents,
@@ -81,9 +96,17 @@ class AppController extends StateNotifier<AppState> {
        _syncWidget = syncWidget ?? WidgetService.sync,
        _timerFactory =
            timerFactory ?? ((duration, run) => Timer(duration, run)),
+       _checkUpdate = checkUpdate ?? _defaultCheckUpdate,
        _undoDuration = undoDuration,
+       _updateCheckInterval = updateCheckInterval,
        super(const AppState()) {
     if (autoLoad) unawaited(load());
+  }
+
+  static Future<UpdateCheckResult> _defaultCheckUpdate(
+    String currentVersion,
+  ) {
+    return UpdateService().checkForUpdate(currentVersion: currentVersion);
   }
 
   // ignore: unused_field
@@ -96,7 +119,9 @@ class AppController extends StateNotifier<AppState> {
   final NotificationCanceller _cancelNotification;
   final WidgetSynchronizer _syncWidget;
   final UndoTimerFactory _timerFactory;
+  final UpdateChecker _checkUpdate;
   final Duration _undoDuration;
+  final Duration _updateCheckInterval;
   static const _batchUndoDuration = Duration(seconds: 10);
   final Map<String, Timer> _undoTimers = {};
   int _operationSequence = 0;
@@ -106,10 +131,17 @@ class AppController extends StateNotifier<AppState> {
     _cancelAllUndoTimers();
     final events = await _loadEvents();
     final settings = await _loadSettings();
-    state = AppState(events: events, settings: settings, isLoading: false);
+    state = AppState(
+      events: events,
+      settings: settings,
+      isLoading: false,
+      // 刷新数据时保留已发现的更新提示，避免横幅因重载消失。
+      availableRelease: state.availableRelease,
+    );
     _notificationActionRevision = await _storage
         .loadNotificationActionRevision();
     await _syncWidget(events, settings);
+    unawaited(autoCheckForUpdate());
   }
 
   Future<void> reloadAfterNotificationAction() async {
@@ -275,9 +307,65 @@ class AppController extends StateNotifier<AppState> {
   }
 
   Future<void> updateSettings(AppSettings settings) async {
-    state = state.copyWith(settings: settings);
+    state = state.copyWith(
+      settings: settings,
+      // 关闭自动检测时一并收起更新横幅。
+      clearAvailableRelease: !settings.autoCheckUpdate &&
+          state.availableRelease != null,
+    );
     await _saveSettings(settings);
     await _syncWidget(state.events, settings);
+  }
+
+  /// 启动后的自动检测：受开关与 [_updateCheckInterval] 间隔限制，
+  /// 结果只在新版本未被跳过时以横幅形式提示，失败保持静默。
+  Future<void> autoCheckForUpdate() async {
+    if (!state.settings.autoCheckUpdate) return;
+    final now = DateTime.now();
+    final lastCheckAt = await _storage.loadLastUpdateCheckAt();
+    if (lastCheckAt != null &&
+        now.difference(lastCheckAt) < _updateCheckInterval) {
+      return;
+    }
+    // 先记录时间再请求，弱网下也保持每天最多一次。
+    await _storage.saveLastUpdateCheckAt(now);
+    final result = await _runUpdateCheck();
+    if (!mounted) return;
+    final release = result.release;
+    if (!result.isNewer || release == null) return;
+    final skipped = await _storage.loadSkippedReleaseVersion();
+    if (!mounted) return;
+    if (skipped == release.version) return;
+    state = state.copyWith(availableRelease: release);
+  }
+
+  /// 设置页手动检测：不受开关与间隔限制，结果直接返回给界面。
+  Future<UpdateCheckResult> checkForUpdateNow() async {
+    final result = await _runUpdateCheck();
+    if (!mounted) return result;
+    await _storage.saveLastUpdateCheckAt(DateTime.now());
+    final release = result.release;
+    if (result.isNewer && release != null) {
+      state = state.copyWith(availableRelease: release);
+    }
+    return result;
+  }
+
+  /// 收起更新横幅；[skipVersion] 为真时记住该版本，自动检测不再提示。
+  Future<void> dismissUpdateRelease({bool skipVersion = false}) async {
+    final release = state.availableRelease;
+    state = state.copyWith(clearAvailableRelease: true);
+    if (skipVersion && release != null) {
+      await _storage.saveSkippedReleaseVersion(release.version);
+    }
+  }
+
+  Future<UpdateCheckResult> _runUpdateCheck() async {
+    try {
+      return await _checkUpdate(appVersion);
+    } catch (_) {
+      return const UpdateCheckResult(errorMessage: '检查更新失败，请稍后再试');
+    }
   }
 
   UndoOperation _newOperation({

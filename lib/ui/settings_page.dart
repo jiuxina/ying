@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 
+import '../app_version.dart';
 import '../models/countdown_event.dart';
 import '../state/app_controller.dart';
 import 'glass_ui.dart';
 import 'reminder_diagnostics_section.dart';
+import 'update_dialog.dart';
 import 'widget_preview_section.dart';
-
-/// 与 pubspec.yaml 的 version 保持一致（不含 +build 号）。
-const appVersion = '2.0.0';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -85,69 +84,75 @@ class SettingsPage extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         _Section(
-          title: '小部件色彩',
-          subtitle: '选择桌面上的主色调',
-          child: Wrap(
-            spacing: 13,
-            runSpacing: 13,
-            children: colorOptions
-                .map(
-                  (option) => _ColorButton(
-                    color: option.$1,
-                    label: option.$2,
-                    selected: settings.widgetColor == option.$1.toARGB32(),
-                    onTap: () => controller.updateSettings(
-                      settings.copyWith(widgetColor: option.$1.toARGB32()),
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _Section(
-          title: '文字大小',
-          subtitle: '${(settings.widgetFontScale * 100).round()}%',
-          child: Semantics(
-            label: '小部件文字大小',
-            value: '${(settings.widgetFontScale * 100).round()}%',
-            child: SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                trackHeight: 4,
-                activeTrackColor: Theme.of(context).colorScheme.primary,
-                inactiveTrackColor: Theme.of(
-                  context,
-                ).colorScheme.outlineVariant.withValues(alpha: 0.5),
-                thumbColor: Theme.of(context).colorScheme.primary,
-                overlayColor: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.12),
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.text_decrease_rounded, size: 19),
-                  Expanded(
-                    child: Slider(
-                      value: settings.widgetFontScale,
-                      min: 0.85,
-                      max: 1.3,
-                      divisions: 3,
-                      onChanged: (value) => controller.updateSettings(
-                        settings.copyWith(widgetFontScale: value),
+          title: '小部件样式',
+          subtitle: '主色与文字缩放',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 13,
+                runSpacing: 13,
+                children: colorOptions
+                    .map(
+                      (option) => _ColorButton(
+                        color: option.$1,
+                        label: option.$2,
+                        selected: settings.widgetColor == option.$1.toARGB32(),
+                        onTap: () => controller.updateSettings(
+                          settings.copyWith(widgetColor: option.$1.toARGB32()),
+                        ),
                       ),
+                    )
+                    .toList(),
+              ),
+              const _InsetDivider(),
+              Semantics(
+                label: '小部件文字大小',
+                value: '${(settings.widgetFontScale * 100).round()}%',
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 4,
+                    activeTrackColor: Theme.of(context).colorScheme.primary,
+                    inactiveTrackColor: Theme.of(
+                      context,
+                    ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    thumbColor: Theme.of(context).colorScheme.primary,
+                    overlayColor: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.12),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 9,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 20,
                     ),
                   ),
-                  const Icon(Icons.text_increase_rounded, size: 23),
-                ],
+                  child: Row(
+                    children: [
+                      const Icon(Icons.text_decrease_rounded, size: 19),
+                      Expanded(
+                        child: Slider(
+                          value: settings.widgetFontScale,
+                          min: 0.85,
+                          max: 1.3,
+                          divisions: 3,
+                          onChanged: (value) => controller.updateSettings(
+                            settings.copyWith(widgetFontScale: value),
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.text_increase_rounded, size: 23),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
         _Section(
-          title: '显示内容',
+          title: '小部件内容',
+          subtitle: '选择桌面卡片显示的字段',
           child: Column(
             children: [
               _SettingSwitch(
@@ -176,6 +181,26 @@ class SettingsPage extends ConsumerWidget {
         ReminderDiagnosticsSection(events: appState.events),
         const SizedBox(height: 16),
         WidgetPreviewSection(events: appState.events, settings: settings),
+        const SizedBox(height: 16),
+        _Section(
+          title: '检查更新',
+          subtitle: '当前版本 v$appVersion',
+          child: Column(
+            children: [
+              _SettingSwitch(
+                icon: Icons.system_update_outlined,
+                title: '自动检测更新',
+                subtitle: '启动后每天最多向 GitHub 仓库查询一次最新发布',
+                value: settings.autoCheckUpdate,
+                onChanged: (value) => controller.updateSettings(
+                  settings.copyWith(autoCheckUpdate: value),
+                ),
+              ),
+              const _InsetDivider(),
+              const _UpdateCheckTile(),
+            ],
+          ),
+        ),
         const SizedBox(height: 16),
         _Section(
           title: '数据管理',
@@ -331,6 +356,123 @@ class SettingsPage extends ConsumerWidget {
   }
 
   void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+}
+
+/// 手动检测仓库 Release 更新，展示检查进度与最近一次结果。
+class _UpdateCheckTile extends ConsumerStatefulWidget {
+  const _UpdateCheckTile();
+
+  @override
+  ConsumerState<_UpdateCheckTile> createState() => _UpdateCheckTileState();
+}
+
+class _UpdateCheckTileState extends ConsumerState<_UpdateCheckTile> {
+  bool _checking = false;
+  String? _status;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final subtitle = _checking ? '正在检查…' : (_status ?? '查询 GitHub 仓库的最新发布');
+    return Semantics(
+      button: true,
+      label: '检查更新',
+      hint: subtitle,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _checking ? null : _check,
+          borderRadius: BorderRadius.circular(14),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.system_update_alt_rounded,
+                    color: scheme.onSurfaceVariant,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '立即检查',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (_checking)
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: scheme.onSurfaceVariant,
+                      size: 20,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _check() async {
+    setState(() {
+      _checking = true;
+      _status = null;
+    });
+    final result = await ref
+        .read(appControllerProvider.notifier)
+        .checkForUpdateNow();
+    if (!mounted) return;
+    setState(() => _checking = false);
+    final release = result.release;
+    if (result.hasError) {
+      _finish(result.errorMessage ?? '检查更新失败，请稍后再试');
+      return;
+    }
+    if (release == null) {
+      _finish('仓库暂无发布');
+      return;
+    }
+    if (result.isNewer) {
+      setState(() => _status = '发现新版本 v${release.version}');
+      await showReleaseDialog(
+        context,
+        release,
+        onSkip: () => ref
+            .read(appControllerProvider.notifier)
+            .dismissUpdateRelease(skipVersion: true),
+      );
+      return;
+    }
+    _finish('已是最新版本');
+  }
+
+  void _finish(String message) {
+    setState(() => _status = message);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );

@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ying/models/app_settings.dart';
 import 'package:ying/models/countdown_event.dart';
 import 'package:ying/models/event_reminder.dart';
 import 'package:ying/models/event_repeat.dart';
 import 'package:ying/services/storage_service.dart';
+import 'package:ying/services/update_service.dart';
 import 'package:ying/state/app_controller.dart';
 
 void main() {
@@ -261,6 +263,141 @@ void main() {
       expect(kept.reminders.single.minutesBefore, 1440);
       expect(scheduled, containsAll(['Keep-Id', 'Fresh-Id']));
       expect(stored.last, hasLength(2));
+      controller.dispose();
+    });
+  });
+
+  group('AppController update checks', () {
+    UpdateCheckResult newerRelease(String version) => UpdateCheckResult(
+      release: ReleaseInfo(version: version, url: 'https://example.com/$version'),
+      isNewer: true,
+    );
+
+    AppController buildController({
+      required List<String> calls,
+      UpdateCheckResult? result,
+      AppSettings settings = const AppSettings(),
+      Map<String, Object> prefs = const {},
+      Duration updateCheckInterval = const Duration(hours: 24),
+    }) {
+      SharedPreferences.setMockInitialValues(prefs);
+      return AppController(
+        StorageService(),
+        autoLoad: false,
+        loadEvents: () async => const [],
+        saveEvents: (_) async {},
+        loadSettings: () async => settings,
+        saveSettings: (_) async {},
+        scheduleNotification: (_) async {},
+        cancelNotification: (_) async {},
+        syncWidget: (_, _) async {},
+        timerFactory: (_, _) => _IdleTimer(),
+        updateCheckInterval: updateCheckInterval,
+        checkUpdate: (version) async {
+          calls.add(version);
+          return result ?? newerRelease('9.9.9');
+        },
+      );
+    }
+
+    test('auto check surfaces newer release, then throttles', () async {
+      final calls = <String>[];
+      final controller = buildController(calls: calls);
+
+      await controller.autoCheckForUpdate();
+      expect(calls, hasLength(1));
+      expect(controller.state.availableRelease?.version, '9.9.9');
+      expect(await StorageService().loadLastUpdateCheckAt(), isNotNull);
+
+      // 24 小时内再次检查直接跳过。
+      await controller.autoCheckForUpdate();
+      expect(calls, hasLength(1));
+      controller.dispose();
+    });
+
+    test('auto check respects the toggle', () async {
+      final calls = <String>[];
+      final controller = buildController(calls: calls);
+      await controller.updateSettings(
+        const AppSettings(autoCheckUpdate: false),
+      );
+
+      await controller.autoCheckForUpdate();
+      expect(calls, isEmpty);
+      expect(controller.state.availableRelease, isNull);
+      controller.dispose();
+    });
+
+    test('auto check stays quiet for skipped versions', () async {
+      final calls = <String>[];
+      final controller = buildController(
+        calls: calls,
+        prefs: {'skipped_release_version': '9.9.9'},
+      );
+
+      await controller.autoCheckForUpdate();
+      expect(calls, hasLength(1));
+      expect(controller.state.availableRelease, isNull);
+      controller.dispose();
+    });
+
+    test('auto check re-runs once the interval has passed', () async {
+      final calls = <String>[];
+      final controller = buildController(
+        calls: calls,
+        updateCheckInterval: Duration.zero,
+      );
+
+      await controller.autoCheckForUpdate();
+      await controller.autoCheckForUpdate();
+      expect(calls, hasLength(2));
+      controller.dispose();
+    });
+
+    test('manual check reports up-to-date without banner', () async {
+      final calls = <String>[];
+      final controller = buildController(
+        calls: calls,
+        result: UpdateCheckResult(
+          release: const ReleaseInfo(
+            version: '2.0.0',
+            url: 'https://example.com/2.0.0',
+          ),
+        ),
+      );
+
+      final result = await controller.checkForUpdateNow();
+      expect(result.isNewer, isFalse);
+      expect(result.errorMessage, isNull);
+      expect(controller.state.availableRelease, isNull);
+      controller.dispose();
+    });
+
+    test('dismiss can skip the version for future auto checks', () async {
+      final calls = <String>[];
+      final controller = buildController(calls: calls);
+      await controller.autoCheckForUpdate();
+      expect(controller.state.availableRelease, isNotNull);
+
+      await controller.dismissUpdateRelease(skipVersion: true);
+      expect(controller.state.availableRelease, isNull);
+      expect(
+        await StorageService().loadSkippedReleaseVersion(),
+        '9.9.9',
+      );
+      controller.dispose();
+    });
+
+    test('turning off auto check hides the banner', () async {
+      final calls = <String>[];
+      final controller = buildController(calls: calls);
+      await controller.autoCheckForUpdate();
+      expect(controller.state.availableRelease, isNotNull);
+
+      await controller.updateSettings(
+        const AppSettings(autoCheckUpdate: false),
+      );
+      expect(controller.state.availableRelease, isNull);
       controller.dispose();
     });
   });

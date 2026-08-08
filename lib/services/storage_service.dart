@@ -13,7 +13,23 @@ class StorageService {
   static const _eventSortModeKey = 'event_sort_mode';
   static const _reduceTransparencyKey = 'reduce_transparency';
   static const _reduceMotionKey = 'reduce_motion';
+  static const _autoCheckUpdateKey = 'auto_check_update';
+  static const _lastUpdateCheckAtKey = 'last_update_check_at';
+  static const _skippedReleaseVersionKey = 'skipped_release_version';
   static const _notificationActionRevisionKey = 'notification_action_revision';
+  static const _widgetStyleKey = 'widget_style';
+  static const _widgetBackgroundPathKey = 'widget_background_path';
+  static const _widgetUnitTextKey = 'widget_unit_text';
+  static const _widgetShowIconKey = 'widget_show_icon';
+  static const _widgetShowProgressKey = 'widget_show_progress';
+  static const _widgetShowPreciseTimeKey = 'widget_show_precise_time';
+  static const _widgetMysteryModeKey = 'widget_mystery_mode';
+  static const _widgetQuoteModeKey = 'widget_quote_mode';
+  static const _widgetFontFamilyKey = 'widget_font_family';
+  static const _widgetTextOutlineKey = 'widget_text_outline';
+  static const _widgetWallpaperColorKey = 'widget_wallpaper_color';
+  static const _widgetWallpaperDarkColorKey = 'widget_wallpaper_dark_color';
+  static const _widgetWallpaperTextColorKey = 'widget_wallpaper_text_color';
 
   Future<List<CountdownEvent>> loadEvents() async {
     final preferences = await SharedPreferences.getInstance();
@@ -43,6 +59,26 @@ class StorageService {
       'eventSortMode': preferences.getString(_eventSortModeKey),
       'reduceTransparency': preferences.getBool(_reduceTransparencyKey),
       'reduceMotion': preferences.getBool(_reduceMotionKey),
+      'autoCheckUpdate': preferences.getBool(_autoCheckUpdateKey),
+      'widgetStyle': preferences.getString(_widgetStyleKey),
+      'widgetBackgroundPath': preferences.getString(_widgetBackgroundPathKey),
+      'widgetUnitText': preferences.getString(_widgetUnitTextKey),
+      'widgetShowIcon': preferences.getBool(_widgetShowIconKey),
+      'widgetShowProgress': preferences.getBool(_widgetShowProgressKey),
+      'widgetShowPreciseTime': preferences.getBool(
+        _widgetShowPreciseTimeKey,
+      ),
+      'widgetMysteryMode': preferences.getBool(_widgetMysteryModeKey),
+      'widgetQuoteMode': preferences.getBool(_widgetQuoteModeKey),
+      'widgetFontFamily': preferences.getString(_widgetFontFamilyKey),
+      'widgetTextOutline': preferences.getBool(_widgetTextOutlineKey),
+      'widgetWallpaperColor': preferences.getInt(_widgetWallpaperColorKey),
+      'widgetWallpaperDarkColor': preferences.getInt(
+        _widgetWallpaperDarkColorKey,
+      ),
+      'widgetWallpaperTextColor': preferences.getInt(
+        _widgetWallpaperTextColorKey,
+      ),
     });
   }
 
@@ -69,6 +105,57 @@ class StorageService {
       preferences.setString(_eventSortModeKey, settings.eventSortMode.name),
       preferences.setBool(_reduceTransparencyKey, settings.reduceTransparency),
       preferences.setBool(_reduceMotionKey, settings.reduceMotion),
+      preferences.setBool(_autoCheckUpdateKey, settings.autoCheckUpdate),
+      preferences.setString(_widgetStyleKey, settings.widgetStyle.name),
+      preferences.setString(
+        _widgetBackgroundPathKey,
+        settings.widgetBackgroundPath,
+      ),
+      preferences.setString(_widgetUnitTextKey, settings.widgetUnitText),
+      preferences.setBool(_widgetShowIconKey, settings.widgetShowIcon),
+      preferences.setBool(_widgetShowProgressKey, settings.widgetShowProgress),
+      preferences.setBool(
+        _widgetShowPreciseTimeKey,
+        settings.widgetShowPreciseTime,
+      ),
+      preferences.setBool(_widgetMysteryModeKey, settings.widgetMysteryMode),
+      preferences.setBool(_widgetQuoteModeKey, settings.widgetQuoteMode),
+      preferences.setString(_widgetFontFamilyKey, settings.widgetFontFamily),
+      preferences.setBool(_widgetTextOutlineKey, settings.widgetTextOutline),
+      preferences.setInt(_widgetWallpaperColorKey, settings.widgetWallpaperColor),
+      preferences.setInt(
+        _widgetWallpaperDarkColorKey,
+        settings.widgetWallpaperDarkColor,
+      ),
+      preferences.setInt(
+        _widgetWallpaperTextColorKey,
+        settings.widgetWallpaperTextColor,
+      ),
     ]);
+  }
+
+  Future<DateTime?> loadLastUpdateCheckAt() async {
+    final preferences = await SharedPreferences.getInstance();
+    final millis = preferences.getInt(_lastUpdateCheckAtKey);
+    if (millis == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(millis);
+  }
+
+  Future<void> saveLastUpdateCheckAt(DateTime time) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setInt(
+      _lastUpdateCheckAtKey,
+      time.millisecondsSinceEpoch,
+    );
+  }
+
+  Future<String?> loadSkippedReleaseVersion() async {
+    final preferences = await SharedPreferences.getInstance();
+    return preferences.getString(_skippedReleaseVersionKey);
+  }
+
+  Future<void> saveSkippedReleaseVersion(String version) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_skippedReleaseVersionKey, version);
   }
 }

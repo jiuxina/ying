@@ -26,6 +26,15 @@ void main() {
       expect(restored.reduceTransparency, isTrue);
       expect(restored.reduceMotion, isTrue);
     });
+
+    test('defaults auto update check on and round-trips the toggle', () {
+      final legacy = AppSettings.fromMap(const {});
+      expect(legacy.autoCheckUpdate, isTrue);
+
+      final disabled = legacy.copyWith(autoCheckUpdate: false);
+      final restored = AppSettings.fromMap(disabled.toMap());
+      expect(restored.autoCheckUpdate, isFalse);
+    });
   });
 
   group('CountdownEvent', () {

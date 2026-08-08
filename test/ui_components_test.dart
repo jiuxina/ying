@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:ying/app_version.dart';
 import 'package:ying/models/app_settings.dart';
 import 'package:ying/models/countdown_event.dart';
 import 'package:ying/models/event_sort_mode.dart';
@@ -372,6 +373,7 @@ void main() {
     AppController buildController(
       List<AppSettings> saved, {
       AppSettings initial = const AppSettings(),
+      UpdateChecker? checkUpdate,
     }) {
       return AppController(
         StorageService(),
@@ -384,6 +386,7 @@ void main() {
         cancelNotification: (_) async {},
         syncWidget: (_, _) async {},
         timerFactory: (_, _) => _IdleTimer(),
+        checkUpdate: checkUpdate,
       );
     }
 
