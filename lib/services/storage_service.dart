@@ -23,8 +23,10 @@ class StorageService {
   static const _widgetShowIconKey = 'widget_show_icon';
   static const _widgetShowProgressKey = 'widget_show_progress';
   static const _widgetShowPreciseTimeKey = 'widget_show_precise_time';
+  static const _widgetShowLunarWeekKey = 'widget_show_lunar_week';
   static const _widgetMysteryModeKey = 'widget_mystery_mode';
   static const _widgetQuoteModeKey = 'widget_quote_mode';
+  static const _widgetListModeKey = 'widget_list_mode';
   static const _widgetFontFamilyKey = 'widget_font_family';
   static const _widgetTextOutlineKey = 'widget_text_outline';
   static const _widgetWallpaperColorKey = 'widget_wallpaper_color';
@@ -68,8 +70,12 @@ class StorageService {
       'widgetShowPreciseTime': preferences.getBool(
         _widgetShowPreciseTimeKey,
       ),
+      'widgetShowLunarWeek': preferences.getBool(
+        _widgetShowLunarWeekKey,
+      ),
       'widgetMysteryMode': preferences.getBool(_widgetMysteryModeKey),
       'widgetQuoteMode': preferences.getBool(_widgetQuoteModeKey),
+      'widgetListMode': preferences.getBool(_widgetListModeKey),
       'widgetFontFamily': preferences.getString(_widgetFontFamilyKey),
       'widgetTextOutline': preferences.getBool(_widgetTextOutlineKey),
       'widgetWallpaperColor': preferences.getInt(_widgetWallpaperColorKey),
@@ -118,8 +124,13 @@ class StorageService {
         _widgetShowPreciseTimeKey,
         settings.widgetShowPreciseTime,
       ),
+      preferences.setBool(
+        _widgetShowLunarWeekKey,
+        settings.widgetShowLunarWeek,
+      ),
       preferences.setBool(_widgetMysteryModeKey, settings.widgetMysteryMode),
       preferences.setBool(_widgetQuoteModeKey, settings.widgetQuoteMode),
+      preferences.setBool(_widgetListModeKey, settings.widgetListMode),
       preferences.setString(_widgetFontFamilyKey, settings.widgetFontFamily),
       preferences.setBool(_widgetTextOutlineKey, settings.widgetTextOutline),
       preferences.setInt(_widgetWallpaperColorKey, settings.widgetWallpaperColor),

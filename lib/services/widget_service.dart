@@ -8,6 +8,7 @@ import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
 import '../models/widget_holiday.dart';
 import '../utils/event_repeat_utils.dart';
+import '../utils/widget_content_utils.dart';
 import 'notification_service.dart';
 import 'storage_service.dart';
 
@@ -111,6 +112,7 @@ String encodeWidgetEvents(List<CountdownEvent> events) {
             'id': event.id,
             'title': event.title,
             'targetDate': event.dateOnly.millisecondsSinceEpoch,
+            'targetTime': event.targetDate.millisecondsSinceEpoch,
             'category': event.category,
             'note': event.note,
             'icon': event.icon,
@@ -132,7 +134,7 @@ Map<String, Object?> widgetPreferenceValues(
 }) {
   final today = now ?? DateTime.now();
   return {
-    'widget_protocol_version': 3,
+    'widget_protocol_version': 4,
     'widget_color': settings.widgetColor.toRadixString(16).padLeft(8, '0'),
     'widget_font_scale': settings.widgetFontScale,
     'widget_show_note': settings.widgetShowNote,
@@ -143,14 +145,17 @@ Map<String, Object?> widgetPreferenceValues(
     'widget_show_icon': settings.widgetShowIcon,
     'widget_show_progress': settings.widgetShowProgress,
     'widget_show_precise_time': settings.widgetShowPreciseTime,
+    'widget_show_lunar_week': settings.widgetShowLunarWeek,
     'widget_mystery_mode': settings.widgetMysteryMode,
     'widget_quote_mode': settings.widgetQuoteMode,
+    'widget_list_mode': settings.widgetListMode,
     'widget_font_family': settings.widgetFontFamily,
     'widget_text_outline': settings.widgetTextOutline,
     'widget_wallpaper_color': settings.widgetWallpaperColor,
     'widget_wallpaper_dark_color': settings.widgetWallpaperDarkColor,
     'widget_wallpaper_text_color': settings.widgetWallpaperTextColor,
     'widget_holiday': holidayFor(today).wireName,
+    'widget_date_info': widgetDateInfo(today),
   };
 }
 

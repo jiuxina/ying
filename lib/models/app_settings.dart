@@ -31,8 +31,10 @@ class AppSettings {
     this.widgetShowIcon = false,
     this.widgetShowProgress = false,
     this.widgetShowPreciseTime = false,
+    this.widgetShowLunarWeek = false,
     this.widgetMysteryMode = false,
     this.widgetQuoteMode = false,
+    this.widgetListMode = false,
     this.widgetFontFamily = 'system',
     this.widgetTextOutline = false,
     this.widgetWallpaperColor = -1,
@@ -55,8 +57,10 @@ class AppSettings {
   final bool widgetShowIcon;
   final bool widgetShowProgress;
   final bool widgetShowPreciseTime;
+  final bool widgetShowLunarWeek;
   final bool widgetMysteryMode;
   final bool widgetQuoteMode;
+  final bool widgetListMode;
   final String widgetFontFamily;
   final bool widgetTextOutline;
   final int widgetWallpaperColor;
@@ -79,8 +83,10 @@ class AppSettings {
     bool? widgetShowIcon,
     bool? widgetShowProgress,
     bool? widgetShowPreciseTime,
+    bool? widgetShowLunarWeek,
     bool? widgetMysteryMode,
     bool? widgetQuoteMode,
+    bool? widgetListMode,
     String? widgetFontFamily,
     bool? widgetTextOutline,
     int? widgetWallpaperColor,
@@ -104,8 +110,10 @@ class AppSettings {
       widgetShowProgress: widgetShowProgress ?? this.widgetShowProgress,
       widgetShowPreciseTime:
           widgetShowPreciseTime ?? this.widgetShowPreciseTime,
+      widgetShowLunarWeek: widgetShowLunarWeek ?? this.widgetShowLunarWeek,
       widgetMysteryMode: widgetMysteryMode ?? this.widgetMysteryMode,
       widgetQuoteMode: widgetQuoteMode ?? this.widgetQuoteMode,
+      widgetListMode: widgetListMode ?? this.widgetListMode,
       widgetFontFamily: widgetFontFamily ?? this.widgetFontFamily,
       widgetTextOutline: widgetTextOutline ?? this.widgetTextOutline,
       widgetWallpaperColor: widgetWallpaperColor ?? this.widgetWallpaperColor,
@@ -132,8 +140,10 @@ class AppSettings {
     'widgetShowIcon': widgetShowIcon,
     'widgetShowProgress': widgetShowProgress,
     'widgetShowPreciseTime': widgetShowPreciseTime,
+    'widgetShowLunarWeek': widgetShowLunarWeek,
     'widgetMysteryMode': widgetMysteryMode,
     'widgetQuoteMode': widgetQuoteMode,
+    'widgetListMode': widgetListMode,
     'widgetFontFamily': widgetFontFamily,
     'widgetTextOutline': widgetTextOutline,
     'widgetWallpaperColor': widgetWallpaperColor,
@@ -167,8 +177,10 @@ class AppSettings {
       widgetShowIcon: (map['widgetShowIcon'] as bool?) ?? false,
       widgetShowProgress: (map['widgetShowProgress'] as bool?) ?? false,
       widgetShowPreciseTime: (map['widgetShowPreciseTime'] as bool?) ?? false,
+      widgetShowLunarWeek: (map['widgetShowLunarWeek'] as bool?) ?? false,
       widgetMysteryMode: (map['widgetMysteryMode'] as bool?) ?? false,
       widgetQuoteMode: (map['widgetQuoteMode'] as bool?) ?? false,
+      widgetListMode: (map['widgetListMode'] as bool?) ?? false,
       widgetFontFamily: (map['widgetFontFamily'] as String?) ?? 'system',
       widgetTextOutline: (map['widgetTextOutline'] as bool?) ?? false,
       widgetWallpaperColor: (map['widgetWallpaperColor'] as int?) ?? -1,

@@ -15,8 +15,10 @@ void main() {
       expect(legacy.widgetShowIcon, isFalse);
       expect(legacy.widgetShowProgress, isFalse);
       expect(legacy.widgetShowPreciseTime, isFalse);
+      expect(legacy.widgetShowLunarWeek, isFalse);
       expect(legacy.widgetMysteryMode, isFalse);
       expect(legacy.widgetQuoteMode, isFalse);
+      expect(legacy.widgetListMode, isFalse);
       expect(legacy.widgetFontFamily, 'system');
       expect(legacy.widgetTextOutline, isFalse);
       expect(legacy.widgetWallpaperColor, -1);
@@ -37,8 +39,10 @@ void main() {
         widgetShowIcon: true,
         widgetShowProgress: true,
         widgetShowPreciseTime: true,
+        widgetShowLunarWeek: true,
         widgetMysteryMode: true,
         widgetQuoteMode: true,
+        widgetListMode: true,
         widgetFontFamily: 'mono',
         widgetTextOutline: true,
         widgetWallpaperColor: 0xFF102030,
@@ -52,8 +56,10 @@ void main() {
       expect(restored.widgetShowIcon, isTrue);
       expect(restored.widgetShowProgress, isTrue);
       expect(restored.widgetShowPreciseTime, isTrue);
+      expect(restored.widgetShowLunarWeek, isTrue);
       expect(restored.widgetMysteryMode, isTrue);
       expect(restored.widgetQuoteMode, isTrue);
+      expect(restored.widgetListMode, isTrue);
       expect(restored.widgetFontFamily, 'mono');
       expect(restored.widgetTextOutline, isTrue);
       expect(restored.widgetWallpaperColor, 0xFF102030);
@@ -91,7 +97,7 @@ void main() {
     });
   });
 
-  group('WidgetService protocol v2 helpers', () {
+  group('WidgetService protocol v4 helpers', () {
     CountdownEvent event(
       String id, {
       String icon = '',
@@ -129,6 +135,10 @@ void main() {
       final encoded = decoded.single as Map<String, dynamic>;
       expect(encoded['icon'], 'cake');
       expect(encoded['createdAt'], createdAt.millisecondsSinceEpoch);
+      expect(
+        encoded['targetTime'],
+        DateTime(2026, 8, 8).millisecondsSinceEpoch,
+      );
     });
 
     test('filters completed events and keeps pinned first', () {
@@ -147,7 +157,7 @@ void main() {
 
     test('preference values include protocol version and every key', () {
       final values = widgetPreferenceValues(const AppSettings());
-      expect(values['widget_protocol_version'], 3);
+      expect(values['widget_protocol_version'], 4);
       expect(values['widget_color'], 'ff0f766e');
       expect(
         values.keys,
@@ -163,14 +173,17 @@ void main() {
           'widget_show_icon',
           'widget_show_progress',
           'widget_show_precise_time',
+          'widget_show_lunar_week',
           'widget_mystery_mode',
           'widget_quote_mode',
+          'widget_list_mode',
           'widget_font_family',
           'widget_text_outline',
           'widget_wallpaper_color',
           'widget_wallpaper_dark_color',
           'widget_wallpaper_text_color',
           'widget_holiday',
+          'widget_date_info',
         ]),
       );
     });
