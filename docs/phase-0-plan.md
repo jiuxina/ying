@@ -1,6 +1,6 @@
 # 第 0 阶段详细计划：小部件个性化底座
 
-> 状态：已实现（2026-08-08），对应 [update-plan.md](update-plan.md) 阶段 0。
+> 状态：已实现，MuMu 模拟器手工验收通过（2026-08-08），对应 [update-plan.md](update-plan.md) 阶段 0。
 
 ## 摘要
 
@@ -42,6 +42,16 @@
 - Android 单测：`MidnightRefreshSchedulerTest` 覆盖零点前后、跨日、闰日、DST 时区的 `nextMidnightMillis` 计算，以及窗口落在 5 分钟内。
 - 验证命令：`flutter analyze`、`flutter test`、`gradlew -p android :app:testDebugUnitTest`（MuMu 环境用现有 `-Pmumu-x64` 构建开关验证）。
 - 手工验收：MuMu 添加旧小部件确认视觉与现在一致；跨零点 5 分钟内天数更新；改系统时间 / 时区后小部件立即刷新；无精确闹钟权限仍能工作。
+
+## 验收确认
+
+MuMu 模拟器（x86_64 / Android 12）手工验收通过，日期 2026-08-08：
+
+- [x] 已安装并启动新构建，`widget_protocol_version=2` 与全部新字段默认值写入 `HomeWidgetPreferences`
+- [x] 桌面小部件视觉与现状一致，小 / 中尺寸、左右切换、快速完成正常
+- [x] 午夜刷新闹钟已排定到下一个 00:00（`RTC_WAKEUP com.jiuxina.ying.MIDNIGHT_REFRESH`）
+- [x] 跨零点 5 分钟窗口内天数更新；`DATE_CHANGED` / `TIME_SET` / `TIMEZONE_CHANGED` 广播触发立即刷新
+- [x] 未申请精确闹钟权限，30 分钟 `updatePeriodMillis` 轮询保留为降级兜底
 
 ## 假设与注意事项
 
