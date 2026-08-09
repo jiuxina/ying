@@ -14,17 +14,23 @@ void main(List<String> args) {
     return;
   }
 
-  final random = Random.secure();
+  final keys = generateUnlockKeys(count);
   final rows = <String>['keyId,key,createdAt'];
   final now = DateTime.now().toUtc().toIso8601String();
-  for (var i = 0; i < count; i += 1) {
-    final keyId = _hex(random, 8);
-    final key = 'YING-${_base62(random, 40)}';
+  for (var i = 0; i < keys.length; i += 1) {
+    final keyId = _hex(Random.secure(), 8);
+    final key = keys[i];
     rows.add('$keyId,$key,$now');
   }
 
   File(output).writeAsStringSync('${rows.join('\n')}\n', flush: true);
   stdout.writeln('已生成 $count 把密钥：$output');
+}
+
+/// 生成 [count] 把 `YING-` + 40 位 base62 的密钥。
+List<String> generateUnlockKeys(int count, {Random? random}) {
+  final rng = random ?? Random.secure();
+  return List.generate(count, (_) => 'YING-${_base62(rng, 40)}');
 }
 
 String _base62(Random random, int length) {

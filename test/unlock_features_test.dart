@@ -64,4 +64,10 @@ void main() {
     final key = '${UnlockConfig.keyPrefix}${'Z' * UnlockConfig.keyLength}';
     expect(validateUnlockKey(key), isNull);
   });
+
+  test('embedded public key is a valid P-256 raw point', () {
+    final bytes = base64Decode(UnlockConfig.publicKeyRawBase64);
+    expect(bytes, hasLength(65));
+    expect(bytes.first, 0x04);
+  });
 }

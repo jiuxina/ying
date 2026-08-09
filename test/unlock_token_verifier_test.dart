@@ -22,8 +22,8 @@ void main() {
     });
     final payloadBytes = Uint8List.fromList(utf8.encode(payload));
     final signature = _sign(privateKey, payloadBytes);
-    final token = '${base64Url.encode(payloadBytes)}.'
-        '${base64Url.encode(signature)}';
+    final token =
+        '${base64Url.encode(payloadBytes)}.${base64Url.encode(signature)}';
 
     final verifier = UnlockTokenVerifier(publicRaw);
     final parsed = verifier.verifyToken(token);
@@ -32,7 +32,7 @@ void main() {
     expect(parsed.plan, 'r5');
     expect(parsed.deviceHash, 'b' * 64);
 
-    final tampered = token.substring(0, token.length - 2) + 'AA';
+    final tampered = '${token.substring(0, token.length - 2)}AA';
     expect(verifier.verifyToken(tampered), isNull);
     expect(verifier.verifyToken('garbage'), isNull);
   });
