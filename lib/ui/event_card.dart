@@ -227,7 +227,8 @@ class _CardActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final accent = color ?? scheme.onSurfaceVariant;
+    final iconColor = scheme.onSurfaceVariant;
+    final textColor = color ?? scheme.onSurface;
     return Semantics(
       button: true,
       label: label,
@@ -249,12 +250,12 @@ class _CardActionRow extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(icon, size: 20, color: accent),
+                  Icon(icon, size: 20, color: iconColor),
                   const SizedBox(width: 11),
                   Text(
                     label,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: color ?? scheme.onSurface,
+                      color: textColor,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -388,6 +389,15 @@ class _CardContent extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isTerminal = event.isCompleted;
+    final delta = event.dayDelta();
+    final dark = theme.brightness == Brightness.dark;
+    final numberColor = isTerminal
+        ? scheme.onSurfaceVariant
+        : delta < 0
+        ? (dark ? GlassPalette.overdueDark : GlassPalette.overdue)
+        : delta <= 7
+        ? (dark ? GlassPalette.upcomingDark : GlassPalette.upcoming)
+        : scheme.onSurface;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -421,11 +431,9 @@ class _CardContent extends StatelessWidget {
                   child: Text(
                     event.dayDelta() == 0 ? '今' : '${event.displayDays}',
                     style: theme.textTheme.headlineMedium?.copyWith(
-                      color: isTerminal
-                          ? scheme.onSurfaceVariant
-                          : scheme.onSurface,
-                      fontSize: 36,
-                      fontWeight: FontWeight.w300,
+                      color: numberColor,
+                      fontSize: 44,
+                      fontWeight: FontWeight.w600,
                       height: 1,
                       letterSpacing: 0,
                     ),
@@ -475,14 +483,32 @@ class _CardContent extends StatelessWidget {
                   context,
                   const Duration(milliseconds: 180),
                 ),
-                child: Text(
-                  '${DateFormat('M月d日 E', 'zh_CN').format(event.targetDate)}${event.isAllDay ? ' · 全天' : ''}',
+                child: Row(
                   key: ValueKey('${event.statusLabel}-${event.targetDate}'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
+                  children: [
+                    Flexible(
+                      child: Text(
+                        DateFormat(
+                          'M月d日 E',
+                          'zh_CN',
+                        ).format(event.targetDate),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    if (event.isAllDay) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        '全天',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               const SizedBox(height: 7),
@@ -490,7 +516,7 @@ class _CardContent extends StatelessWidget {
                 children: [
                   if (event.isPinned)
                     Padding(
-                      padding: const EdgeInsets.only(right: 5),
+                      padding: const EdgeInsets.only(right: 6),
                       child: Icon(
                         Icons.push_pin_outlined,
                         size: 14,
@@ -498,29 +524,24 @@ class _CardContent extends StatelessWidget {
                       ),
                     ),
                   Flexible(
-                    child: Text(
-                      [
-                        event.category,
-                        if (event.repeatsYearly) '每年',
-                      ].join(' · '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: _CategoryTag(label: event.category),
+                  ),
+                  if (event.repeatsYearly) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      '每年',
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ],
           ),
         ),
         const SizedBox(width: 4),
-        GlassIconButton(
-          icon: event.isCompleted
-              ? Icons.check_circle_rounded
-              : Icons.circle_outlined,
-          selected: event.isCompleted,
+        IconButton(
           onPressed: () {
             HapticFeedback.lightImpact();
             onToggle();
@@ -530,8 +551,58 @@ class _CardContent extends StatelessWidget {
               : event.isCompleted
               ? '恢复事件'
               : '标记完成',
+          visualDensity: VisualDensity.compact,
+          icon: event.isCompleted
+              ? Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: scheme.onSurface,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_rounded,
+                    size: 16,
+                    color: scheme.surface,
+                  ),
+                )
+              : Icon(
+                  Icons.circle_outlined,
+                  size: 26,
+                  color: scheme.onSurfaceVariant,
+                ),
         ),
       ],
+    );
+  }
+}
+
+class _CategoryTag extends StatelessWidget {
+  const _CategoryTag({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }

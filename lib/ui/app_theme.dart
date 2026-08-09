@@ -9,18 +9,21 @@ class AppTheme {
   static ThemeData _build(Brightness brightness) {
     final dark = brightness == Brightness.dark;
     final primary = dark ? const Color(0xFFBEF264) : const Color(0xFF0F766E);
-    final background = dark ? const Color(0xFF0F1115) : const Color(0xFFFCFBF9);
-    final surface = dark ? const Color(0xFF181A20) : Colors.white;
+    final background = dark ? const Color(0xFF101318) : const Color(0xFFF5F4F0);
+    final surface = dark ? const Color(0xFF1A1E24) : Colors.white;
     final scheme = ColorScheme.fromSeed(
       seedColor: primary,
       brightness: brightness,
       primary: primary,
-      onPrimary: dark ? const Color(0xFF0F1115) : Colors.white,
+      onPrimary: dark ? const Color(0xFF101318) : Colors.white,
       surface: surface,
-      onSurface: dark ? const Color(0xFFF4F4F5) : const Color(0xFF27272A),
-      outline: dark ? const Color(0xFF3F424C) : const Color(0xFFD4D4D8),
-      outlineVariant: dark ? const Color(0xFF272A33) : const Color(0xFFE4E4E7),
-      error: dark ? const Color(0xFFEF4444) : const Color(0xFFDC2626),
+      onSurface: dark ? const Color(0xFFF1F3F5) : const Color(0xFF1F2328),
+      onSurfaceVariant: dark ? const Color(0xFFA8B0BB) : const Color(0xFF5C636E),
+      surfaceContainerHighest:
+          dark ? const Color(0xFF232731) : const Color(0xFFEFEDE9),
+      outline: dark ? const Color(0xFF3F424C) : const Color(0xFFD9DCE1),
+      outlineVariant: dark ? const Color(0xFF262A33) : const Color(0xFFECEAE6),
+      error: dark ? const Color(0xFFF87171) : const Color(0xFFDC2626),
     );
     final base = ThemeData(
       useMaterial3: true,
@@ -137,12 +140,12 @@ class AppTheme {
       ),
       chipTheme: base.chipTheme.copyWith(
         backgroundColor: background,
-        selectedColor: scheme.primary,
+        selectedColor: scheme.surfaceContainerHighest,
         side: BorderSide(color: scheme.outlineVariant),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         labelStyle: TextStyle(color: scheme.onSurfaceVariant),
         secondaryLabelStyle: TextStyle(
-          color: scheme.onPrimary,
+          color: scheme.onSurface,
           fontWeight: FontWeight.w600,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),

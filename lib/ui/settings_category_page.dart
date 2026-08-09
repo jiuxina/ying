@@ -75,7 +75,7 @@ class SettingsCategoryPage extends ConsumerWidget {
               _SettingSwitch(
                 icon: Icons.layers_clear_rounded,
                 title: '减少透明度',
-                subtitle: '使用高对比度不透明表面，减少模糊负担',
+                subtitle: '使用实色背景',
                 value: settings.reduceTransparency,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(reduceTransparency: value),
@@ -85,7 +85,7 @@ class SettingsCategoryPage extends ConsumerWidget {
               _SettingSwitch(
                 icon: Icons.motion_photos_off_rounded,
                 title: '减少动画',
-                subtitle: '关闭界面过渡，并始终跟随系统减少动态效果',
+                subtitle: '关闭过渡动画',
                 value: settings.reduceMotion,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(reduceMotion: value),
@@ -98,7 +98,7 @@ class SettingsCategoryPage extends ConsumerWidget {
       SettingsCategory.widget => [
         _Section(
           title: '小部件样式',
-          subtitle: '预设、主色与文字缩放',
+          subtitle: '预设、主色与缩放',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -183,13 +183,13 @@ class SettingsCategoryPage extends ConsumerWidget {
         const SizedBox(height: 16),
         _Section(
           title: '小部件背景',
-          subtitle: '壁纸取色与相册背景',
+          subtitle: '壁纸取色与相册',
           child: Column(
             children: [
               _SettingSwitch(
                 icon: Icons.wallpaper_rounded,
                 title: '跟随壁纸颜色',
-                subtitle: '读取当前壁纸主色并自动生成对比文字色',
+                subtitle: '自动适配壁纸主色',
                 value: settings.widgetWallpaperColor != -1,
                 onChanged: (value) => unawaited(
                   _toggleWallpaperColors(context, ref, settings, value),
@@ -200,8 +200,8 @@ class SettingsCategoryPage extends ConsumerWidget {
                 icon: Icons.add_photo_alternate_outlined,
                 title: '选择照片背景',
                 subtitle: settings.widgetBackgroundPath.isEmpty
-                    ? '从相册挑选一张作为小部件背景'
-                    : '已设置照片背景，点击可重新选择',
+                    ? '从相册选择一张图片'
+                    : '已设置，点击可更换',
                 onTap: () => unawaited(_pickBackgroundPhoto(context, ref)),
               ),
               if (settings.widgetBackgroundPath.isNotEmpty) ...[
@@ -209,7 +209,7 @@ class SettingsCategoryPage extends ConsumerWidget {
                 _SettingsActionTile(
                   icon: Icons.hide_image_outlined,
                   title: '清除照片背景',
-                  subtitle: '恢复为样式默认背景',
+                  subtitle: '恢复默认背景',
                   onTap: () => unawaited(_clearWidgetBackground(context, ref)),
                 ),
               ],
@@ -219,13 +219,13 @@ class SettingsCategoryPage extends ConsumerWidget {
         const SizedBox(height: 16),
         _Section(
           title: '小部件内容',
-          subtitle: '选择桌面卡片显示的字段',
+          subtitle: '选择卡片显示字段',
           child: Column(
             children: [
               _SettingSwitch(
                 icon: Icons.tag_rounded,
                 title: '分类标签',
-                subtitle: '在桌面小部件中显示分类',
+                subtitle: '显示分类',
                 value: settings.widgetShowCategory,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetShowCategory: value),
@@ -235,7 +235,7 @@ class SettingsCategoryPage extends ConsumerWidget {
               _SettingSwitch(
                 icon: Icons.notes_rounded,
                 title: '事件备注',
-                subtitle: '显示一行简短备注',
+                subtitle: '显示一行备注',
                 value: settings.widgetShowNote,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetShowNote: value),
@@ -245,7 +245,7 @@ class SettingsCategoryPage extends ConsumerWidget {
               _SettingSwitch(
                 icon: Icons.emoji_emotions_outlined,
                 title: '事件图标',
-                subtitle: '显示事件 Emoji 图标',
+                subtitle: '显示 Emoji',
                 value: settings.widgetShowIcon,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetShowIcon: value),
@@ -255,7 +255,7 @@ class SettingsCategoryPage extends ConsumerWidget {
               _SettingSwitch(
                 icon: Icons.timer_outlined,
                 title: '精确到秒',
-                subtitle: '倒计时精确到时分秒',
+                subtitle: '精确到时分秒',
                 value: settings.widgetShowPreciseTime,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetShowPreciseTime: value),
@@ -265,7 +265,7 @@ class SettingsCategoryPage extends ConsumerWidget {
               _SettingSwitch(
                 icon: Icons.calendar_month_outlined,
                 title: '农历与星期',
-                subtitle: '显示当天农历与星期',
+                subtitle: '显示农历与星期',
                 value: settings.widgetShowLunarWeek,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetShowLunarWeek: value),
@@ -275,7 +275,7 @@ class SettingsCategoryPage extends ConsumerWidget {
               _SettingSwitch(
                 icon: Icons.donut_small_rounded,
                 title: '进度百分比',
-                subtitle: '从创建日到目标日的完成进度',
+                subtitle: '显示完成进度',
                 value: settings.widgetShowProgress,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetShowProgress: value),
@@ -285,7 +285,7 @@ class SettingsCategoryPage extends ConsumerWidget {
               _SettingSwitch(
                 icon: Icons.visibility_off_outlined,
                 title: '神秘模式',
-                subtitle: '隐藏具体数字，只显示蜡烛与“快到了”',
+                subtitle: '隐藏数字与日期',
                 value: settings.widgetMysteryMode,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetMysteryMode: value),
@@ -295,7 +295,7 @@ class SettingsCategoryPage extends ConsumerWidget {
               _SettingSwitch(
                 icon: Icons.format_quote_outlined,
                 title: '每日一句',
-                subtitle: '备注与内置句子按天轮播',
+                subtitle: '每日轮播一句话',
                 value: settings.widgetQuoteMode,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetQuoteMode: value),
@@ -305,7 +305,7 @@ class SettingsCategoryPage extends ConsumerWidget {
               _SettingSwitch(
                 icon: Icons.local_fire_department_outlined,
                 title: '临近高亮',
-                subtitle: '7 天、3 天、1 天内自动切换强调色与文案',
+                subtitle: '临近自动切换强调色',
                 value: settings.widgetUrgentHighlight,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetUrgentHighlight: value),
@@ -315,7 +315,7 @@ class SettingsCategoryPage extends ConsumerWidget {
               _ChoiceSetting(
                 icon: Icons.text_fields_rounded,
                 title: '单位文案',
-                subtitle: '选择“还有、只剩、距离、已经、约 X 周”等预设',
+                subtitle: '选择单位文案预设',
                 options: widgetUnitPresetOptions,
                 selected: (
                   settings.widgetUnitText,
@@ -334,7 +334,7 @@ class SettingsCategoryPage extends ConsumerWidget {
               _ChoiceSetting(
                 icon: Icons.pin_outlined,
                 title: '数字字体',
-                subtitle: '切换数字区域的字体风格',
+                subtitle: '切换数字字体',
                 options: widgetFontOptions,
                 selected: (
                   settings.widgetFontFamily,
@@ -355,13 +355,13 @@ class SettingsCategoryPage extends ConsumerWidget {
         const SizedBox(height: 16),
         _Section(
           title: '小部件列表',
-          subtitle: '在一个小部件里滚动浏览所有事件',
+          subtitle: '滚动浏览全部事件',
           child: Column(
             children: [
               _SettingSwitch(
                 icon: Icons.view_agenda_outlined,
                 title: '事件列表模式',
-                subtitle: '显示全部事件的滚动列表，关闭后回到单事件卡片',
+                subtitle: '显示全部事件列表',
                 value: settings.widgetListMode,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetListMode: value),
@@ -379,27 +379,27 @@ class SettingsCategoryPage extends ConsumerWidget {
       SettingsCategory.data => [
         _Section(
           title: '数据管理',
-          subtitle: '导出、导入或清除本地数据',
+          subtitle: '导出、导入与清除',
           child: Column(
             children: [
               _SettingsActionTile(
                 icon: Icons.upload_file_outlined,
                 title: '导出数据',
-                subtitle: '将全部事件复制到剪贴板，可粘贴到备忘录备份',
+                subtitle: '复制到剪贴板备份',
                 onTap: () => _exportData(context, ref),
               ),
               const _InsetDivider(),
               _SettingsActionTile(
                 icon: Icons.download_outlined,
                 title: '导入数据',
-                subtitle: '从剪贴板读取备份并合并到当前列表',
+                subtitle: '从剪贴板导入备份',
                 onTap: () => _importData(context, ref),
               ),
               const _InsetDivider(),
               _SettingsActionTile(
                 icon: Icons.delete_sweep_outlined,
                 title: '清除所有事件',
-                subtitle: '删除全部事件及其提醒，可撤销',
+                subtitle: '删除全部并可撤销',
                 onTap: () => _clearAllData(context, ref),
               ),
             ],
@@ -415,7 +415,7 @@ class SettingsCategoryPage extends ConsumerWidget {
               _SettingSwitch(
                 icon: Icons.system_update_outlined,
                 title: '自动检测更新',
-                subtitle: '启动后每天最多向 GitHub 仓库查询一次最新发布',
+                subtitle: '启动时自动查询最新版',
                 value: settings.autoCheckUpdate,
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(autoCheckUpdate: value),
@@ -440,13 +440,13 @@ class SettingsCategoryPage extends ConsumerWidget {
               _SettingsActionTile(
                 icon: Icons.privacy_tip_outlined,
                 title: '数据仅保存在本机',
-                subtitle: '无账号、无服务端，删除应用前请先导出备份',
+                subtitle: '无账号无服务端，卸载前先备份',
               ),
               const _InsetDivider(),
               _SettingsActionTile(
                 icon: Icons.code_rounded,
                 title: 'github.com/jiuxina/ying',
-                subtitle: '开源仓库，欢迎 Star 与 Issues 反馈',
+                subtitle: '开源仓库，欢迎反馈',
                 onTap: () =>
                     _copyLink(context, 'https://github.com/jiuxina/ying'),
               ),

@@ -46,7 +46,7 @@ class EventDetailPage extends ConsumerWidget {
             'zh_CN',
           ).format(current.targetDate);
     final reminderText = current.reminders.isEmpty
-        ? '不提醒'
+        ? '无'
         : current.reminders
               .where((reminder) => reminder.enabled)
               .map(
@@ -93,11 +93,9 @@ class EventDetailPage extends ConsumerWidget {
                             current.statusLabel,
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: current.isCompleted
-                                      ? Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant
-                                      : Theme.of(context).colorScheme.primary,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                           ),
                           const SizedBox(height: 8),
@@ -190,15 +188,7 @@ class EventDetailPage extends ConsumerWidget {
                           _DetailRow(
                             icon: Icons.repeat_rounded,
                             label: '重复',
-                            value: current.repeatsYearly ? '每年' : '不重复',
-                          ),
-                          _DetailRow(
-                            icon: Icons.schedule_outlined,
-                            label: '创建时间',
-                            value: DateFormat(
-                              'yyyy年M月d日 HH:mm',
-                              'zh_CN',
-                            ).format(current.createdAt),
+                            value: current.repeatsYearly ? '每年' : '无',
                           ),
                         ],
                       ),
@@ -232,6 +222,16 @@ class EventDetailPage extends ConsumerWidget {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 14),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '创建于 ${DateFormat('yyyy年M月d日 HH:mm', 'zh_CN').format(current.createdAt)}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 20),
                     LayoutBuilder(
                       builder: (context, constraints) {
@@ -362,8 +362,11 @@ class _DetailRow extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.end,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 13.5,
               ),
             ),
           ),

@@ -403,7 +403,9 @@ class _ModeButton extends StatelessWidget {
               ),
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                color: selected ? scheme.primary : Colors.transparent,
+                color: selected
+                    ? scheme.surfaceContainerHighest
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: ExcludeSemantics(
@@ -413,17 +415,13 @@ class _ModeButton extends StatelessWidget {
                     Icon(
                       icon,
                       size: 17,
-                      color: selected
-                          ? scheme.onPrimary
-                          : scheme.onSurfaceVariant,
+                      color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       label,
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: selected
-                            ? scheme.onPrimary
-                            : scheme.onSurfaceVariant,
+                        color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -494,12 +492,10 @@ class _DayCell extends StatelessWidget {
               'calendar-day-${date.year}-${date.month}-${date.day}',
             ),
             decoration: BoxDecoration(
-              color: selected ? scheme.primary.withValues(alpha: 0.14) : null,
+              color: selected ? scheme.surfaceContainerHighest : null,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isToday
-                    ? scheme.primary.withValues(alpha: 0.45)
-                    : Colors.transparent,
+                color: selected ? scheme.outlineVariant : Colors.transparent,
               ),
             ),
             child: Column(
@@ -514,24 +510,35 @@ class _DayCell extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                if (occurrences.isEmpty)
+                if (occurrences.isEmpty && !isToday)
                   const SizedBox(height: 8)
                 else
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      for (final occurrence in occurrences.take(3))
+                      if (isToday && occurrences.isEmpty)
                         Container(
                           width: 6,
                           height: 6,
                           margin: const EdgeInsets.symmetric(horizontal: 1),
                           decoration: BoxDecoration(
-                            color: occurrence.event.isCompleted
-                                ? scheme.outlineVariant
-                                : scheme.primary,
+                            color: scheme.primary,
                             shape: BoxShape.circle,
                           ),
-                        ),
+                        )
+                      else
+                        for (final occurrence in occurrences.take(3))
+                          Container(
+                            width: 6,
+                            height: 6,
+                            margin: const EdgeInsets.symmetric(horizontal: 1),
+                            decoration: BoxDecoration(
+                              color: occurrence.event.isCompleted
+                                  ? scheme.outlineVariant
+                                  : scheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
                       if (occurrences.length > 3)
                         Text(
                           '+${occurrences.length - 3}',
@@ -647,7 +654,9 @@ class _EventRow extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${event.category} · ${event.statusLabel}',
+                          event.isCompleted
+                              ? '已完成'
+                              : '${event.statusLabel} ${event.displayDays} 天',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall

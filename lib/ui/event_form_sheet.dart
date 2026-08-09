@@ -115,15 +115,6 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
                                   letterSpacing: 0,
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                widget.event == null
-                                    ? '收藏一个值得期待的时刻'
-                                    : '调整日期、提醒和显示方式',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
                             ],
                           ),
                         ),
@@ -159,7 +150,7 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
                       icon: Icons.today_outlined,
                       title: '全天事件',
                       value: isAllDay ? '已开启' : '已关闭',
-                      subtitle: '全天事件只记录日期，提醒以当天 09:00 为基准',
+                      subtitle: '只记日期，提醒按 09:00',
                       selected: isAllDay,
                       trailing: GlassSwitch(
                         value: isAllDay,
@@ -174,12 +165,25 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
                       onTap: isAllDay ? _pickDate : _pickDateTime,
                     ),
                     const SizedBox(height: 12),
-                    GlassChoiceTile(
-                      icon: Icons.sell_outlined,
-                      title: '分类标签',
-                      value: category,
-                      selected: true,
-                      onTap: _pickCategory,
+                    Text(
+                      '分类标签',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final value in categories)
+                          _FormCategoryChip(
+                            label: value,
+                            selected: category == value,
+                            onTap: () => setState(() => category = value),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -275,20 +279,6 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
         ),
       ),
     );
-  }
-
-  Future<void> _pickCategory() async {
-    final value = await showModalBottomSheet<String>(
-      context: context,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _FormChoiceSheet<String>(
-        title: '选择分类',
-        value: category,
-        options: categories,
-      ),
-    );
-    if (value != null && mounted) setState(() => category = value);
   }
 
   Future<void> _pickRepeat() async {
@@ -549,11 +539,11 @@ class _EmojiPicker extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: value == emoji
-                        ? scheme.primary.withValues(alpha: 0.14)
+                        ? scheme.surfaceContainerHighest
                         : Colors.transparent,
                     border: Border.all(
                       color: value == emoji
-                          ? scheme.primary.withValues(alpha: 0.45)
+                          ? scheme.outlineVariant
                           : scheme.outlineVariant.withValues(alpha: 0.45),
                     ),
                   ),
@@ -664,12 +654,12 @@ class _DirectionOption extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
             color: selected
-                ? scheme.primary.withValues(alpha: 0.12)
+                ? scheme.surfaceContainerHighest
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(15),
             border: Border.all(
               color: selected
-                  ? scheme.primary.withValues(alpha: 0.34)
+                  ? scheme.outlineVariant
                   : scheme.outlineVariant.withValues(alpha: 0.55),
             ),
           ),
@@ -679,17 +669,61 @@ class _DirectionOption extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: selected ? scheme.primary : scheme.onSurfaceVariant,
+                color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
               ),
               const SizedBox(height: 3),
               Text(
                 label,
                 style: TextStyle(
-                  color: selected ? scheme.primary : scheme.onSurfaceVariant,
+                  color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FormCategoryChip extends StatelessWidget {
+  const _FormCategoryChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '分类：$label',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: motionDuration(context, const Duration(milliseconds: 180)),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? scheme.surfaceContainerHighest
+                : Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: scheme.outlineVariant),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            ),
           ),
         ),
       ),

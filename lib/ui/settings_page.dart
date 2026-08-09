@@ -40,11 +40,11 @@ extension SettingsCategoryInfo on SettingsCategory {
   };
 
   String get subtitle => switch (this) {
-    SettingsCategory.appearance => '主题、透明度与动画',
-    SettingsCategory.widget => '样式、背景、内容与预览',
-    SettingsCategory.notifications => '权限状态与调度诊断',
-    SettingsCategory.data => '导出、导入与清除',
-    SettingsCategory.updateAbout => '版本、更新与仓库',
+    SettingsCategory.appearance => '主题与动画',
+    SettingsCategory.widget => '样式与内容',
+    SettingsCategory.notifications => '权限与提醒',
+    SettingsCategory.data => '备份与清除',
+    SettingsCategory.updateAbout => '版本与更新',
   };
 }
 
@@ -93,13 +93,6 @@ class SettingsPage extends ConsumerWidget {
                 style: Theme.of(context).textTheme.displaySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                '让萤更像你。',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 24),

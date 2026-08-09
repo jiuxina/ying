@@ -181,12 +181,12 @@ class _StyleOption extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             decoration: BoxDecoration(
               color: selected
-                  ? scheme.primary.withValues(alpha: 0.10)
+                  ? scheme.surfaceContainerHighest
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: selected
-                    ? scheme.primary.withValues(alpha: 0.38)
+                    ? scheme.outlineVariant
                     : scheme.outlineVariant.withValues(alpha: 0.5),
               ),
             ),
@@ -197,14 +197,14 @@ class _StyleOption extends StatelessWidget {
                   Icon(
                     icon,
                     size: 17,
-                    color: selected ? scheme.primary : scheme.onSurfaceVariant,
+                    color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     label,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: selected
-                          ? scheme.primary
+                          ? scheme.onSurface
                           : scheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
@@ -519,15 +519,7 @@ class _CategoryCard extends StatelessWidget {
         onTap: onTap,
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: scheme.primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(category.icon, color: scheme.primary, size: 20),
-            ),
+            Icon(category.icon, color: scheme.onSurfaceVariant, size: 20),
             const SizedBox(width: 13),
             Expanded(
               child: Column(

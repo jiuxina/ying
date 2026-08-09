@@ -41,29 +41,29 @@ class EventFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final hasActiveFilters = incompleteOnly || selectedCategory != null;
     return Column(
       children: [
         Row(
           children: [
-            Expanded(
-              child: _FilterButton(
-                icon: Icons.search_rounded,
-                label: searchExpanded ? '收起搜索' : '搜索事件',
-                selected: searchExpanded || controller.text.isNotEmpty,
-                onTap: onToggleSearch,
-              ),
+            _FilterButton(
+              icon: Icons.search_rounded,
+              tooltip: searchExpanded ? '收起搜索' : '搜索事件',
+              selected: searchExpanded || controller.text.isNotEmpty,
+              onTap: onToggleSearch,
             ),
             const SizedBox(width: 8),
             _FilterButton(
               icon: Icons.swap_vert_rounded,
-              label: _sortLabel(sortMode),
+              tooltip: _sortLabel(sortMode),
               onTap: () => _showSortSheet(context),
             ),
             const SizedBox(width: 8),
             _FilterButton(
               icon: Icons.tune_rounded,
-              label: incompleteOnly || selectedCategory != null ? '筛选中' : '筛选',
-              selected: incompleteOnly || selectedCategory != null,
+              tooltip: hasActiveFilters ? '筛选中' : '筛选',
+              selected: hasActiveFilters,
+              showDot: hasActiveFilters,
               onTap: () => _showFilterSheet(context),
             ),
           ],
@@ -93,26 +93,6 @@ class EventFilterBar extends StatelessWidget {
                 )
               : const SizedBox.shrink(),
         ),
-        if (categories.isNotEmpty) ...[
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 36,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: categories.length + 1,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final category = index == 0 ? null : categories[index - 1];
-                final selected = selectedCategory == category;
-                return _CategoryChip(
-                  label: category ?? '全部',
-                  selected: selected,
-                  onTap: () => onCategoryChanged(category),
-                );
-              },
-            ),
-          ),
-        ],
         if (hasFilters) ...[
           const SizedBox(height: 8),
           Align(
@@ -121,7 +101,9 @@ class EventFilterBar extends StatelessWidget {
               onPressed: onClear,
               icon: const Icon(Icons.filter_alt_off_rounded, size: 17),
               label: const Text('清除筛选'),
-              style: TextButton.styleFrom(foregroundColor: scheme.primary),
+              style: TextButton.styleFrom(
+                foregroundColor: scheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],
@@ -173,14 +155,16 @@ class EventFilterBar extends StatelessWidget {
 class _FilterButton extends StatelessWidget {
   const _FilterButton({
     required this.icon,
-    required this.label,
+    required this.tooltip,
     required this.onTap,
     this.selected = false,
+    this.showDot = false,
   });
   final IconData icon;
-  final String label;
+  final String tooltip;
   final VoidCallback onTap;
   final bool selected;
+  final bool showDot;
 
   @override
   Widget build(BuildContext context) {
@@ -188,46 +172,43 @@ class _FilterButton extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: label,
-      child: Material(
-        color: selected ? scheme.primary : scheme.surface,
-        borderRadius: BorderRadius.circular(15),
-        child: InkWell(
-          onTap: onTap,
+      label: tooltip,
+      child: Tooltip(
+        message: tooltip,
+        child: Material(
+          color: selected
+              ? scheme.surfaceContainerHighest.withValues(alpha: 0.6)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(15),
-          // 按钮可能处于无界宽度约束下（Row 的非弹性子项），
-          // IntrinsicWidth 保证内部 Row 的 Flexible 文本始终拿到有限宽度。
-          child: IntrinsicWidth(
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 44),
-              padding: const EdgeInsets.symmetric(horizontal: 11),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(
-                  color: selected ? scheme.primary : scheme.outlineVariant,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(15),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
                   Icon(
                     icon,
-                    size: 18,
+                    size: 20,
                     color: selected
-                        ? scheme.onPrimary
+                        ? scheme.onSurface
                         : scheme.onSurfaceVariant,
                   ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      label,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: selected ? scheme.onPrimary : scheme.onSurface,
-                        fontWeight: FontWeight.w600,
+                  if (showDot)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: scheme.primary,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -263,18 +244,18 @@ class _CategoryChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
             color: selected
-                ? scheme.primary
+                ? scheme.surfaceContainerHighest
                 : Theme.of(context).scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected ? scheme.primary : scheme.outlineVariant,
+              color: scheme.outlineVariant,
             ),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? scheme.onPrimary : scheme.onSurfaceVariant,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
         ),

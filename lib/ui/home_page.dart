@@ -615,7 +615,7 @@ class _UpdateBanner extends StatelessWidget {
         children: [
           Icon(
             Icons.system_update_outlined,
-            color: Theme.of(context).colorScheme.primary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             size: 19,
           ),
           const SizedBox(width: 12),
@@ -659,41 +659,18 @@ class _HeroHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '萤',
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                  Container(
-                    width: 6,
-                    height: 6,
-                    margin: const EdgeInsets.only(left: 8, bottom: 8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.55),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 5),
               Text(
-                active == 0 ? '收藏下一个值得期待的时刻' : '$active 个日子，正在靠近',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                '萤',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                active == 0 ? '还没有日子' : '$active 个待完成',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -746,11 +723,10 @@ class _EmptyState extends StatelessWidget {
               ),
               const SizedBox(height: 9),
               Text(
-                '考试、旅行、纪念日，\n把重要时刻收藏在这里。',
+                '考试、旅行、纪念日，都收藏在这里。',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.5,
                 ),
               ),
               const SizedBox(height: 20),
@@ -838,11 +814,19 @@ class _GlassTabBar extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: GlassIconButton(
-                  icon: Icons.add_rounded,
-                  selected: true,
-                  tooltip: '新建倒数日',
-                  onPressed: onAdd,
+                child: Tooltip(
+                  message: '新建倒数日',
+                  child: SizedBox.square(
+                    dimension: 46,
+                    child: FilledButton(
+                      onPressed: onAdd,
+                      style: FilledButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        shape: const CircleBorder(),
+                      ),
+                      child: const Icon(Icons.add_rounded, size: 24),
+                    ),
+                  ),
                 ),
               ),
               Expanded(
@@ -877,7 +861,7 @@ class _TabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = selected
-        ? Theme.of(context).colorScheme.primary
+        ? Theme.of(context).colorScheme.onSurface
         : Theme.of(context).colorScheme.onSurfaceVariant;
     return InkWell(
       onTap: onTap,
@@ -922,11 +906,19 @@ class _GlassRail extends StatelessWidget {
         width: 72,
         child: Column(
           children: [
-            GlassIconButton(
-              icon: Icons.add_rounded,
-              selected: true,
-              onPressed: onAdd,
-              tooltip: '新建倒数日',
+            Tooltip(
+              message: '新建倒数日',
+              child: SizedBox.square(
+                dimension: 46,
+                child: FilledButton(
+                  onPressed: onAdd,
+                  style: FilledButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    shape: const CircleBorder(),
+                  ),
+                  child: const Icon(Icons.add_rounded, size: 24),
+                ),
+              ),
             ),
             const Spacer(),
             _RailButton(
@@ -972,7 +964,6 @@ class _RailButton extends StatelessWidget {
         width: 62,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? GlassPalette.blue.withValues(alpha: 0.14) : null,
           borderRadius: BorderRadius.circular(22),
         ),
         child: Column(
@@ -980,7 +971,7 @@ class _RailButton extends StatelessWidget {
             Icon(
               icon,
               color: selected
-                  ? GlassPalette.blue
+                  ? Theme.of(context).colorScheme.onSurface
                   : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 5),
@@ -988,7 +979,7 @@ class _RailButton extends StatelessWidget {
               label,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: selected
-                    ? GlassPalette.blue
+                    ? Theme.of(context).colorScheme.onSurface
                     : Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               ),

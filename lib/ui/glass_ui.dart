@@ -98,6 +98,11 @@ class GlassPalette {
   static const mint = Color(0xFF16A085);
   static const pink = Color(0xFFDB2777);
   static const orange = Color(0xFFD97706);
+  static const upcoming = Color(0xFFB45309);
+  static const upcomingDark = Color(0xFFFBBF24);
+  static const overdue = Color(0xFFDC2626);
+  static const overdueDark = Color(0xFFF87171);
+  static const yearlyDark = Color(0xFF818CF8);
 }
 
 class LiquidBackground extends StatelessWidget {
@@ -116,10 +121,10 @@ class LiquidBackground extends StatelessWidget {
             ? null
             : RadialGradient(
                 center: const Alignment(0.86, -0.92),
-                radius: 1.15,
-                colors: dark
-                    ? const [Color(0x182B3A26), Color(0x00101115)]
-                    : const [Color(0x140F766E), Color(0x00FCFBF9)],
+        radius: 1.15,
+        colors: dark
+                    ? const [Color(0x122B3A26), Color(0x00101115)]
+                    : const [Color(0x120F766E), Color(0x00F5F4F0)],
               ),
       ),
       child: child,
@@ -135,7 +140,7 @@ class GlassSurface extends StatelessWidget {
     this.radius = 22,
     this.onTap,
     this.opacity,
-    this.borderOpacity,
+    this.borderOpacity = 0.55,
     this.glass = false,
   });
 
@@ -218,11 +223,9 @@ class GlassIconButton extends StatelessWidget {
       visualDensity: VisualDensity.compact,
       style: IconButton.styleFrom(
         foregroundColor: selected
-            ? scheme.primary
+            ? scheme.onSurface
             : color ?? scheme.onSurfaceVariant,
-        backgroundColor: selected
-            ? scheme.primary.withValues(alpha: 0.10)
-            : Colors.transparent,
+        backgroundColor: Colors.transparent,
         minimumSize: const Size.square(44),
       ),
       icon: Icon(icon, size: 21),
@@ -326,11 +329,13 @@ class GlassChoiceTile extends StatelessWidget {
             ),
             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
             decoration: BoxDecoration(
-              color: selected ? scheme.primary.withValues(alpha: 0.10) : null,
+              color: selected
+                  ? scheme.surfaceContainerHighest.withValues(alpha: 0.55)
+                  : null,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: selected
-                    ? scheme.primary.withValues(alpha: 0.32)
+                    ? scheme.outlineVariant
                     : scheme.outlineVariant.withValues(alpha: 0.45),
               ),
             ),
@@ -339,7 +344,7 @@ class GlassChoiceTile extends StatelessWidget {
                 Icon(
                   icon,
                   size: 20,
-                  color: selected ? scheme.primary : scheme.onSurfaceVariant,
+                  color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 11),
                 Expanded(
@@ -376,7 +381,7 @@ class GlassChoiceTile extends StatelessWidget {
                   Icon(
                     Icons.check_circle_rounded,
                     size: 19,
-                    color: scheme.primary,
+                    color: scheme.onSurface,
                   ),
                 ],
               ],
@@ -406,20 +411,36 @@ class GlassStatusPill extends StatelessWidget {
     final accent = color ?? scheme.primary;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.11),
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: accent.withValues(alpha: 0.25)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        child: Text(
-          label,
-          maxLines: maxLines,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: accent,
-            fontWeight: FontWeight.w700,
-          ),
+        padding: const EdgeInsets.fromLTRB(9, 5, 10, 5),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: accent,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
