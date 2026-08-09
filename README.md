@@ -316,6 +316,8 @@ Flutter 官方支持通过 Android Gradle Plugin 的 `abiFilters` 限定 `x86_64
 
 Android 桌面小部件的个性化路线图、开发顺序、注意事项与完成标记见 [docs/update-plan.md](docs/update-plan.md)。
 
+2.3.0 全面代码审查报告见 [docs/software-review-2.3.0.md](docs/software-review-2.3.0.md)。
+
 ---
 
 ## 版本计划
