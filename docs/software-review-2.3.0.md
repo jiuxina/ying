@@ -30,6 +30,22 @@
 
 严重度统计：P1 × 3，P2 × 4，P3 × 8，建议项 × 5。
 
+### 修复状态（2026-08-09 收尾）
+
+| 编号 | 状态 | 说明 |
+| --- | --- | --- |
+| P1-01 iOS 小部件跳转 | 已修复 | iOS 统一为 `ying://open` / `ying://add`，Flutter 侧兼容旧 host `event` / `new` |
+| P1-02 测试挂起 | 已修复 | 启动动作处理器不再等待 UI Future；测试装置补齐 locale 初始化与数据加载；完整套件 `--concurrency=1` 123 项通过 |
+| P1-03 Release 签名 | 已修复 | 移除 debug 签名；无密钥时 release 构建明确失败；CI 增加 Secrets 注入与 `apksigner` 校验 |
+| P2-01 夏令时天数 | 已修复 | 天数计算改为 UTC 零点归一化，新增纽约 DST 回归测试 |
+| P2-02 坏数据容错 | 已修复 | 解析异常全量兜底，`decodeList` 增加结构校验，新增 3 个坏数据用例 |
+| P2-03 iOS 默认色/索引 | 部分修复 | 默认色与占位色已对齐；每实例独立索引受 WidgetKit AppIntent 无实例 ID 限制，保留为已知限制 |
+| P2-04 启动 URI 防失控 | 已修复 | 去重表上限 64、冷启动重试上限 20 次、旧 host 兼容 |
+| P3 清单 | 已修复 | 通知权限缓存、双重压缩、SnackBar 深浅色、负字距归零、Gradle 模板注释清理等 |
+| 依赖升级 | 延后 | 已审计：riverpod 3.x、home_widget 0.9.x、flutter_local_notifications 22.x 需 API 迁移，设回退门槛另行专项升级 |
+| 大文件拆分 | 已修复 | Kotlin 协议拆到 `WidgetProtocol.kt`；Dart 预览画家与设置页控件拆为 `part` 文件 |
+| 集成测试 | 已修复 | 新增 `integration_test` 冒烟测试并在模拟器通过 |
+
 ## 2. 审查范围与方法
 
 ### 2.1 覆盖范围
@@ -48,8 +64,7 @@
 | 命令 | 结果 |
 | --- | --- |
 | `flutter analyze` | 通过，0 issues |
-| `flutter test`（完整套件） | 挂起/超时，两次复现；被用户中断后停止继续调试 |
-| 分文件测试（除挂起文件外） | 109 项通过，见第 7 节 |
+| `flutter test --concurrency=1`（完整套件） | 修复后 123 项全部通过 |
 | `git ls-files` + `.gitignore` 检查 | `tools/vision_bridge/.env` 未被 Git 跟踪，已正确忽略 |
 
 未执行项：
@@ -276,7 +291,7 @@ try {
 | `ui_components_test.dart` | 26 项通过 |
 | `widget_interaction_test.dart` | 8 项通过 |
 
-合计 109 项通过；`widget_launch_actions_test.dart` 挂起（P1-02）。
+修复后完整套件使用 `flutter test --concurrency=1` 运行，123 项全部通过；`widget_launch_actions_test.dart` 已恢复绿灯。
 
 ### 5.2 覆盖亮点
 
@@ -289,10 +304,10 @@ try {
 
 ### 5.3 覆盖缺口
 
-- `NotificationService` 的调度/取消/诊断没有单测；
-- Android Kotlin 与 iOS Swift 原生代码没有自动化测试；
-- DST、坏数据、iOS URL host 等本次发现的问题没有测试；
-- 没有 E2E/集成测试覆盖“App 修改事件 -> 原生小部件同步 -> 点击小部件回跳”。
+- `NotificationService` 的调度/取消/诊断仍无单测；
+- iOS Swift 原生代码仍需 macOS 环境构建验证；
+- 已新增 Android Kotlin 纯函数单测（39 项）、DST/坏数据/iOS URL host 测试与集成冒烟测试；
+- 仍无覆盖“App 修改事件 -> 原生小部件同步 -> 点击小部件回跳”的完整 E2E。
 
 ## 6. 安全与隐私评估
 
