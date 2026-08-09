@@ -42,7 +42,7 @@ class VisionBridgeTests(unittest.TestCase):
                 "id": "chatcmpl-1",
                 "object": "chat.completion",
                 "created": 1,
-                "model": "seed-2.1-turbo",
+                "model": "sensenova-6.7-flash-lite",
                 "choices": [
                     {
                         "index": 0,
@@ -58,9 +58,9 @@ class VisionBridgeTests(unittest.TestCase):
         )
         request = mock_urlopen.call_args.args[0]
         body = json.loads(request.data.decode("utf-8"))
-        self.assertEqual(request.full_url, "https://tokenrhythm.studio/v1/chat/completions")
+        self.assertEqual(request.full_url, "https://token.sensenova.cn/v1/chat/completions")
         self.assertEqual(request.headers["Authorization"], "Bearer test-key")
-        self.assertEqual(body["model"], "seed-2.1-turbo")
+        self.assertEqual(body["model"], "sensenova-6.7-flash-lite")
         self.assertEqual(body["stream"], False)
         content = body["messages"][0]["content"]
         self.assertEqual(content[0]["text"], "图里有什么")

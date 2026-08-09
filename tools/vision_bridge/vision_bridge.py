@@ -25,12 +25,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-DEFAULT_BASE_URL = "https://tokenrhythm.studio/v1"
-DEFAULT_MODEL = "seed-2.1-turbo"
+DEFAULT_BASE_URL = "https://token.sensenova.cn/v1"
+DEFAULT_MODEL = "sensenova-6.7-flash-lite"
 DEFAULT_PROMPT = "请详细描述这张图片。"
 DEFAULT_TIMEOUT = 120
 MAX_BODY_BYTES = 25 * 1024 * 1024
-ENV_KEY_NAMES = ("TOKENRHYTHM_API_KEY", "OPENAI_API_KEY")
+ENV_KEY_NAMES = ("SENSENOVA_API_KEY", "TOKENRHYTHM_API_KEY", "OPENAI_API_KEY")
 
 
 def _env_file_path() -> Path:
@@ -162,7 +162,7 @@ def describe_image(
     key = find_api_key(api_key)
     if not key:
         raise RuntimeError(
-            "未配置 API Key：请设置 TOKENRHYTHM_API_KEY 环境变量，"
+            "未配置 API Key：请设置 SENSENOVA_API_KEY 或 TOKENRHYTHM_API_KEY 环境变量，"
             "或在 .env 文件、--api-key 参数中配置。"
         )
     messages = [{"role": "user", "content": build_vision_content(image, prompt)}]
@@ -731,7 +731,7 @@ class VisionBridgeHandler(BaseHTTPRequestHandler):
         api_key = payload.get("api_key") or self.config["api_key"]
         if not find_api_key(api_key):
             raise RuntimeError(
-                "未配置 API Key：请设置 TOKENRHYTHM_API_KEY 环境变量，"
+                "未配置 API Key：请设置 SENSENOVA_API_KEY 或 TOKENRHYTHM_API_KEY 环境变量，"
                 "或在 .env 文件、请求 api_key 字段中配置。"
             )
         model = payload.get("model") or self.config["model"]
@@ -781,7 +781,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--serve", action="store_true", help="启动本地服务（网页 + OpenAI 兼容转发）")
     parser.add_argument("--host", default="127.0.0.1", help="服务监听地址")
     parser.add_argument("--port", type=int, default=8765, help="服务监听端口")
-    parser.add_argument("--version", action="version", version="vision-bridge 1.0.0")
+    parser.add_argument("--version", action="version", version="vision-bridge 1.1.0")
     return parser
 
 
