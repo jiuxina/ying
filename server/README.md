@@ -31,7 +31,8 @@ wrangler deploy
 部署完成后验证：
 
 ```bash
-curl https://<你的子域名>.workers.dev/v1/health
+set WORKER_URL=https://ying-verify.xxx.workers.dev
+node tools/check_worker.js
 ```
 
 ## 接口
