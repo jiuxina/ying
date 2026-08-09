@@ -5,6 +5,16 @@ import 'event_repeat.dart';
 
 enum CountDirection { auto, countdown, countup }
 
+/// 按日历日计算两个本地日期之间的天数差。
+///
+/// 统一用 UTC 零点比较，避免夏令时切换日（23/25 小时）导致
+/// [DateTime.difference] 的 `inDays` 向下取整出现差一天。
+int calendarDayDelta(DateTime from, DateTime to) {
+  final start = DateTime.utc(from.year, from.month, from.day);
+  final end = DateTime.utc(to.year, to.month, to.day);
+  return end.difference(start).inDays;
+}
+
 class CountdownEvent {
   const CountdownEvent({
     required this.id,
@@ -51,8 +61,7 @@ class CountdownEvent {
 
   int dayDelta([DateTime? now]) {
     final today = now ?? DateTime.now();
-    final start = DateTime(today.year, today.month, today.day);
-    return dateOnly.difference(start).inDays;
+    return calendarDayDelta(today, targetDate);
   }
 
   bool get isCountingUp =>
@@ -173,9 +182,18 @@ class CountdownEvent {
       jsonEncode(events.map((event) => event.toJson()).toList());
 
   static List<CountdownEvent> decodeList(String source) {
-    final values = jsonDecode(source) as List<dynamic>;
+    final decoded = jsonDecode(source);
+    if (decoded is! List) {
+      throw const FormatException('事件数据应为 JSON 数组');
+    }
+    final values = decoded;
     return values
-        .map((value) => CountdownEvent.fromJson(value as Map<String, dynamic>))
+        .map((value) {
+          if (value is! Map<String, dynamic>) {
+            throw const FormatException('事件条目应为 JSON 对象');
+          }
+          return CountdownEvent.fromJson(value);
+        })
         .toList();
   }
 }

@@ -1,12 +1,16 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 import 'package:ying/models/app_settings.dart';
 import 'package:ying/models/countdown_event.dart';
 import 'package:ying/models/event_reminder.dart';
 import 'package:ying/models/event_repeat.dart';
 import 'package:ying/models/event_sort_mode.dart';
 import 'package:ying/services/notification_service.dart';
+import 'package:ying/services/storage_service.dart';
 import 'package:ying/utils/event_date_utils.dart';
 import 'package:ying/utils/event_query.dart';
 import 'package:ying/utils/event_repeat_utils.dart';
@@ -260,6 +264,60 @@ void main() {
       expect(addCalendarMonth(DateTime(2025, 1, 31)), DateTime(2025, 2, 28));
       expect(addCalendarMonth(DateTime(2024, 1, 31)), DateTime(2024, 2, 29));
       expect(addCalendarMonth(DateTime(2026, 12, 31)), DateTime(2027, 1, 31));
+    });
+  });
+
+  group('calendar day delta is DST safe', () {
+    setUpAll(tz_data.initializeTimeZones);
+
+    test('spring-forward day still counts one calendar day', () {
+      final ny = tz.getLocation('America/New_York');
+      final before = tz.TZDateTime(ny, 2026, 3, 7, 12);
+      final after = tz.TZDateTime(ny, 2026, 3, 8, 12);
+      expect(after.difference(before).inDays, 0, reason: '23h 本地差值是问题根源');
+      expect(calendarDayDelta(before, after), 1);
+    });
+
+    test('fall-back day still counts one calendar day', () {
+      final ny = tz.getLocation('America/New_York');
+      final before = tz.TZDateTime(ny, 2026, 11, 1, 12);
+      final after = tz.TZDateTime(ny, 2026, 11, 2, 12);
+      expect(calendarDayDelta(before, after), 1);
+    });
+
+    test('CountdownEvent.dayDelta uses calendar days for DST zones', () {
+      final ny = tz.getLocation('America/New_York');
+      final event = CountdownEvent(
+        id: 'dst-event',
+        title: 'DST 事件',
+        targetDate: tz.TZDateTime(ny, 2026, 3, 8, 9),
+        category: '其他',
+        createdAt: DateTime(2026, 1, 1),
+      );
+      expect(event.dayDelta(tz.TZDateTime(ny, 2026, 3, 7, 12)), 1);
+    });
+  });
+
+  group('storage robustness', () {
+    test('invalid JSON falls back to an empty list', () async {
+      SharedPreferences.setMockInitialValues({
+        'countdown_events_v1': '{broken',
+      });
+      expect(await StorageService().loadEvents(), isEmpty);
+    });
+
+    test('non-array payload falls back to an empty list', () async {
+      SharedPreferences.setMockInitialValues({
+        'countdown_events_v1': '{"title":"oops"}',
+      });
+      expect(await StorageService().loadEvents(), isEmpty);
+    });
+
+    test('wrong field types fall back to an empty list', () async {
+      SharedPreferences.setMockInitialValues({
+        'countdown_events_v1': '[{"id": 1, "title": "bad"}]',
+      });
+      expect(await StorageService().loadEvents(), isEmpty);
     });
   });
 }

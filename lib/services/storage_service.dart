@@ -41,7 +41,7 @@ class StorageService {
     if (raw == null || raw.isEmpty) return const [];
     try {
       return CountdownEvent.decodeList(raw);
-    } on FormatException {
+    } catch (_) {
       return const [];
     }
   }

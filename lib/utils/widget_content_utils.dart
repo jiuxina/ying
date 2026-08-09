@@ -131,11 +131,7 @@ const _builtInQuotes = <String>[
 /// 每日一句 / 备注轮播：有备注时按天在备注与内置句子间切换。
 String widgetQuoteText(CountdownEvent? event, DateTime now) {
   final note = event?.note.trim() ?? '';
-  final dayNumber = DateTime(
-    now.year,
-    now.month,
-    now.day,
-  ).difference(DateTime(2000)).inDays;
+  final dayNumber = calendarDayDelta(DateTime(2000), now);
   if (note.isNotEmpty && dayNumber.isEven) return note;
   return _builtInQuotes[dayNumber.abs() % _builtInQuotes.length];
 }
