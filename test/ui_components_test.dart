@@ -5,17 +5,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ying/app_version.dart';
 import 'package:ying/models/app_settings.dart';
 import 'package:ying/models/countdown_event.dart';
 import 'package:ying/models/event_sort_mode.dart';
 import 'package:ying/services/storage_service.dart';
 import 'package:ying/state/app_controller.dart';
+import 'package:ying/ui/app_theme.dart';
 import 'package:ying/ui/event_card.dart';
 import 'package:ying/ui/event_detail_page.dart';
 import 'package:ying/ui/event_filter_bar.dart';
 import 'package:ying/ui/event_form_sheet.dart';
 import 'package:ying/ui/glass_ui.dart';
+import 'package:ying/ui/home_page.dart';
 import 'package:ying/ui/settings_page.dart';
 import 'package:ying/ui/widget_preview_section.dart';
 
@@ -429,11 +432,14 @@ void main() {
       );
     }
 
-    Widget buildSettingsPage(AppController controller) {
+    Widget buildSettingsPage(
+      AppController controller, {
+      SettingsCategory category = SettingsCategory.appearance,
+    }) {
       return glassApp(
         ProviderScope(
           overrides: [appControllerProvider.overrideWith((ref) => controller)],
-          child: const Scaffold(body: SettingsPage()),
+          child: SettingsCategoryPage(category: category),
         ),
       );
     }
@@ -447,11 +453,13 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('整行可切换玻璃开关并持久化', (tester) async {
+    testWidgets('外观设置开关整行可切换并持久化', (tester) async {
       phoneViewport(tester);
       final saved = <AppSettings>[];
       final controller = buildController(saved);
-      await tester.pumpWidget(buildSettingsPage(controller));
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.appearance),
+      );
       await flushPlatform(tester);
 
       // 点击标题文字所在行即可切换（整行可点）。
@@ -463,10 +471,29 @@ void main() {
       await tester.tap(find.text('减少透明度'));
       await tester.pumpAndSettle();
       expect(controller.state.settings.reduceTransparency, isTrue);
-      // 阶段 2 后开关数量增加，只校验可见的基础开关与新内容开关。
+      expect(find.byType(GlassSwitch), findsNWidgets(2));
+    });
+
+    testWidgets('小部件内容开关渲染并持久化', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.widget),
+      );
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.text('事件图标'), 400);
+      await tester.ensureVisible(find.text('事件图标'));
+      await tester.pump(const Duration(milliseconds: 400));
       expect(find.byType(GlassSwitch), findsAtLeastNWidgets(5));
       expect(find.text('事件图标'), findsOneWidget);
       expect(find.text('进度百分比'), findsOneWidget);
+
+      await tester.tap(find.text('事件图标'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(controller.state.settings.widgetShowIcon, isTrue);
+      expect(saved.last.widgetShowIcon, isTrue);
     });
 
     testWidgets('切换小部件样式预设并持久化', (tester) async {
@@ -474,7 +501,9 @@ void main() {
       final saved = <AppSettings>[];
       final controller = buildController(saved);
       final handle = tester.ensureSemantics();
-      await tester.pumpWidget(buildSettingsPage(controller));
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.widget),
+      );
       await flushPlatform(tester);
 
       await tester.tap(find.bySemanticsLabel('小部件样式：贴纸'));
@@ -488,25 +517,19 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('主题选择与色卡选择带选中语义', (tester) async {
+    testWidgets('主题选择带选中语义', (tester) async {
       phoneViewport(tester);
       final saved = <AppSettings>[];
       final controller = buildController(saved);
       final handle = tester.ensureSemantics();
-      await tester.pumpWidget(buildSettingsPage(controller));
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.appearance),
+      );
       await flushPlatform(tester);
 
       await tester.tap(find.text('深色'));
       await tester.pumpAndSettle();
       expect(controller.state.settings.themeMode, ThemeMode.dark);
-
-      // 色卡分组在竖屏视口内同屏可见，直接点选。
-      await tester.tap(find.bySemanticsLabel('主色调：粉色'));
-      await tester.pumpAndSettle();
-      expect(
-        controller.state.settings.widgetColor,
-        GlassPalette.pink.toARGB32(),
-      );
 
       // 选中态语义可被读屏器识别。
       final themeNode = tester.getSemantics(find.bySemanticsLabel('主题：深色'));
@@ -514,12 +537,35 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('色卡选择持久化', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.widget),
+      );
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.bySemanticsLabel('主色调：粉色'), 300);
+      await tester.ensureVisible(find.bySemanticsLabel('主色调：粉色'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.bySemanticsLabel('主色调：粉色'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        controller.state.settings.widgetColor,
+        GlassPalette.pink.toARGB32(),
+      );
+      expect(saved.last.widgetColor, GlassPalette.pink.toARGB32());
+    });
+
     testWidgets('单位文案与数字字体预设持久化', (tester) async {
       phoneViewport(tester);
       final saved = <AppSettings>[];
       final controller = buildController(saved);
       final handle = tester.ensureSemantics();
-      await tester.pumpWidget(buildSettingsPage(controller));
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.widget),
+      );
       await flushPlatform(tester);
 
       await tester.scrollUntilVisible(find.bySemanticsLabel('单位文案：只剩'), 300);
@@ -544,7 +590,9 @@ void main() {
       phoneViewport(tester);
       final saved = <AppSettings>[];
       final controller = buildController(saved);
-      await tester.pumpWidget(buildSettingsPage(controller));
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.widget),
+      );
       await flushPlatform(tester);
 
       await tester.scrollUntilVisible(find.text('事件列表模式'), 300);
@@ -560,7 +608,9 @@ void main() {
       phoneViewport(tester);
       final saved = <AppSettings>[];
       final controller = buildController(saved);
-      await tester.pumpWidget(buildSettingsPage(controller));
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.notifications),
+      );
       await flushPlatform(tester);
 
       await tester.scrollUntilVisible(find.text('刷新状态'), 300);
@@ -582,19 +632,31 @@ void main() {
       expect(find.text('通知权限'), findsOneWidget);
     });
 
-    testWidgets('数据管理与关于分区渲染', (tester) async {
+    testWidgets('数据管理分区渲染', (tester) async {
       phoneViewport(tester);
       final saved = <AppSettings>[];
       final controller = buildController(saved);
-      await tester.pumpWidget(buildSettingsPage(controller));
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.data),
+      );
       await flushPlatform(tester);
 
-      await tester.scrollUntilVisible(find.text('数据管理'), 300);
+      expect(find.text('数据管理'), findsWidgets);
       expect(find.text('导出数据'), findsOneWidget);
       expect(find.text('导入数据'), findsOneWidget);
       expect(find.text('清除所有事件'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
 
-      await tester.scrollUntilVisible(find.text('关于'), 300);
+    testWidgets('更新与关于分区渲染', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.updateAbout),
+      );
+      await flushPlatform(tester);
+
       expect(find.text('萤 $appVersion'), findsOneWidget);
       expect(find.text('github.com/jiuxina/ying'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -605,7 +667,9 @@ void main() {
       final saved = <AppSettings>[];
       final controller = buildController(saved);
       await controller.saveEvent(makeEvent(title: '剪贴板事件'));
-      await tester.pumpWidget(buildSettingsPage(controller));
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.data),
+      );
       await flushPlatform(tester);
 
       final calls = <MethodCall>[];
@@ -626,7 +690,6 @@ void main() {
         ),
       );
 
-      await tester.scrollUntilVisible(find.text('导出数据'), 300);
       await tester.ensureVisible(find.text('导出数据'));
       await flushPlatform(tester);
       await tester.pumpAndSettle();
@@ -645,7 +708,9 @@ void main() {
       final saved = <AppSettings>[];
       final controller = buildController(saved);
       final backup = CountdownEvent.encodeList([makeEvent(title: '备份事件')]);
-      await tester.pumpWidget(buildSettingsPage(controller));
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.data),
+      );
       await flushPlatform(tester);
 
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -664,7 +729,6 @@ void main() {
         ),
       );
 
-      await tester.scrollUntilVisible(find.text('导入数据'), 300);
       await tester.ensureVisible(find.text('导入数据'));
       await flushPlatform(tester);
       await tester.pumpAndSettle();
@@ -684,10 +748,11 @@ void main() {
       final saved = <AppSettings>[];
       final controller = buildController(saved);
       await controller.saveEvent(makeEvent(title: '要被清除'));
-      await tester.pumpWidget(buildSettingsPage(controller));
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.data),
+      );
       await flushPlatform(tester);
 
-      await tester.scrollUntilVisible(find.text('清除所有事件'), 300);
       await tester.ensureVisible(find.text('清除所有事件'));
       await flushPlatform(tester);
       await tester.pumpAndSettle();
@@ -707,6 +772,38 @@ void main() {
       expect(controller.state.events, isEmpty);
       expect(controller.state.pendingUndos, hasLength(1));
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('右上角设置按钮进入二级页，分类进入三级页', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      SharedPreferences.setMockInitialValues({});
+      await controller.load(runAutoCheck: false);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [appControllerProvider.overrideWith((ref) => controller)],
+          child: MaterialApp(theme: AppTheme.light(), home: const HomePage()),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('日子'), findsOneWidget);
+      expect(find.text('日历'), findsOneWidget);
+      await tester.tap(find.byTooltip('设置'));
+      await tester.pumpAndSettle();
+      expect(find.text('设置'), findsOneWidget);
+      expect(find.text('外观与显示'), findsOneWidget);
+
+      for (final category in SettingsCategory.values) {
+        await tester.tap(find.text(category.label));
+        await tester.pump(const Duration(milliseconds: 350));
+        await flushPlatform(tester);
+        expect(find.text(category.label), findsWidgets);
+        await tester.tap(find.byKey(const ValueKey('settings-category-back')));
+        await tester.pumpAndSettle();
+        expect(find.text('设置'), findsOneWidget);
+      }
     });
   });
 

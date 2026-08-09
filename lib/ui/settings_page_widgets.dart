@@ -197,9 +197,7 @@ class _StyleOption extends StatelessWidget {
                   Icon(
                     icon,
                     size: 17,
-                    color: selected
-                        ? scheme.primary
-                        : scheme.onSurfaceVariant,
+                    color: selected ? scheme.primary : scheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -478,9 +476,8 @@ class _SettingsActionTile extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           subtitle,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: scheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -503,3 +500,64 @@ class _SettingsActionTile extends StatelessWidget {
   }
 }
 
+class _CategoryCard extends StatelessWidget {
+  const _CategoryCard({required this.category, required this.onTap});
+
+  final SettingsCategory category;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: category.label,
+      hint: category.subtitle,
+      child: GlassSurface(
+        radius: 20,
+        padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
+        onTap: onTap,
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: scheme.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(category.icon, color: scheme.primary, size: 20),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category.label,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    category.subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: scheme.onSurfaceVariant,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
