@@ -45,7 +45,7 @@ class SettingsPage extends ConsumerWidget {
           '设置',
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
             fontWeight: FontWeight.w600,
-            letterSpacing: -0.8,
+            letterSpacing: 0,
           ),
         ),
         const SizedBox(height: 5),
@@ -204,9 +204,7 @@ class SettingsPage extends ConsumerWidget {
                   icon: Icons.hide_image_outlined,
                   title: '清除照片背景',
                   subtitle: '恢复为样式默认背景',
-                  onTap: () => controller.updateSettings(
-                    settings.copyWith(widgetBackgroundPath: ''),
-                  ),
+                  onTap: () => unawaited(_clearWidgetBackground(context, ref)),
                 ),
               ],
             ],
@@ -594,6 +592,20 @@ class SettingsPage extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) _showMessage(context, '选择照片失败，请重试');
     }
+  }
+
+  Future<void> _clearWidgetBackground(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    await deleteCachedWidgetBackground();
+    await ref.read(appControllerProvider.notifier).updateSettings(
+      ref
+          .read(appControllerProvider)
+          .settings
+          .copyWith(widgetBackgroundPath: ''),
+    );
+    if (context.mounted) _showMessage(context, '已清除照片背景');
   }
 
   void _showMessage(BuildContext context, String message) {

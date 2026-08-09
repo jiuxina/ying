@@ -112,7 +112,7 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
                                 widget.event == null ? '新建日子' : '编辑日子',
                                 style: theme.textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  letterSpacing: -0.4,
+                                  letterSpacing: 0,
                                 ),
                               ),
                               const SizedBox(height: 2),

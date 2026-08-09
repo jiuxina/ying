@@ -442,7 +442,7 @@ class GlassSectionTitle extends StatelessWidget {
           title,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
+            letterSpacing: 0,
           ),
         ),
         if (subtitle != null) ...[

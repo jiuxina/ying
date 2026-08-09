@@ -19,7 +19,6 @@ Future<String> pickAndCacheWidgetBackground({
     source: ImageSource.gallery,
     maxWidth: maxDimension.toDouble(),
     maxHeight: maxDimension.toDouble(),
-    imageQuality: 90,
   );
   if (picked == null) {
     throw const PhotoBackgroundException('已取消选择照片');
@@ -47,5 +46,18 @@ Future<String> pickAndCacheWidgetBackground({
     rethrow;
   } catch (_) {
     throw const PhotoBackgroundException('照片处理失败，请重试');
+  }
+}
+
+/// 删除缓存的相册背景文件；文件不存在或删除失败时静默返回。
+Future<void> deleteCachedWidgetBackground() async {
+  try {
+    final dir = await getApplicationDocumentsDirectory();
+    final target = File('${dir.path}${Platform.pathSeparator}$_cacheFileName');
+    if (await target.exists()) {
+      await target.delete();
+    }
+  } catch (_) {
+    // 删除失败不阻塞设置流程，下次重新选择会覆盖同名缓存文件。
   }
 }

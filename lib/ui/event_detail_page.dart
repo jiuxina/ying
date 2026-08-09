@@ -122,7 +122,7 @@ class EventDetailPage extends ConsumerWidget {
                                               context,
                                             ).colorScheme.onSurface,
                                       height: 1,
-                                      letterSpacing: -2.5,
+                                      letterSpacing: 0,
                                     ),
                               ),
                               const SizedBox(width: 8),

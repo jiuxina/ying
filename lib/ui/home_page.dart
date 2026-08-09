@@ -650,7 +650,7 @@ class _HeroHeader extends StatelessWidget {
                     '萤',
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      letterSpacing: -1,
+                      letterSpacing: 0,
                     ),
                   ),
                   Container(
@@ -720,7 +720,7 @@ class _EmptyState extends StatelessWidget {
                 '让期待有迹可循',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  letterSpacing: -0.4,
+                  letterSpacing: 0,
                 ),
               ),
               const SizedBox(height: 9),

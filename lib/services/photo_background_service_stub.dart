@@ -7,3 +7,6 @@ Future<String> pickAndCacheWidgetBackground({
 }) {
   throw const PhotoBackgroundException('当前平台暂不支持相册背景');
 }
+
+/// 非原生平台没有可删除的缓存文件。
+Future<void> deleteCachedWidgetBackground() async {}

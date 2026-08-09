@@ -52,16 +52,16 @@ class AppTheme {
       textTheme: base.textTheme.copyWith(
         displaySmall: base.textTheme.displaySmall?.copyWith(
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.8,
+          letterSpacing: 0,
         ),
         headlineMedium: base.textTheme.headlineMedium?.copyWith(
           fontWeight: FontWeight.w700,
-          letterSpacing: -0.8,
+          letterSpacing: 0,
           height: 1.18,
         ),
         titleLarge: base.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.3,
+          letterSpacing: 0,
           height: 1.28,
         ),
         titleMedium: base.textTheme.titleMedium?.copyWith(
@@ -178,7 +178,7 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: dark
-            ? const Color(0xFF292C32)
+            ? const Color(0xFF3F424C)
             : const Color(0xFF292C32),
         contentTextStyle: const TextStyle(color: Colors.white),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
