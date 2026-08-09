@@ -28,7 +28,7 @@
   - 已过：浅色 `#DC2626`，深色 `#F87171`
   - 每年重复：浅色 `#4F46E5`，深色 `#818CF8`
   - 已完成：中性灰
-- 图标一律单色：默认浅色 `#4B5563`、深色 `#A8B0BB`，选中态使用中性 `onSurface`，不再用品牌色给图标上色；图标容器透明，不垫色块。主色只保留在实底主按钮、开关、状态小圆点与需要强调的少量文字。
+- 图标一律单色：默认浅色 `#4B5563`、深色 `#A8B0BB`，选中态使用中性 `onSurface`，不再用品牌色给图标上色；图标容器透明，不垫色块。主色只保留在实底主按钮、开关与状态小圆点；语义色只允许用于倒计时数字状态与删除警示文字，且这些文字一律不垫色块。
 - 输入框 label 与前缀图标默认使用次要文字色，聚焦时才变主色。
 - `LiquidBackground` 顶角渐变透明度降到 7% 左右，避免背景与内容同色。
 
@@ -121,6 +121,24 @@
 
 例外保留：实底主按钮/底部新建圆钮内的图标使用 `onPrimary` 白色；颜色选择器 `_ColorButton` 的白色对勾保留（色块本身就是选项值）；滑块、开关等控件轨道保留单一主色。
 
+### 2.9 彩色文字与文字垫底色块清理
+
+统一规则：正文与标签不使用彩色文字，也不放在彩色垫底上；选中态、状态标签全部改中性。语义色只保留两种用途：倒计时数字的状态色（临近琥珀、已过红、完成灰，数字下方不垫色块）与破坏性操作的红字（如“删除”，无底色）。下列位置全部按此规则修改：
+
+- `lib/ui/glass_ui.dart` `GlassStatusPill`：彩色文字 + 彩色底（`accent 11%` 背景与 `accent` 文字）改为中性文字加中性底，语义色只留给 6px 前置圆点（与 2.8 同项）。
+- `lib/ui/event_filter_bar.dart` `_FilterButton` 选中态：`onPrimary` 白字 + `primary` 实底改为 `onSurface` 文字 + 中性填充（与 2.8 同项）。
+- `lib/ui/event_filter_bar.dart` `_CategoryChip` 选中态：`onPrimary` 白字 + `primary` 实底改为中性文字 + 中性填充（与 2.8 同项）。
+- `lib/ui/calendar_page.dart` `_ModeButton` 选中态：`onPrimary` 白字 + `primary` 实底改为中性文字 + 中性填充（与 2.8 同项）。
+- `lib/ui/calendar_page.dart` `_DayCell` 选中态：日期文字下的 `primary 14%` 底色改为中性填充（与 2.8 同项）。
+- `lib/ui/event_form_sheet.dart` `_DirectionOption` 选中态：`primary` 文字 + `primary 12%` 底色改为中性文字 + 中性填充（与 2.8 同项）。
+- `lib/ui/settings_page_widgets.dart` `_StyleOption` 选中态：`primary` 文字 + `primary 10%` 底色改为中性文字 + 中性填充（与 2.8 同项）。
+- `lib/ui/app_theme.dart` `chipTheme`：选中标签 `secondaryLabelStyle` 从 `onPrimary` 改为 `onSurface`，`selectedColor` 从 `primary` 改为中性 `surfaceContainerHighest`（与 2.8 同项）。
+- `lib/ui/event_detail_page.dart`：顶部状态文字（“还有”）从 `primary` 改为 `onSurfaceVariant`。
+- `lib/ui/event_filter_bar.dart` “清除筛选”文字按钮：前景色从 `primary` 改为 `onSurfaceVariant`，文字与图标都不再用品牌色（与 2.8 同项）。
+- `lib/ui/home_page.dart` `_TabButton`、`_RailButton`：选中文字从 `primary` / `GlassPalette.blue` 改为 `onSurface`，仅用字重表达选中（与 2.8 同项）。
+
+例外保留：倒计时数字的状态色（临近琥珀、已过红、完成灰）与删除警示红字无底色；`_ColorButton` 的白色对勾；小部件预览卡片内部文字颜色属于样式预览本身，不改。
+
 ## 3. 测试与验收
 
 - 同步更新受影响测试：
@@ -128,6 +146,7 @@
   - `test/ui_components_test.dart`：工具栏断言从文字改为 tooltip，分类选择改到筛选面板。
   - 其他断言被删除文案的用例同步修正。
 - 新增回归测试：`GlassIconButton`、`GlassChoiceTile` 选中态无主色背景与主色图标；`GlassStatusPill` 为中性底；`_CategoryCard` 图标无垫底色块。
+- 新增回归测试：选中态控件无 `primary` 文字与 `primary` 填充；详情页状态文字为中性色；`GlassStatusPill` 无彩色文字。
 - `flutter analyze` 0 issues。
 - `flutter test --concurrency=1` 全量通过（当前 123 项）。
 - 集成冒烟测试通过；构建 debug APK 安装到运行中的安卓模拟器。
@@ -141,3 +160,4 @@
 - 模拟器里的测试数据（如 `Exam-30D`）不属于 UI 设计问题，本轮不替换。
 - 保持“减少透明度 / 减少动画”设置生效，图标化按钮保留 tooltip 与无障碍语义。
 - 图标单色规则例外：实底主按钮与底部新建圆钮使用白色图标；颜色选择器保留白色对勾；滑块/开关轨道保留单一主色；状态小圆点保留语义色。
+- 彩色文字规则例外：倒计时数字状态色与删除警示红字保留，但均不垫底色块。
