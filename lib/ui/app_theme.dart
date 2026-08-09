@@ -81,7 +81,7 @@ class AppTheme {
         margin: EdgeInsets.zero,
         color: Colors.transparent,
       ),
-      dividerColor: scheme.outlineVariant.withValues(alpha: 0.55),
+      dividerColor: scheme.outlineVariant.withValues(alpha: 0.40),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: background,
