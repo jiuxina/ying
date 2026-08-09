@@ -57,5 +57,5 @@
 
 - 本机 `flutter test` 全量启动器仍会卡住（阶段 3 已知问题），本次按文件拆分回归：
   `widget_content_test`、`widget_protocol_test`、`ui_components_test` 均通过。
-- MuMu 模拟器（x86_64 / Android 12）已安装 2.3.0 调试构建；桌面手工验收见
+- MuMu 模拟器（x86_64 / Android 12）已安装 2.3.0 调试构建并启动，桌面手工验收步骤见
   [release-notes-v2.3.0-phase4.md](../../outputs/release-notes-v2.3.0-phase4.md)。
