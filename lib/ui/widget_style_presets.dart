@@ -12,6 +12,12 @@ const widgetStylePresets = <(WidgetStyle, String, IconData)>[
   (WidgetStyle.neon, '霓虹', Icons.bolt_rounded),
   (WidgetStyle.pixel, '像素', Icons.grid_view_rounded),
   (WidgetStyle.minimal, '极简', Icons.auto_awesome_outlined),
+  (WidgetStyle.envelope, '神秘信封', Icons.mail_outline),
+  (WidgetStyle.capsule, '时间胶囊', Icons.hourglass_bottom),
+  (WidgetStyle.crt, '复古 CRT', Icons.tv),
+  (WidgetStyle.neonSign, '霓虹灯牌', Icons.lightbulb_outline),
+  (WidgetStyle.pixelHealth, '像素血条', Icons.favorite_border),
+  (WidgetStyle.mirror, '镜像整活', Icons.flip),
 ];
 
 String widgetStyleLabel(WidgetStyle style) {

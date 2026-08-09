@@ -920,6 +920,67 @@ void main() {
       expect(find.text('只剩2天'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('趣味主题预览同步渲染且不抛异常', (tester) async {
+      final base = DateTime.now();
+      final today = DateTime(base.year, base.month, base.day);
+      final todayEvent = CountdownEvent(
+        id: 'fun-preview',
+        title: '毕业',
+        targetDate: today,
+        category: '重要',
+        createdAt: today.subtract(const Duration(days: 2)),
+      );
+      for (final style in [
+        WidgetStyle.envelope,
+        WidgetStyle.capsule,
+        WidgetStyle.crt,
+        WidgetStyle.neonSign,
+        WidgetStyle.pixelHealth,
+        WidgetStyle.mirror,
+      ]) {
+        await tester.pumpWidget(
+          glassApp(
+            Scaffold(
+              body: WidgetPreviewSection(
+                events: [todayEvent],
+                settings: AppSettings(widgetStyle: style),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+      }
+
+      await tester.pumpWidget(
+        glassApp(
+          Scaffold(
+            body: WidgetPreviewSection(
+              events: [todayEvent],
+              settings: const AppSettings(widgetStyle: WidgetStyle.capsule),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.textContaining('恭喜！'), findsWidgets);
+      expect(find.text('就是今天'), findsWidgets);
+
+      await tester.pumpWidget(
+        glassApp(
+          Scaffold(
+            body: WidgetPreviewSection(
+              events: [todayEvent],
+              settings: const AppSettings(widgetStyle: WidgetStyle.envelope),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('神秘信封'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 

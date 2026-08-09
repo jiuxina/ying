@@ -16,6 +16,16 @@ class WidgetAppearanceTest {
     }
 
     @Test
+    fun phase5FunStylesParseByName() {
+        assertEquals(WidgetStyle.envelope, parseWidgetStyle("envelope"))
+        assertEquals(WidgetStyle.capsule, parseWidgetStyle("capsule"))
+        assertEquals(WidgetStyle.crt, parseWidgetStyle("crt"))
+        assertEquals(WidgetStyle.neonSign, parseWidgetStyle("neonSign"))
+        assertEquals(WidgetStyle.pixelHealth, parseWidgetStyle("pixelHealth"))
+        assertEquals(WidgetStyle.mirror, parseWidgetStyle("mirror"))
+    }
+
+    @Test
     fun dateHolidaysCoverNewYearAndChristmas() {
         assertEquals("new_year", holidayForDate(LocalDate.of(2027, 1, 1)))
         assertEquals("christmas", holidayForDate(LocalDate.of(2026, 12, 24)))
@@ -250,6 +260,17 @@ class WidgetAppearanceTest {
             "add button must sit in the header above the rows",
             addIndex in 0 until rowIndex,
         )
+    }
+
+    @Test
+    fun phase5SingleWidgetLayoutHasEnvelopeHealthAndNeonViews() {
+        val layout = File("src/main/res/layout/daymark_widget.xml").readText()
+        assertTrue("single layout should have neon day view", "widget_days_neon" in layout)
+        assertTrue("single layout should have pixel health bar", "widget_health_bar" in layout)
+        assertTrue("single layout should have envelope cover", "widget_envelope_cover" in layout)
+        val source = File("src/main/kotlin/com/jiuxina/ying/DaymarkWidgetProvider.kt").readText()
+        assertTrue("provider should handle envelope reveal", "ACTION_REVEAL" in source)
+        assertTrue("provider should keep per-widget envelope state", "envelopeOpenKey" in source)
     }
 
     @Test

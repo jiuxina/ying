@@ -258,14 +258,25 @@ class _WidgetPreview extends StatelessWidget {
     final holiday = combinedHoliday(event, DateTime.now());
     final darkSurface = style == WidgetStyle.glass ||
         style == WidgetStyle.polaroid ||
-        style == WidgetStyle.minimal;
+        style == WidgetStyle.minimal ||
+        style == WidgetStyle.capsule;
     final wallpaperText = settings.widgetWallpaperTextColor == -1
         ? null
         : Color(settings.widgetWallpaperTextColor);
-    final primaryText = wallpaperText ??
+    final accent = _holidayAccent(holiday) ?? Color(settings.widgetColor);
+    final neonPrimary = style == WidgetStyle.neonSign ? accent : null;
+    final crtPrimary = style == WidgetStyle.crt
+        ? const Color(0xFFC9F7D0)
+        : null;
+    final pixelPrimary = style == WidgetStyle.pixelHealth
+        ? const Color(0xFFB7FF9E)
+        : null;
+    final primaryText = neonPrimary ??
+        crtPrimary ??
+        pixelPrimary ??
+        wallpaperText ??
         (darkSurface ? const Color(0xFF1C1C1E) : Colors.white);
     final secondaryText = primaryText.withValues(alpha: 0.74);
-    final accent = _holidayAccent(holiday) ?? Color(settings.widgetColor);
     final borderColor = style == WidgetStyle.minimal
         ? primaryText.withValues(alpha: 0.4)
         : style == WidgetStyle.glass
@@ -274,11 +285,21 @@ class _WidgetPreview extends StatelessWidget {
         ? accent
         : style == WidgetStyle.pixel
         ? accent.withValues(alpha: 0.9)
+        : style == WidgetStyle.crt
+        ? const Color(0xFF4ADE80).withValues(alpha: 0.75)
+        : style == WidgetStyle.neonSign ||
+              style == WidgetStyle.envelope ||
+              style == WidgetStyle.pixelHealth ||
+              style == WidgetStyle.mirror
+        ? accent.withValues(alpha: 0.85)
         : null;
     final withShadow = style == WidgetStyle.sticker ||
         style == WidgetStyle.photo ||
         style == WidgetStyle.neon ||
-        style == WidgetStyle.pixel;
+        style == WidgetStyle.pixel ||
+        style == WidgetStyle.neonSign ||
+        style == WidgetStyle.envelope ||
+        style == WidgetStyle.mirror;
     final shadow = withShadow
         ? const [
             Shadow(
@@ -296,7 +317,8 @@ class _WidgetPreview extends StatelessWidget {
             : (settings.widgetShowPreciseTime ||
                       settings.widgetShowLunarWeek ||
                       settings.widgetShowProgress ||
-                      settings.widgetQuoteMode)
+                      settings.widgetQuoteMode ||
+                      style == WidgetStyle.pixelHealth)
                   ? 216
                   : 170,
         clipBehavior: Clip.antiAlias,
@@ -343,18 +365,35 @@ class _WidgetPreview extends StatelessWidget {
               ),
             Padding(
               padding: const EdgeInsets.all(15),
-              child: _PreviewBody(
-                event: event,
-                settings: settings,
-                compact: compact,
-                primaryText: primaryText,
-                secondaryText: secondaryText,
-                accent: accent,
-                holiday: holiday,
-                shadow: shadow,
-                scale: scale,
-              ),
+              child: style == WidgetStyle.mirror
+                  ? Transform.rotate(
+                      angle: -0.045,
+                      child: _PreviewBody(
+                        event: event,
+                        settings: settings,
+                        compact: compact,
+                        primaryText: primaryText,
+                        secondaryText: secondaryText,
+                        accent: accent,
+                        holiday: holiday,
+                        shadow: shadow,
+                        scale: scale,
+                      ),
+                    )
+                  : _PreviewBody(
+                      event: event,
+                      settings: settings,
+                      compact: compact,
+                      primaryText: primaryText,
+                      secondaryText: secondaryText,
+                      accent: accent,
+                      holiday: holiday,
+                      shadow: shadow,
+                      scale: scale,
+                    ),
             ),
+            if (style == WidgetStyle.envelope)
+              const Positioned.fill(child: _EnvelopeCover()),
           ],
         ),
       ),
@@ -408,21 +447,38 @@ class _PreviewBody extends StatelessWidget {
     final now = DateTime.now();
     final countDisplay = widgetCountDisplay(current, settings.widgetUnitText);
     final mystery = settings.widgetMysteryMode;
-    final mainText = mystery ? '🕯️' : countDisplay.mainText;
-    final unitText = mystery ? '快到了' : countDisplay.unitText;
+    final capsuleToday =
+        settings.widgetStyle == WidgetStyle.capsule && current.dayDelta() == 0;
+    final displayTitle = capsuleToday ? '恭喜！${current.title}' : current.title;
+    final displayCategory = capsuleToday ? '时间胶囊' : current.category;
+    final mainText = capsuleToday
+        ? '🎉'
+        : mystery
+        ? '🕯️'
+        : countDisplay.mainText;
+    final unitText = capsuleToday
+        ? '就是今天'
+        : mystery
+        ? '快到了'
+        : countDisplay.unitText;
     final urgentLevel = settings.widgetUrgentHighlight
         ? widgetUrgentLevel(current)
         : 0;
-    final urgentActive = urgentLevel > 0 && !mystery;
+    final urgentActive = !capsuleToday && urgentLevel > 0 && !mystery;
     final displayUnitText = urgentActive
         ? widgetUrgentLabel(urgentLevel, current.displayDays)
         : unitText;
-    final displayMainColor = urgentActive
+    final displayMainColor = capsuleToday
+        ? accent
+        : urgentActive
         ? Color(widgetUrgentArgb(urgentLevel))
         : primaryText;
     final showIcon = settings.widgetShowIcon && current.icon.isNotEmpty;
-    final fontFamily = widgetFontName(settings.widgetFontFamily);
-    final italic = settings.widgetFontFamily == 'hand';
+    final fontFamily = settings.widgetStyle == WidgetStyle.pixelHealth
+        ? 'monospace'
+        : widgetFontName(settings.widgetFontFamily);
+    final italic = settings.widgetFontFamily == 'hand' &&
+        settings.widgetStyle != WidgetStyle.pixelHealth;
     final precise = settings.widgetShowPreciseTime;
     final dateInfo = settings.widgetShowLunarWeek
         ? widgetDateInfo(now)
@@ -435,6 +491,14 @@ class _PreviewBody extends StatelessWidget {
     final noteText = quote.isNotEmpty ? quote : current.note;
     final showProgress = !compact && settings.widgetShowProgress;
     final progress = widgetProgress(current, now);
+    final showPixelHealth =
+        settings.widgetStyle == WidgetStyle.pixelHealth && !compact;
+    final glowShadows = settings.widgetStyle == WidgetStyle.neonSign
+        ? [
+            Shadow(color: accent.withValues(alpha: 0.9), blurRadius: 10),
+            Shadow(color: accent.withValues(alpha: 0.45), blurRadius: 22),
+          ]
+        : shadow;
     final mainFontSize = mainText.length > 3
         ? (compact ? 24 : 28) * scale
         : (compact ? 38 : 44) * scale;
@@ -447,7 +511,7 @@ class _PreviewBody extends StatelessWidget {
               if (settings.widgetShowCategory)
                 Expanded(
                   child: Text(
-                    current.category,
+                    displayCategory,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: secondaryText, shadows: shadow),
@@ -471,7 +535,7 @@ class _PreviewBody extends StatelessWidget {
             ],
             Expanded(
               child: Text(
-                current.title,
+                displayTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -488,6 +552,14 @@ class _PreviewBody extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+            if (showPixelHealth) ...[
+              _PixelHealthBar(
+                progress: progress,
+                accent: accent,
+                track: primaryText.withValues(alpha: 0.16),
+              ),
+              const SizedBox(width: 9),
+            ],
             if (showProgress) ...[
               _ProgressRing(
                 progress: progress,
@@ -504,7 +576,7 @@ class _PreviewBody extends StatelessWidget {
                 fontSize: mainFontSize,
                 fontWeight: FontWeight.w800,
                 height: 0.95,
-                shadows: shadow,
+                shadows: glowShadows,
                 fontFamily: fontFamily,
                 fontStyle: italic ? FontStyle.italic : null,
               ),
@@ -519,7 +591,7 @@ class _PreviewBody extends StatelessWidget {
                     color: urgentActive
                         ? displayMainColor.withValues(alpha: 0.92)
                         : secondaryText,
-                    shadows: shadow,
+                    shadows: glowShadows,
                   ),
                 ),
               ),
@@ -630,6 +702,75 @@ class _RingPainter extends CustomPainter {
       oldDelegate.track != track;
 }
 
+class _PixelHealthBar extends StatelessWidget {
+  const _PixelHealthBar({
+    required this.progress,
+    required this.accent,
+    required this.track,
+  });
+
+  final double progress;
+  final Color accent;
+  final Color track;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 82,
+      height: 14,
+      child: CustomPaint(
+        painter: _PixelBarPainter(
+          progress: progress,
+          accent: accent,
+          track: track,
+        ),
+      ),
+    );
+  }
+}
+
+class _PixelBarPainter extends CustomPainter {
+  const _PixelBarPainter({
+    required this.progress,
+    required this.accent,
+    required this.track,
+  });
+
+  final double progress;
+  final Color accent;
+  final Color track;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const segments = 12;
+    final gap = 2.0;
+    final segmentWidth = (size.width - gap * (segments - 1)) / segments;
+    final filled = (progress.clamp(0.0, 1.0) * segments).ceil();
+    final background = Paint()..color = track;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Offset.zero & size,
+        const Radius.circular(2),
+      ),
+      background,
+    );
+    final fill = Paint()..color = accent;
+    for (var index = 0; index < filled; index++) {
+      final left = index * (segmentWidth + gap);
+      canvas.drawRect(
+        Rect.fromLTWH(left, 1, segmentWidth, size.height - 2),
+        fill,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PixelBarPainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      oldDelegate.accent != accent ||
+      oldDelegate.track != track;
+}
+
 class _WidgetListPreview extends StatelessWidget {
   const _WidgetListPreview({
     required this.events,
@@ -648,11 +789,23 @@ class _WidgetListPreview extends StatelessWidget {
     final style = settings.widgetStyle;
     final darkSurface = style == WidgetStyle.glass ||
         style == WidgetStyle.polaroid ||
-        style == WidgetStyle.minimal;
+        style == WidgetStyle.minimal ||
+        style == WidgetStyle.capsule;
     final wallpaperText = settings.widgetWallpaperTextColor == -1
         ? null
         : Color(settings.widgetWallpaperTextColor);
-    final primaryText = wallpaperText ??
+    final accent = Color(settings.widgetColor);
+    final neonPrimary = style == WidgetStyle.neonSign ? accent : null;
+    final crtPrimary = style == WidgetStyle.crt
+        ? const Color(0xFFC9F7D0)
+        : null;
+    final pixelPrimary = style == WidgetStyle.pixelHealth
+        ? const Color(0xFFB7FF9E)
+        : null;
+    final primaryText = neonPrimary ??
+        crtPrimary ??
+        pixelPrimary ??
+        wallpaperText ??
         (darkSurface ? const Color(0xFF1C1C1E) : Colors.white);
     final secondaryText = primaryText.withValues(alpha: 0.74);
     final rows = events.isEmpty
@@ -685,7 +838,7 @@ class _WidgetListPreview extends StatelessWidget {
             _PreviewBackdrop(
               style: style,
               color: color,
-              accent: Color(settings.widgetColor),
+              accent: accent,
               imageProvider: widgetBackgroundImage(
                 settings.widgetBackgroundPath,
               ),
@@ -886,6 +1039,34 @@ class _PreviewBackdrop extends StatelessWidget {
         return ColoredBox(color: const Color(0xFF0A0F1E));
       case WidgetStyle.pixel:
         return ColoredBox(color: const Color(0xFF141414));
+      case WidgetStyle.envelope:
+        return const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF4A2B2B), Color(0xFF2A1717)],
+            ),
+          ),
+        );
+      case WidgetStyle.capsule:
+        return const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF24453F), Color(0xFFC58A4B)],
+            ),
+          ),
+        );
+      case WidgetStyle.crt:
+        return CustomPaint(painter: _CrtPainter(accent: accent));
+      case WidgetStyle.neonSign:
+        return CustomPaint(painter: _NeonSignPainter(accent: accent));
+      case WidgetStyle.pixelHealth:
+        return CustomPaint(painter: _PixelBackdropPainter(accent: accent));
+      case WidgetStyle.mirror:
+        return CustomPaint(painter: _MirrorBackdropPainter(accent: accent));
     }
   }
 
@@ -907,6 +1088,183 @@ class _PreviewBackdrop extends StatelessWidget {
       ),
     );
   }
+}
+
+class _EnvelopeCover extends StatelessWidget {
+  const _EnvelopeCover();
+
+  @override
+  Widget build(BuildContext context) {
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF5B3330), Color(0xFF2C1917)],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.mail_outline,
+              color: Color(0xFFFFE3C2),
+              size: 44,
+            ),
+            SizedBox(height: 8),
+            Text(
+              '神秘信封',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                shadows: [
+                  Shadow(color: Colors.black54, blurRadius: 5),
+                ],
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '点击查看事件',
+              style: TextStyle(
+                color: Color(0xCCFFFFFF),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CrtPainter extends CustomPainter {
+  const _CrtPainter({required this.accent});
+
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFF0A120C));
+    final line = Paint()
+      ..color = const Color(0x33000000)
+      ..strokeWidth = 1;
+    for (double y = 0; y < size.height; y += 4) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), line);
+    }
+    final border = Paint()
+      ..color = accent.withValues(alpha: 0.65)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Offset.zero & size,
+        const Radius.circular(8),
+      ),
+      border,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CrtPainter oldDelegate) =>
+      oldDelegate.accent != accent;
+}
+
+class _NeonSignPainter extends CustomPainter {
+  const _NeonSignPainter({required this.accent});
+
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFF0A0F1E));
+    final bounds = Rect.fromLTWH(3, 3, size.width - 6, size.height - 6);
+    for (var index = 4; index >= 1; index--) {
+      final glow = Paint()
+        ..color = accent.withValues(alpha: 0.06 * index)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = index * 3;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(bounds, const Radius.circular(8)),
+        glow,
+      );
+    }
+    final border = Paint()
+      ..color = accent.withValues(alpha: 0.9)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(bounds, const Radius.circular(8)),
+      border,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_NeonSignPainter oldDelegate) =>
+      oldDelegate.accent != accent;
+}
+
+class _PixelBackdropPainter extends CustomPainter {
+  const _PixelBackdropPainter({required this.accent});
+
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFF101418));
+    final grid = Paint()
+      ..color = accent.withValues(alpha: 0.14)
+      ..strokeWidth = 1;
+    for (double x = 0; x < size.width; x += 16) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
+    }
+    for (double y = 0; y < size.height; y += 16) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
+    }
+    final block = Paint()..color = accent.withValues(alpha: 0.75);
+    canvas.drawRect(const Rect.fromLTWH(12, 14, 10, 10), block);
+    canvas.drawRect(const Rect.fromLTWH(34, 30, 10, 10), block);
+    canvas.drawRect(
+      Rect.fromLTWH(size.width - 40, size.height - 36, 14, 14),
+      block,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_PixelBackdropPainter oldDelegate) =>
+      oldDelegate.accent != accent;
+}
+
+class _MirrorBackdropPainter extends CustomPainter {
+  const _MirrorBackdropPainter({required this.accent});
+
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF312E81), Color(0xFF9D174D)],
+      ).createShader(Offset.zero & size);
+    canvas.drawRect(Offset.zero & size, paint);
+    final stripe = Paint()
+      ..color = accent.withValues(alpha: 0.22)
+      ..strokeWidth = 10;
+    for (double x = -size.height; x < size.width; x += 34) {
+      canvas.drawLine(
+        Offset(x, size.height),
+        Offset(x + size.height, 0),
+        stripe,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_MirrorBackdropPainter oldDelegate) =>
+      oldDelegate.accent != accent;
 }
 
 class _HolidayBadge extends StatelessWidget {

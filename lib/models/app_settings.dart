@@ -12,6 +12,12 @@ enum WidgetStyle {
   neon,
   pixel,
   minimal,
+  envelope,
+  capsule,
+  crt,
+  neonSign,
+  pixelHealth,
+  mirror,
 }
 
 class AppSettings {

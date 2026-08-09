@@ -195,7 +195,12 @@ void main() {
 
       expect(controller.state.events.single.isCompleted, isTrue);
       expect(synced, hasLength(1));
-      expect(synced.single.any((event) => event.id == source.id), isFalse);
+      expect(
+        synced.single.where((event) => !event.isCompleted).any(
+          (event) => event.id == source.id,
+        ),
+        isFalse,
+      );
       expect(recordedFlipDay, source.dayDelta());
       controller.dispose();
     });

@@ -183,7 +183,7 @@ Map<String, Object?> widgetPreferenceValues(
 }) {
   final today = now ?? DateTime.now();
   return {
-    'widget_protocol_version': 5,
+    'widget_protocol_version': 6,
     'widget_color': settings.widgetColor.toRadixString(16).padLeft(8, '0'),
     'widget_font_scale': settings.widgetFontScale,
     'widget_show_note': settings.widgetShowNote,

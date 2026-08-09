@@ -32,6 +32,21 @@ void main() {
       expect(settings.widgetStyle, WidgetStyle.card);
     });
 
+    test('phase 5 fun styles round-trip by name', () {
+      for (final style in [
+        WidgetStyle.envelope,
+        WidgetStyle.capsule,
+        WidgetStyle.crt,
+        WidgetStyle.neonSign,
+        WidgetStyle.pixelHealth,
+        WidgetStyle.mirror,
+      ]) {
+        final restored = AppSettings.fromMap({'widgetStyle': style.name});
+        expect(restored.widgetStyle, style);
+        expect(AppSettings(widgetStyle: style).toMap()['widgetStyle'], style.name);
+      }
+    });
+
     test('round-trips every new field', () {
       final settings = const AppSettings(
         widgetStyle: WidgetStyle.glass,
@@ -160,7 +175,7 @@ void main() {
 
     test('preference values include protocol version and every key', () {
       final values = widgetPreferenceValues(const AppSettings());
-      expect(values['widget_protocol_version'], 5);
+      expect(values['widget_protocol_version'], 6);
       expect(values['widget_color'], 'ff0f766e');
       expect(
         values.keys,

@@ -56,13 +56,13 @@ void main() {
     });
   });
 
-  group('小部件协议 v4', () {
+  group('小部件协议 v6', () {
     test('偏好值携带协议版本与节日字段', () {
       final values = widgetPreferenceValues(
         const AppSettings(),
         now: DateTime(2026, 9, 25),
       );
-      expect(values['widget_protocol_version'], 4);
+      expect(values['widget_protocol_version'], 6);
       expect(values['widget_holiday'], 'mid_autumn');
       expect(values['widget_style'], 'card');
     });
