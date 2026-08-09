@@ -19,10 +19,25 @@ import 'ui/home_page.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('zh_CN');
-  await NotificationService.instance.initialize();
-  await WidgetService.initialize();
-  _listenForWidgetLaunches();
   runApp(const ProviderScope(child: DaymarkApp()));
+  unawaited(_initializePlatformServices());
+}
+
+Future<void> _initializePlatformServices() async {
+  // 通知与小部件插件初始化失败或挂起时不允许阻塞首帧：各给 3 秒上限，
+  // 超时后继续，后续调度/同步会再次尝试初始化。
+  try {
+    await NotificationService.instance
+        .initialize()
+        .timeout(const Duration(seconds: 3), onTimeout: () {});
+  } catch (_) {}
+  try {
+    await WidgetService.initialize().timeout(
+      const Duration(seconds: 3),
+      onTimeout: () {},
+    );
+  } catch (_) {}
+  _listenForWidgetLaunches();
 }
 
 void _listenForWidgetLaunches() {
@@ -61,6 +76,15 @@ class _DaymarkAppState extends ConsumerState<DaymarkApp>
         (_) => _handleNotificationResponse(initial),
       );
     }
+    unawaited(
+      NotificationService.instance.initialized.then((_) {
+        final lateInitial = NotificationService.instance.takeInitialResponse();
+        if (lateInitial == null || !mounted) return;
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _handleNotificationResponse(lateInitial),
+        );
+      }),
+    );
   }
 
   @override

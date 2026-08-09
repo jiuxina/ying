@@ -45,6 +45,7 @@
 | 依赖升级 | 延后 | 已审计：riverpod 3.x、home_widget 0.9.x、flutter_local_notifications 22.x 需 API 迁移，设回退门槛另行专项升级 |
 | 大文件拆分 | 已修复 | Kotlin 协议拆到 `WidgetProtocol.kt`；Dart 预览画家与设置页控件拆为 `part` 文件 |
 | 集成测试 | 已修复 | 新增 `integration_test` 冒烟测试并在模拟器通过 |
+| 模拟器首屏卡住 | 已修复 | debug/profile 在 x86_64 模拟器回退 Skia（Impeller 首帧长时间不出现）；插件初始化移出首帧路径并加 3 秒超时，冷启动首帧从数分钟降到约 9-10 秒 |
 
 ## 2. 审查范围与方法
 

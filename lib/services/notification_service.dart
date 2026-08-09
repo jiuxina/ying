@@ -51,10 +51,14 @@ class NotificationService {
   static final instance = NotificationService._();
   final _plugin = FlutterLocalNotificationsPlugin();
   final _responses = StreamController<NotificationResponse>.broadcast();
+  final _initializationCompleter = Completer<void>();
   bool _initialized = false;
   NotificationResponse? _initialResponse;
 
   Stream<NotificationResponse> get responses => _responses.stream;
+
+  /// 初始化完成信号；界面可据此在后台初始化完成后处理冷启动通知。
+  Future<void> get initialized => _initializationCompleter.future;
 
   NotificationResponse? takeInitialResponse() {
     final response = _initialResponse;
@@ -63,40 +67,51 @@ class NotificationService {
   }
 
   Future<void> initialize() async {
-    if (_initialized || kIsWeb) return;
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    final ios = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-      notificationCategories: [
-        DarwinNotificationCategory(
-          notificationCategoryReminder,
-          actions: [
-            DarwinNotificationAction.plain(notificationActionComplete, '完成'),
-            DarwinNotificationAction.plain(notificationActionSnooze, '1 小时后提醒'),
-          ],
-        ),
-      ],
-    );
-    await _plugin.initialize(
-      InitializationSettings(android: android, iOS: ios),
-      onDidReceiveNotificationResponse: _responses.add,
-      onDidReceiveBackgroundNotificationResponse:
-          notificationBackgroundResponse,
-    );
-    tz_data.initializeTimeZones();
+    if (_initialized || kIsWeb) {
+      if (!_initializationCompleter.isCompleted) {
+        _initializationCompleter.complete();
+      }
+      return;
+    }
     try {
-      final zone = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(zone));
-    } catch (_) {
-      tz.setLocalLocation(tz.UTC);
+      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+      final ios = DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+        notificationCategories: [
+          DarwinNotificationCategory(
+            notificationCategoryReminder,
+            actions: [
+              DarwinNotificationAction.plain(notificationActionComplete, '完成'),
+              DarwinNotificationAction.plain(notificationActionSnooze, '1 小时后提醒'),
+            ],
+          ),
+        ],
+      );
+      await _plugin.initialize(
+        InitializationSettings(android: android, iOS: ios),
+        onDidReceiveNotificationResponse: _responses.add,
+        onDidReceiveBackgroundNotificationResponse:
+            notificationBackgroundResponse,
+      );
+      tz_data.initializeTimeZones();
+      try {
+        final zone = await FlutterTimezone.getLocalTimezone();
+        tz.setLocalLocation(tz.getLocation(zone));
+      } catch (_) {
+        tz.setLocalLocation(tz.UTC);
+      }
+      final launchDetails = await _plugin.getNotificationAppLaunchDetails();
+      if (launchDetails?.didNotificationLaunchApp ?? false) {
+        _initialResponse = launchDetails?.notificationResponse;
+      }
+      _initialized = true;
+    } finally {
+      if (!_initializationCompleter.isCompleted) {
+        _initializationCompleter.complete();
+      }
     }
-    final launchDetails = await _plugin.getNotificationAppLaunchDetails();
-    if (launchDetails?.didNotificationLaunchApp ?? false) {
-      _initialResponse = launchDetails?.notificationResponse;
-    }
-    _initialized = true;
   }
 
   Future<bool> requestPermission() async {
