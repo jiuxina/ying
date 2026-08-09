@@ -118,6 +118,19 @@ class NotificationService {
     );
     return androidGranted ?? iosGranted ?? true;
   }
+
+  /// 已授权时直接返回 true，未授权或状态未知时才触发系统权限请求。
+  Future<bool> ensureNotificationPermission() async {
+    await initialize();
+    try {
+      final enabled = await _notificationsEnabled();
+      if (enabled == true) return true;
+    } catch (_) {
+      // 平台实现缺失或查询失败时退回请求流程。
+    }
+    return requestPermission();
+  }
+
   static const _settingsChannel = MethodChannel('ying/settings');
 
   /// 打开系统通知设置页，用于通知权限被拒后的引导。
@@ -180,9 +193,10 @@ class NotificationService {
     final occurrences = <ReminderOccurrence>[
       for (final event in events.where((value) => !value.isCompleted))
         for (final reminder in event.reminders.where((value) => value.enabled))
-          if (occurrenceFor(event, reminder).scheduledAt.isAfter(now))
-            occurrenceFor(event, reminder),
-    ]..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+          occurrenceFor(event, reminder),
+    ]
+      ..removeWhere((occurrence) => !occurrence.scheduledAt.isAfter(now))
+      ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
     final limit = defaultTargetPlatform == TargetPlatform.iOS ? 60 : null;
     for (final occurrence in occurrences.take(limit ?? occurrences.length)) {
       await _scheduleOccurrence(occurrence);

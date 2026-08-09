@@ -419,7 +419,7 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
     var notificationsAllowed = true;
     if (selectedReminders.isNotEmpty) {
       notificationsAllowed =
-          await NotificationService.instance.requestPermission();
+          await NotificationService.instance.ensureNotificationPermission();
     }
     final existing = widget.event;
     final event = CountdownEvent(

@@ -79,7 +79,7 @@ private struct Provider: AppIntentTimelineProvider {
       date: Date(),
       events: [EventValue(id: "preview", title: "下一场旅行", targetDate: Int64(Date().addingTimeInterval(86400 * 18).timeIntervalSince1970 * 1000), category: "旅行", note: "去看看海", isCountUp: false)],
       index: 0,
-      color: Color(red: 0.40, green: 0.31, blue: 0.64),
+      color: Color(red: 0.06, green: 0.46, blue: 0.43),
       fontScale: 1,
       showNote: true,
       showCategory: true,
@@ -102,8 +102,8 @@ private struct Provider: AppIntentTimelineProvider {
     let data = UserDefaults(suiteName: widgetGroupId)
     let index = data?.integer(forKey: "widget_ios_index") ?? 0
     let events = loadDaymarkEvents(from: data)
-    let colorHex = data?.string(forKey: "widget_color") ?? "ff6750a4"
-    let colorValue = UInt32(colorHex, radix: 16) ?? 0xFF6750A4
+    let colorHex = data?.string(forKey: "widget_color") ?? "ff0f766e"
+    let colorValue = UInt32(colorHex, radix: 16) ?? 0xFF0F766E
     let red = Double((colorValue >> 16) & 0xFF) / 255
     let green = Double((colorValue >> 8) & 0xFF) / 255
     let blue = Double(colorValue & 0xFF) / 255
@@ -187,7 +187,7 @@ private struct DaymarkEntryView: View {
       }
       .foregroundStyle(.white)
       .containerBackground(entry.color, for: .widget)
-      .widgetURL(URL(string: "ying://event?id=\(event.id)"))
+      .widgetURL(URL(string: "ying://open?id=\(event.id)"))
     } else {
       VStack(alignment: .leading) {
         Text("萤").font(.caption.bold())
@@ -197,7 +197,7 @@ private struct DaymarkEntryView: View {
       }
       .foregroundStyle(.white)
       .containerBackground(entry.color, for: .widget)
-      .widgetURL(URL(string: "ying://new"))
+      .widgetURL(URL(string: "ying://add"))
     }
   }
 }
@@ -282,7 +282,7 @@ private struct DaymarkDetailProvider: AppIntentTimelineProvider {
     DaymarkDetailEntry(
       date: Date(),
       event: EventValue(id: "preview", title: "毕业典礼", targetDate: Int64(Date().addingTimeInterval(86400 * 3).timeIntervalSince1970 * 1000), category: "重要", note: "别忘了合影", isCountUp: false),
-      color: Color(red: 0.40, green: 0.31, blue: 0.64),
+      color: Color(red: 0.06, green: 0.46, blue: 0.43),
       fontScale: 1,
       showNote: true,
       showCategory: true,
@@ -305,8 +305,8 @@ private struct DaymarkDetailProvider: AppIntentTimelineProvider {
     let data = UserDefaults(suiteName: widgetGroupId)
     let events = loadDaymarkEvents(from: data)
     let selected = events.first { $0.id == configuration.event?.id } ?? events.first
-    let colorHex = data?.string(forKey: "widget_color") ?? "ff6750a4"
-    let colorValue = UInt32(colorHex, radix: 16) ?? 0xFF6750A4
+    let colorHex = data?.string(forKey: "widget_color") ?? "ff0f766e"
+    let colorValue = UInt32(colorHex, radix: 16) ?? 0xFF0F766E
     let red = Double((colorValue >> 16) & 0xFF) / 255
     let green = Double((colorValue >> 8) & 0xFF) / 255
     let blue = Double(colorValue & 0xFF) / 255
@@ -374,7 +374,7 @@ private struct DaymarkDetailEntryView: View {
       }
       .foregroundStyle(.white)
       .containerBackground(entry.color, for: .widget)
-      .widgetURL(URL(string: "ying://event?id=\(event.id)"))
+      .widgetURL(URL(string: "ying://open?id=\(event.id)"))
     } else {
       VStack(alignment: .leading) {
         Text("萤").font(.caption.bold())
@@ -384,7 +384,7 @@ private struct DaymarkDetailEntryView: View {
       }
       .foregroundStyle(.white)
       .containerBackground(entry.color, for: .widget)
-      .widgetURL(URL(string: "ying://new"))
+      .widgetURL(URL(string: "ying://add"))
     }
   }
 }
