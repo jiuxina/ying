@@ -56,9 +56,13 @@ class SettingsCategoryPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     AppState appState,
-    AppSettings settings,
+    AppSettings incomingSettings,
     AppController controller,
   ) {
+    final unlocked = isSponsorUnlocked(ref);
+    final settings = unlocked
+        ? incomingSettings
+        : sanitizeSponsorSettings(incomingSettings);
     return switch (category) {
       SettingsCategory.appearance => [
         _Section(
@@ -112,6 +116,9 @@ class SettingsCategoryPage extends ConsumerWidget {
                         label: preset.$2,
                         icon: preset.$3,
                         selected: settings.widgetStyle == preset.$1,
+                        locked: !unlocked &&
+                            sponsorWidgetStyles.contains(preset.$1),
+                        onLockedTap: () => openSponsorPage(context),
                         onTap: () => controller.updateSettings(
                           settings.copyWith(widgetStyle: preset.$1),
                         ),
@@ -191,6 +198,8 @@ class SettingsCategoryPage extends ConsumerWidget {
                 title: '跟随壁纸颜色',
                 subtitle: '自动适配壁纸主色',
                 value: settings.widgetWallpaperColor != -1,
+                locked: !unlocked,
+                onLockedTap: () => openSponsorPage(context),
                 onChanged: (value) => unawaited(
                   _toggleWallpaperColors(context, ref, settings, value),
                 ),
@@ -287,6 +296,8 @@ class SettingsCategoryPage extends ConsumerWidget {
                 title: '神秘模式',
                 subtitle: '隐藏数字与日期',
                 value: settings.widgetMysteryMode,
+                locked: !unlocked,
+                onLockedTap: () => openSponsorPage(context),
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetMysteryMode: value),
                 ),
@@ -297,6 +308,8 @@ class SettingsCategoryPage extends ConsumerWidget {
                 title: '每日一句',
                 subtitle: '每日轮播一句话',
                 value: settings.widgetQuoteMode,
+                locked: !unlocked,
+                onLockedTap: () => openSponsorPage(context),
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetQuoteMode: value),
                 ),
@@ -345,6 +358,8 @@ class SettingsCategoryPage extends ConsumerWidget {
                       )
                       .$2,
                 ),
+                locked: !unlocked,
+                onLockedTap: () => openSponsorPage(context),
                 onSelected: (option) => controller.updateSettings(
                   settings.copyWith(widgetFontFamily: option.$1),
                 ),

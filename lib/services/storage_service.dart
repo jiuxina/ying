@@ -2,8 +2,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
+import '../models/unlock_state.dart';
 
 class StorageService {
+  static const sponsorUnlockedKey = 'sponsor_unlocked';
+  static const _sponsorKeyHashKey = 'sponsor_key_hash';
+  static const _sponsorTokenKey = 'sponsor_token';
+  static const _sponsorActivatedAtKey = 'sponsor_activated_at';
   static const _eventsKey = 'countdown_events_v1';
   static const _themeKey = 'theme_mode';
   static const _widgetColorKey = 'widget_color';
@@ -176,5 +181,44 @@ class StorageService {
   Future<void> saveSkippedReleaseVersion(String version) async {
     final preferences = await SharedPreferences.getInstance();
     await preferences.setString(_skippedReleaseVersionKey, version);
+  }
+
+  Future<UnlockState> loadUnlockState() async {
+    final preferences = await SharedPreferences.getInstance();
+    final activatedAtMillis = preferences.getInt(_sponsorActivatedAtKey);
+    return UnlockState(
+      unlocked: preferences.getBool(sponsorUnlockedKey) ?? false,
+      keyHash: preferences.getString(_sponsorKeyHashKey),
+      unlockToken: preferences.getString(_sponsorTokenKey),
+      activatedAt: activatedAtMillis == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(activatedAtMillis),
+    );
+  }
+
+  Future<void> saveUnlockState(UnlockState state) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(sponsorUnlockedKey, state.unlocked);
+    final keyHash = state.keyHash;
+    final unlockToken = state.unlockToken;
+    final activatedAt = state.activatedAt;
+    if (keyHash == null) {
+      await preferences.remove(_sponsorKeyHashKey);
+    } else {
+      await preferences.setString(_sponsorKeyHashKey, keyHash);
+    }
+    if (unlockToken == null) {
+      await preferences.remove(_sponsorTokenKey);
+    } else {
+      await preferences.setString(_sponsorTokenKey, unlockToken);
+    }
+    if (activatedAt == null) {
+      await preferences.remove(_sponsorActivatedAtKey);
+    } else {
+      await preferences.setInt(
+        _sponsorActivatedAtKey,
+        activatedAt.millisecondsSinceEpoch,
+      );
+    }
   }
 }

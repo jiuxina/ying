@@ -56,6 +56,26 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "com.jiuxina.ying/device",
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "androidId" -> {
+                    try {
+                        result.success(
+                            Settings.Secure.getString(
+                                contentResolver,
+                                Settings.Secure.ANDROID_ID,
+                            ),
+                        )
+                    } catch (error: Exception) {
+                        result.error("unavailable", error.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
     }
 }
 

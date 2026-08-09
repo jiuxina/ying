@@ -7,12 +7,14 @@ import 'package:flutter/services.dart';
 import '../app_version.dart';
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
+import '../models/unlock_features.dart';
 import '../state/app_controller.dart';
 import '../services/photo_background_service.dart';
 import '../services/wallpaper_color_service.dart';
 import '../utils/widget_content_utils.dart';
 import 'glass_ui.dart';
 import 'reminder_diagnostics_section.dart';
+import 'unlock_gate.dart';
 import 'update_dialog.dart';
 import 'widget_preview_section.dart';
 import 'widget_style_presets.dart';
@@ -96,6 +98,8 @@ class SettingsPage extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 24),
+              _SponsorCard(onTap: () => openSponsorPage(context)),
+              const SizedBox(height: 12),
               for (final category in SettingsCategory.values) ...[
                 _CategoryCard(
                   category: category,
@@ -293,7 +297,7 @@ class _UpdateCheckTileState extends ConsumerState<_UpdateCheckTile> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final subtitle = _checking ? '正在检查…' : (_status ?? '查询 GitHub 仓库的最新发布');
+    final subtitle = _checking ? '正在检查…' : (_status ?? '查询最新发布');
     return Semantics(
       button: true,
       label: '检查更新',

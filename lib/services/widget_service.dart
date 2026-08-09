@@ -3,11 +3,14 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
+import '../models/unlock_features.dart';
 import '../models/widget_holiday.dart';
 import '../utils/widget_content_utils.dart';
+import 'storage_service.dart';
 import 'widget_interaction_service.dart' show widgetBackgroundCallback;
 
 class WidgetStatus {
@@ -66,6 +69,9 @@ class WidgetService {
                 previousFlipDay != activeDay
             ? previousFlipDay
             : null);
+    final preferences = await SharedPreferences.getInstance();
+    final sponsorUnlocked =
+        preferences.getBool(StorageService.sponsorUnlockedKey) ?? false;
     final encoded = encodeWidgetEvents(visible);
     await Future.wait([
       HomeWidget.saveWidgetData<String>('widget_events', encoded),
@@ -75,7 +81,10 @@ class WidgetService {
         DateTime.now().millisecondsSinceEpoch,
       ),
       HomeWidget.saveWidgetData<int>('widget_flip_day', resolvedFlipDay),
-      for (final entry in widgetPreferenceValues(settings).entries)
+      for (final entry in widgetPreferenceValues(
+        settings,
+        sponsorUnlocked: sponsorUnlocked,
+      ).entries)
         HomeWidget.saveWidgetData(entry.key, entry.value),
     ]);
     if (defaultTargetPlatform == TargetPlatform.android) {
@@ -180,30 +189,33 @@ String encodeWidgetEvents(List<CountdownEvent> events) {
 Map<String, Object?> widgetPreferenceValues(
   AppSettings settings, {
   DateTime? now,
+  bool sponsorUnlocked = true,
 }) {
   final today = now ?? DateTime.now();
+  final resolved = sponsorUnlocked ? settings : sanitizeSponsorSettings(settings);
   return {
     'widget_protocol_version': 6,
-    'widget_color': settings.widgetColor.toRadixString(16).padLeft(8, '0'),
-    'widget_font_scale': settings.widgetFontScale,
-    'widget_show_note': settings.widgetShowNote,
-    'widget_show_category': settings.widgetShowCategory,
-    'widget_style': settings.widgetStyle.name,
-    'widget_background_path': settings.widgetBackgroundPath,
-    'widget_unit_text': settings.widgetUnitText,
-    'widget_show_icon': settings.widgetShowIcon,
-    'widget_show_progress': settings.widgetShowProgress,
-    'widget_show_precise_time': settings.widgetShowPreciseTime,
-    'widget_show_lunar_week': settings.widgetShowLunarWeek,
-    'widget_mystery_mode': settings.widgetMysteryMode,
-    'widget_quote_mode': settings.widgetQuoteMode,
-    'widget_urgent_highlight': settings.widgetUrgentHighlight,
-    'widget_list_mode': settings.widgetListMode,
-    'widget_font_family': settings.widgetFontFamily,
-    'widget_text_outline': settings.widgetTextOutline,
-    'widget_wallpaper_color': settings.widgetWallpaperColor,
-    'widget_wallpaper_dark_color': settings.widgetWallpaperDarkColor,
-    'widget_wallpaper_text_color': settings.widgetWallpaperTextColor,
+    'widget_sponsor_unlocked': sponsorUnlocked,
+    'widget_color': resolved.widgetColor.toRadixString(16).padLeft(8, '0'),
+    'widget_font_scale': resolved.widgetFontScale,
+    'widget_show_note': resolved.widgetShowNote,
+    'widget_show_category': resolved.widgetShowCategory,
+    'widget_style': resolved.widgetStyle.name,
+    'widget_background_path': resolved.widgetBackgroundPath,
+    'widget_unit_text': resolved.widgetUnitText,
+    'widget_show_icon': resolved.widgetShowIcon,
+    'widget_show_progress': resolved.widgetShowProgress,
+    'widget_show_precise_time': resolved.widgetShowPreciseTime,
+    'widget_show_lunar_week': resolved.widgetShowLunarWeek,
+    'widget_mystery_mode': resolved.widgetMysteryMode,
+    'widget_quote_mode': resolved.widgetQuoteMode,
+    'widget_urgent_highlight': resolved.widgetUrgentHighlight,
+    'widget_list_mode': resolved.widgetListMode,
+    'widget_font_family': resolved.widgetFontFamily,
+    'widget_text_outline': resolved.widgetTextOutline,
+    'widget_wallpaper_color': resolved.widgetWallpaperColor,
+    'widget_wallpaper_dark_color': resolved.widgetWallpaperDarkColor,
+    'widget_wallpaper_text_color': resolved.widgetWallpaperTextColor,
     'widget_holiday': holidayFor(today).wireName,
     'widget_date_info': widgetDateInfo(today),
   };

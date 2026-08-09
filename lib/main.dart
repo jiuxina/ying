@@ -11,6 +11,7 @@ import 'services/notification_service.dart';
 import 'services/widget_launch_actions.dart';
 import 'services/widget_service.dart';
 import 'state/app_controller.dart';
+import 'state/unlock_controller.dart';
 import 'ui/app_theme.dart';
 import 'ui/event_detail_page.dart';
 import 'ui/glass_ui.dart';
@@ -67,6 +68,9 @@ class _DaymarkAppState extends ConsumerState<DaymarkApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(ref.read(unlockControllerProvider.notifier).load());
+    });
     _notificationSubscription = NotificationService.instance.responses.listen(
       _handleNotificationResponse,
     );

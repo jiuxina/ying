@@ -80,6 +80,7 @@ void main() {
   group('WidgetService.syncWithFlip', () {
     test('writes previous day when day changes', () async {
       TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferences.setMockInitialValues({});
       final calls = <MethodCall>[];
       final messenger = TestDefaultBinaryMessengerBinding
           .instance

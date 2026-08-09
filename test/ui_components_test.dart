@@ -10,8 +10,10 @@ import 'package:ying/app_version.dart';
 import 'package:ying/models/app_settings.dart';
 import 'package:ying/models/countdown_event.dart';
 import 'package:ying/models/event_sort_mode.dart';
+import 'package:ying/models/unlock_state.dart';
 import 'package:ying/services/storage_service.dart';
 import 'package:ying/state/app_controller.dart';
+import 'package:ying/state/unlock_controller.dart';
 import 'package:ying/ui/app_theme.dart';
 import 'package:ying/ui/event_card.dart';
 import 'package:ying/ui/event_detail_page.dart';
@@ -442,7 +444,15 @@ void main() {
     }) {
       return glassApp(
         ProviderScope(
-          overrides: [appControllerProvider.overrideWith((ref) => controller)],
+          overrides: [
+            appControllerProvider.overrideWith((ref) => controller),
+            unlockControllerProvider.overrideWith(
+              (ref) => UnlockController(
+                StorageService(),
+                initialState: const UnlockState(unlocked: true),
+              ),
+            ),
+          ],
           child: SettingsCategoryPage(category: category),
         ),
       );

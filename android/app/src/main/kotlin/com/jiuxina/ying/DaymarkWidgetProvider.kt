@@ -161,7 +161,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                     context,
                     views,
                     widgetData,
-                    parseWidgetStyle(widgetData.getString("widget_style", "card")),
+                    effectiveWidgetStyle(widgetData),
                 )
                 views.setTextViewText(R.id.widget_title, pendingUndo.title)
                 views.setOnClickPendingIntent(
@@ -192,12 +192,16 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             val options = appWidgetManager.getAppWidgetOptions(widgetId)
             val compact = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250) < 220 ||
                 options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 130) < 120
-            val style = parseWidgetStyle(widgetData.getString("widget_style", "card"))
-            val holiday = resolveHoliday(
-                widgetData.getString("widget_holiday", ""),
-                LocalDate.now(),
-                events.getOrNull(widgetData.getInt(perWidgetIndexKey(widgetId), 0)),
-            )
+            val style = effectiveWidgetStyle(widgetData)
+            val holiday = if (sponsorUnlocked(widgetData)) {
+                resolveHoliday(
+                    widgetData.getString("widget_holiday", ""),
+                    LocalDate.now(),
+                    events.getOrNull(widgetData.getInt(perWidgetIndexKey(widgetId), 0)),
+                )
+            } else {
+                ""
+            }
             if (listMode) {
                 updateListWidget(context, views, widgetData, style)
             } else {
@@ -276,7 +280,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         val days = event.daysFromToday()
         val countUp = event.isCountUp || days < 0
         val preset = widgetData.getString("widget_unit_text", "")
-        val mystery = widgetData.getBoolean("widget_mystery_mode", false)
+        val mystery = sponsorUnlocked(widgetData) &&
+            widgetData.getBoolean("widget_mystery_mode", false)
         val flipDay = widgetData.getInt(FLIP_DAY_KEY, -1)
         if (flipDay >= 0 && abs(days.toInt()) != flipDay && !mystery) {
             views.setTextViewText(R.id.widget_days_old, countMainText(event, preset, flipDay.toLong()))
@@ -376,7 +381,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             views.setViewVisibility(R.id.widget_health_bar, View.GONE)
         }
 
-        val quote = if (widgetData.getBoolean("widget_quote_mode", false)) {
+        val quote = if (sponsorUnlocked(widgetData) &&
+            widgetData.getBoolean("widget_quote_mode", false)) {
             quoteText(event, LocalDate.now())
         } else {
             ""
@@ -468,7 +474,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         val events = parseEvents(widgetData.getString("widget_events", "[]") ?: "[]")
         val colors = resolveTextColors(widgetData, style)
         val showIcon = widgetData.getBoolean("widget_show_icon", false)
-        val mystery = widgetData.getBoolean("widget_mystery_mode", false)
+        val mystery = sponsorUnlocked(widgetData) &&
+            widgetData.getBoolean("widget_mystery_mode", false)
         val preset = widgetData.getString("widget_unit_text", "")
         val showCategory = widgetData.getBoolean("widget_show_category", true)
         val showPrecise = widgetData.getBoolean("widget_show_precise_time", false)
@@ -1210,7 +1217,11 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         }
         applyFontVariant(
             views,
-            data.getString("widget_font_family", "system"),
+            if (sponsorUnlocked(data)) {
+                data.getString("widget_font_family", "system")
+            } else {
+                "system"
+            },
             style,
         )
     }
@@ -1423,7 +1434,11 @@ internal fun resolveTextColors(
     data: SharedPreferences,
     style: WidgetStyle,
 ): WidgetTextColors {
-    val wallpaperTextColor = data.getInt("widget_wallpaper_text_color", -1)
+    val wallpaperTextColor = if (sponsorUnlocked(data)) {
+        data.getInt("widget_wallpaper_text_color", -1)
+    } else {
+        -1
+    }
     val darkSurface = style == WidgetStyle.glass ||
         style == WidgetStyle.polaroid ||
         style == WidgetStyle.minimal ||

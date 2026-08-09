@@ -100,6 +100,9 @@ private struct Provider: AppIntentTimelineProvider {
 
   private func loadEntry() -> DaymarkEntry {
     let data = UserDefaults(suiteName: widgetGroupId)
+    // 预留：未解锁时 iOS 小部件后续的赞助样式统一降级为基础样式。
+    let sponsorUnlocked = data?.bool(forKey: "widget_sponsor_unlocked") ?? false
+    _ = sponsorUnlocked
     let index = data?.integer(forKey: "widget_ios_index") ?? 0
     let events = loadDaymarkEvents(from: data)
     let colorHex = data?.string(forKey: "widget_color") ?? "ff0f766e"

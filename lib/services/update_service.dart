@@ -48,6 +48,7 @@ class UpdateService {
     ReleaseFetcher? fetcher,
     this.owner = defaultOwner,
     this.repo = defaultRepo,
+    this.manifestBaseUrl,
   }) : fetcher = fetcher ?? fetchUrl;
 
   static const defaultOwner = 'jiuxina';
@@ -56,6 +57,7 @@ class UpdateService {
   final ReleaseFetcher fetcher;
   final String owner;
   final String repo;
+  final String? manifestBaseUrl;
 
   Uri get _latestReleaseUri => Uri.parse(
     'https://api.github.com/repos/$owner/$repo/releases/latest',
@@ -64,6 +66,10 @@ class UpdateService {
   Uri get _tagsUri => Uri.parse(
     'https://api.github.com/repos/$owner/$repo/tags?per_page=30',
   );
+
+  Uri? get _manifestUri => manifestBaseUrl == null || manifestBaseUrl!.isEmpty
+      ? null
+      : Uri.parse('${manifestBaseUrl!.replaceAll(RegExp(r'/$'), '')}/v1/latest');
 
   Future<UpdateCheckResult> checkForUpdate({
     required String currentVersion,
@@ -88,6 +94,14 @@ class UpdateService {
 
   /// 拉取最新发布；仓库没有 Release 时回退到最新的 tag。
   Future<ReleaseInfo?> fetchLatestRelease() async {
+    final manifestUri = _manifestUri;
+    if (manifestUri != null) {
+      final response = await fetcher(manifestUri);
+      if (response.statusCode != 200) {
+        throw _errorForStatus(response.statusCode);
+      }
+      return _parseManifest(jsonDecode(response.body) as Map<String, Object?>);
+    }
     final response = await fetcher(_latestReleaseUri);
     if (response.statusCode == 200) {
       return _parseRelease(jsonDecode(response.body) as Map<String, Object?>);
@@ -131,6 +145,17 @@ class UpdateService {
       name: json['name'] as String?,
       notes: json['body'] as String?,
       publishedAt: DateTime.tryParse((json['published_at'] as String?) ?? ''),
+    );
+  }
+
+  ReleaseInfo _parseManifest(Map<String, Object?> json) {
+    final version = normalizeVersion((json['version'] as String?) ?? '');
+    return ReleaseInfo(
+      version: version,
+      url: (json['url'] as String?) ?? '',
+      name: (json['name'] as String?) ?? (json['notes'] as String?),
+      notes: json['notes'] as String?,
+      publishedAt: DateTime.tryParse((json['publishedAt'] as String?) ?? ''),
     );
   }
 
