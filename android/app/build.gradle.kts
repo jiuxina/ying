@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -6,6 +9,27 @@ plugins {
 }
 
 val mumuX64Build = providers.gradleProperty("mumu-x64").isPresent
+
+val releaseKeystoreProperties = Properties().apply {
+    val envPath = System.getenv("ANDROID_KEYSTORE_PATH")
+    if (!envPath.isNullOrBlank()) {
+        setProperty("storeFile", envPath)
+        setProperty("storePassword", System.getenv("ANDROID_KEYSTORE_PASSWORD").orEmpty())
+        setProperty("keyAlias", System.getenv("ANDROID_KEY_ALIAS").orEmpty())
+        setProperty("keyPassword", System.getenv("ANDROID_KEY_PASSWORD").orEmpty())
+    } else {
+        val localFile = rootProject.file("key.properties")
+        if (localFile.exists()) {
+            load(FileInputStream(localFile))
+        }
+    }
+}
+
+val releaseKeystoreConfigured =
+    releaseKeystoreProperties.getProperty("storeFile")?.isNotBlank() == true &&
+        releaseKeystoreProperties.getProperty("storePassword")?.isNotBlank() == true &&
+        releaseKeystoreProperties.getProperty("keyAlias")?.isNotBlank() == true &&
+        releaseKeystoreProperties.getProperty("keyPassword")?.isNotBlank() == true
 
 android {
     namespace = "com.jiuxina.ying"
@@ -22,11 +46,19 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    signingConfigs {
+        if (releaseKeystoreConfigured) {
+            create("release") {
+                storeFile = file(releaseKeystoreProperties.getProperty("storeFile"))
+                storePassword = releaseKeystoreProperties.getProperty("storePassword")
+                keyAlias = releaseKeystoreProperties.getProperty("keyAlias")
+                keyPassword = releaseKeystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.jiuxina.ying"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -41,9 +73,24 @@ android {
             }
         }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            if (releaseKeystoreConfigured) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
+}
+
+tasks.configureEach {
+    if (name == "assembleRelease" || name == "packageRelease") {
+        doFirst {
+            if (!releaseKeystoreConfigured) {
+                throw GradleException(
+                    "Release keystore is not configured. Set " +
+                        "ANDROID_KEYSTORE_PATH/ANDROID_KEYSTORE_PASSWORD/" +
+                        "ANDROID_KEY_ALIAS/ANDROID_KEY_PASSWORD or create " +
+                        "android/key.properties.",
+                )
+            }
         }
     }
 }

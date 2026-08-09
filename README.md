@@ -189,6 +189,26 @@ flutter build apk --debug
 
 ---
 
+## 正式签名（Android Release）
+
+Release 构建不再使用 debug 密钥签名。以下三种方式任选其一，密钥与密码都不应提交到仓库：
+
+1. 环境变量：`ANDROID_KEYSTORE_PATH`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD`
+2. 本地文件：在 `android/key.properties` 中写入：
+
+```properties
+storeFile=/绝对路径/release.keystore
+storePassword=你的密钥库密码
+keyAlias=你的别名
+keyPassword=你的别名密码
+```
+
+3. GitHub Actions：在仓库 Secrets 中配置 `ANDROID_KEYSTORE_BASE64`（keystore 的 base64 内容）、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD`；未配置时 Release 构建会直接失败，CI 也会用 `apksigner` 校验产物不是 debug 签名。
+
+`flutter build apk --debug` 不受影响；`flutter build apk --release` 在缺少密钥时会报错并提示配置方式。
+
+---
+
 ## 快速上手
 
 ### 创建事件
