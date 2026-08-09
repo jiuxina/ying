@@ -63,6 +63,21 @@ curl https://<你的子域名>.workers.dev/v1/health
 2. 运行 `node tools/upload_keys.js` 把密钥哈希导入 Worker KV。
 3. 运行 `node tools/update_afdian_reply.js` 把密钥库存写入爱发电方案的自动随机回复。
 
+## 发布版本清单
+
+构建正式 APK 后，更新 App 内更新检测：
+
+```bash
+set WORKER_URL=https://ying-verify.xxx.workers.dev
+set ADMIN_TOKEN=你的token
+set RELEASE_VERSION=3.0.0
+set RELEASE_VERSION_CODE=6
+set RELEASE_URL=https://你的公开下载地址/ying-3.0.0.apk
+node tools/publish_release.js
+```
+
+正式构建命令见仓库根目录 `build_sponsor_release.bat`。
+
 ## 测试
 
 ```bash
