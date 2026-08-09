@@ -77,30 +77,34 @@ void main() {
       await tester.pumpWidget(glassApp(const Scaffold(body: _FilterHarness())));
       await tester.pump();
 
-      // 搜索：展开后出现输入框。
-      await tester.tap(find.text('搜索事件'));
+      // 搜索：图标按钮展开后出现输入框。
+      await tester.tap(find.byTooltip('搜索事件'));
       await tester.pumpAndSettle();
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.text('收起搜索'), findsOneWidget);
+      expect(find.byTooltip('收起搜索'), findsOneWidget);
 
-      // 分类：选择“学习”后进入筛选状态，出现清除入口。
+      // 分类：进入筛选面板选择“学习”后进入筛选状态，出现清除入口。
+      await tester.tap(find.byTooltip('筛选'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('学习'));
       await tester.pumpAndSettle();
-      expect(find.text('筛选中'), findsOneWidget);
+      await tester.tap(find.text('应用筛选'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('筛选中'), findsOneWidget);
       expect(find.text('清除筛选'), findsOneWidget);
 
-      // 排序：底部面板选择“目标日期”后按钮文案更新。
-      await tester.tap(find.text('按距离'));
+      // 排序：底部面板选择“目标日期”后按钮提示更新。
+      await tester.tap(find.byTooltip('按距离'));
       await tester.pumpAndSettle();
       expect(find.text('排序方式'), findsOneWidget);
       await tester.tap(find.text('目标日期'));
       await tester.pumpAndSettle();
-      expect(find.text('按日期'), findsOneWidget);
+      expect(find.byTooltip('按日期'), findsOneWidget);
 
       // 清除筛选后恢复初始状态。
       await tester.tap(find.text('清除筛选'));
       await tester.pumpAndSettle();
-      expect(find.text('筛选'), findsOneWidget);
+      expect(find.byTooltip('筛选'), findsOneWidget);
       expect(find.text('清除筛选'), findsNothing);
     });
   });

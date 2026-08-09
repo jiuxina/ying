@@ -21,9 +21,64 @@ void main() {
     final dark = AppTheme.dark();
 
     expect(light.colorScheme.primary, const Color(0xFF0F766E));
-    expect(light.scaffoldBackgroundColor, const Color(0xFFFCFBF9));
+    expect(light.scaffoldBackgroundColor, const Color(0xFFF5F4F0));
     expect(dark.colorScheme.primary, const Color(0xFFBEF264));
-    expect(dark.scaffoldBackgroundColor, const Color(0xFF0F1115));
+    expect(dark.scaffoldBackgroundColor, const Color(0xFF101318));
+  });
+
+  testWidgets('选中态控件不再使用主色图标或主色背景', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(
+          body: Column(
+            children: [
+              GlassIconButton(
+                icon: Icons.calendar_today_rounded,
+                selected: true,
+                tooltip: '选中图标',
+                onPressed: _noop,
+              ),
+              GlassChoiceTile(
+                icon: Icons.sell_outlined,
+                title: '分类',
+                value: '学习',
+                selected: true,
+                onTap: _noop,
+              ),
+              GlassStatusPill(label: '已开启', color: Color(0xFFDC2626)),
+            ],
+          ),
+        ),
+      ),
+    );
+    final primary = Theme.of(
+      tester.element(find.byType(GlassIconButton)),
+    ).colorScheme.primary;
+
+    final iconButton = tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byIcon(Icons.calendar_today_rounded),
+        matching: find.byType(IconButton),
+      ),
+    );
+    expect(iconButton.style?.backgroundColor?.resolve({}), isNot(primary));
+    for (final icon in tester.widgetList<Icon>(
+      find.descendant(
+        of: find.byType(GlassChoiceTile),
+        matching: find.byType(Icon),
+      ),
+    )) {
+      expect(icon.color, isNot(primary));
+    }
+
+    final pillText = tester.widget<Text>(
+      find.descendant(
+        of: find.byType(GlassStatusPill),
+        matching: find.text('已开启'),
+      ),
+    );
+    expect(pillText.style?.color, isNot(const Color(0xFFDC2626)));
   });
 
   testWidgets('mobile navigation keeps days, add and calendar entries', (
@@ -151,6 +206,8 @@ void main() {
     expect(scaffold.backgroundColor, isNull);
   });
 }
+
+void _noop() {}
 
 class _IdleTimer implements Timer {
   bool _active = true;
