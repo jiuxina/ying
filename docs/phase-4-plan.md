@@ -61,3 +61,4 @@
   [release-notes-v2.3.0-phase4.md](../../outputs/release-notes-v2.3.0-phase4.md)。
 - 修复跨日翻牌旧天数未清除导致数字残留（`ACTION_REFRESH_FLIP` 先清理 `widget_flip_day`
   再刷新）；临近高亮 7 天档文案补回「天」，如「4天 · 快到了」（2026-08-09）。
+- 用户复核通过（2026-08-09）：临近高亮显示「4天 · 快到了」，切换事件后不再残留旧天数。
