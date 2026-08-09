@@ -19,25 +19,26 @@ node server/generate_signing_keys.mjs
 
 ## 部署
 
-推荐方式（自动创建 KV 并写入 secret）：
+需要 Cloudflare API Token 具备以下权限：
 
-```bash
-# 需要 Cloudflare API Token 具备以下权限：
-#   Account - Workers Scripts: Edit
-#   Account - Workers KV Storage: Edit
-node server/deploy_worker.mjs
-```
+- Account - Workers Scripts: Edit
+- Account - Workers KV Storage: Edit
 
-也可以使用 wrangler 手动部署：
+使用 wrangler 部署（模块格式支持最稳定）：
 
 ```bash
 cd server
+set CLOUDFLARE_API_TOKEN=你的token
+set CLOUDFLARE_ACCOUNT_ID=你的account_id
 wrangler kv namespace create ying-unlock
 # 把输出的 namespace id 填进 wrangler.toml
-wrangler secret put ADMIN_TOKEN
-wrangler secret put SIGN_PRIVATE_JWK
-wrangler deploy
+set /p ADMIN_TOKEN=< .dev-secrets\admin-token.txt
+echo %ADMIN_TOKEN%| wrangler secret put ADMIN_TOKEN
+node -e "console.log(JSON.stringify(require('./signing-keys.json').privateJwk))" | wrangler secret put SIGN_PRIVATE_JWK
+npx wrangler deploy
 ```
+
+`server/deploy_worker.mjs` 为实验性 API 直传脚本，若 Cloudflare API 不接受模块 multipart 格式时，请以上面的 wrangler 方式部署。
 
 部署完成后验证：
 

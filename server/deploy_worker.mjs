@@ -86,6 +86,7 @@ const scriptSource = readFileSync(
   "utf8",
 );
 const metadata = {
+  body_part: "script",
   main_module: "verify_worker.js",
   compatibility_date: "2024-09-23",
   bindings: [
@@ -98,21 +99,29 @@ const metadata = {
 };
 
 const workerName = process.env.WORKER_NAME || "ying-verify";
-const form = new FormData();
-form.append(
-  "metadata",
-  new Blob([JSON.stringify(metadata)], { type: "application/json" }),
-);
-form.append(
-  "script",
-  new Blob([scriptSource], { type: "application/javascript" }),
-);
+const boundary = `----ying-deploy-${Math.random().toString(36).slice(2)}`;
+const body = [
+  `--${boundary}\r\n`,
+  'Content-Disposition: form-data; name="metadata"\r\n',
+  "Content-Type: application/json\r\n\r\n",
+  JSON.stringify(metadata),
+  "\r\n",
+  `--${boundary}\r\n`,
+  'Content-Disposition: form-data; name="script"; filename="verify_worker.js"\r\n',
+  "Content-Type: application/javascript\r\n\r\n",
+  scriptSource,
+  "\r\n",
+  `--${boundary}--\r\n`,
+].join("");
 const upload = await fetch(
   `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}`,
   {
     method: "PUT",
-    headers: { authorization: `Bearer ${apiToken}` },
-    body: form,
+    headers: {
+      authorization: `Bearer ${apiToken}`,
+      "content-type": `multipart/form-data; boundary=${boundary}`,
+    },
+    body,
   },
 );
 const uploadBody = await upload.json();
