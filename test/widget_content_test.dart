@@ -141,7 +141,7 @@ void main() {
       expect(widgetUrgentArgb(3), 0xFFC2410C);
       expect(widgetUrgentArgb(1), 0xFFB91C1C);
       expect(widgetUrgentArgb(0), 0);
-      expect(widgetUrgentLabel(7, 5), '快到了');
+      expect(widgetUrgentLabel(7, 5), '天 · 快到了');
       expect(widgetUrgentLabel(3, 3), '只剩3天');
       expect(widgetUrgentLabel(1, 1), '只剩1天');
       expect(widgetUrgentLabel(1, 0), '就是今天');

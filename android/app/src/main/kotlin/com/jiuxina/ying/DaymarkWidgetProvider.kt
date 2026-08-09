@@ -97,6 +97,12 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == ACTION_REFRESH_FLIP) {
+            val data = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            data.edit().remove(FLIP_DAY_KEY).apply()
+            refreshAll(context)
+            return
+        }
         when (intent.action) {
             ACTION_NAVIGATE -> {
                 val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
@@ -109,7 +115,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             }
             MidnightRefreshScheduler.ACTION_MIDNIGHT_REFRESH,
             ACTION_REFRESH_PENDING_UNDO,
-            ACTION_REFRESH_FLIP,
             Intent.ACTION_DATE_CHANGED,
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED,
@@ -119,12 +124,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 MidnightRefreshScheduler.schedule(context)
                 return
             }
-        }
-        if (intent.action == ACTION_REFRESH_FLIP) {
-            val data = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            data.edit().remove(FLIP_DAY_KEY).apply()
-            refreshAll(context)
-            return
         }
         super.onReceive(context, intent)
     }
@@ -1140,7 +1139,7 @@ internal fun urgentAccent(level: Int): Int? = when (level) {
 }
 
 internal fun urgentLabel(level: Int, days: Long): String = when (level) {
-    7 -> "快到了"
+    7 -> "天 · 快到了"
     3 -> "只剩${days}天"
     1 -> if (days == 0L) "就是今天" else "只剩${days}天"
     else -> ""

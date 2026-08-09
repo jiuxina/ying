@@ -48,7 +48,7 @@ private func urgentColor(level: Int) -> Color? {
 
 private func urgentLabel(level: Int, days: Int) -> String {
   switch level {
-  case 7: return "快到了"
+  case 7: return "天 · 快到了"
   case 3: return "只剩\(days)天"
   case 1: return days == 0 ? "就是今天" : "只剩\(days)天"
   default: return ""

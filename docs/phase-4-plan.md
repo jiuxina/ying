@@ -59,3 +59,5 @@
   `widget_content_test`、`widget_protocol_test`、`ui_components_test` 均通过。
 - MuMu 模拟器（x86_64 / Android 12）已安装 2.3.0 调试构建并启动，桌面手工验收步骤见
   [release-notes-v2.3.0-phase4.md](../../outputs/release-notes-v2.3.0-phase4.md)。
+- 修复跨日翻牌旧天数未清除导致数字残留（`ACTION_REFRESH_FLIP` 先清理 `widget_flip_day`
+  再刷新）；临近高亮 7 天档文案补回「天」，如「4天 · 快到了」（2026-08-09）。

@@ -184,7 +184,7 @@ int widgetUrgentArgb(int level) => switch (level) {
 
 /// 临近高亮替换单位区域的文案；[days] 为剩余天数（非负）。
 String widgetUrgentLabel(int level, int days) => switch (level) {
-  7 => '快到了',
+  7 => '天 · 快到了',
   3 => '只剩$days天',
   1 => days == 0 ? '就是今天' : '只剩$days天',
   _ => '',

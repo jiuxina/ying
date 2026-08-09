@@ -122,10 +122,20 @@ class WidgetAppearanceTest {
         assertEquals(argb(0xC2, 0x41, 0x0C), urgentAccent(3))
         assertEquals(argb(0xB9, 0x1C, 0x1C), urgentAccent(1))
         assertEquals(null, urgentAccent(0))
-        assertEquals("快到了", urgentLabel(7, 5))
+        assertEquals("天 · 快到了", urgentLabel(7, 5))
         assertEquals("只剩3天", urgentLabel(3, 3))
         assertEquals("只剩1天", urgentLabel(1, 1))
         assertEquals("就是今天", urgentLabel(1, 0))
+    }
+
+    @Test
+    fun flipRefreshClearsStaleFlipDayBeforeRendering() {
+        val source = File("src/main/kotlin/com/jiuxina/ying/DaymarkWidgetProvider.kt").readText()
+        val flipIf = source.indexOf("if (intent.action == ACTION_REFRESH_FLIP)")
+        val flipRemove = source.indexOf("remove(FLIP_DAY_KEY)")
+        val whenStart = source.indexOf("when (intent.action)")
+        assertTrue("flip cleanup must run before generic refresh", flipIf in 0 until whenStart)
+        assertTrue("flip cleanup must remove stale day", flipRemove > flipIf && flipRemove < whenStart)
     }
 
     @Test
