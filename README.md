@@ -351,6 +351,8 @@ Android 桌面小部件的个性化路线图、开发顺序、注意事项与完
 
 2.3.0 全面代码审查报告见 [docs/software-review-2.3.0.md](docs/software-review-2.3.0.md)。
 
+UI 视觉改版计划见 [docs/ui-visual-redesign-plan.md](docs/ui-visual-redesign-plan.md)。
+
 ---
 
 ## 版本计划
