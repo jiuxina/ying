@@ -6,6 +6,7 @@ import '../models/countdown_event.dart';
 import '../services/update_service.dart';
 import '../state/app_controller.dart';
 import '../utils/event_query.dart';
+import 'calendar_page.dart';
 import 'event_card.dart';
 import 'event_detail_page.dart';
 import 'event_filter_bar.dart';
@@ -36,7 +37,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         onAdd: _openForm,
         onEdit: _openForm,
       ),
-      const SettingsPage(),
+      const CalendarPage(),
     ];
 
     return Scaffold(
@@ -62,6 +63,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                     child: IndexedStack(index: selectedIndex, children: pages),
                   ),
                 ],
+              ),
+            ),
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 8,
+              right: 18,
+              child: GlassIconButton(
+                icon: Icons.settings_outlined,
+                tooltip: '设置',
+                onPressed: _openSettings,
               ),
             ),
             if (state.latestUndo != null)
@@ -117,6 +127,12 @@ class _HomePageState extends ConsumerState<HomePage> {
       constraints: const BoxConstraints(maxWidth: 680),
       builder: (context) => EventFormSheet(event: event),
     );
+  }
+
+  void _openSettings() {
+    Navigator.of(
+      context,
+    ).push<void>(GlassPageRoute(builder: (context) => const SettingsPage()));
   }
 }
 
@@ -422,10 +438,10 @@ class _EventsPageState extends ConsumerState<_EventsPage> {
         child: _CompletedHeader(
           count: _completedCount,
           expanded: completedExpanded,
-          onToggle: () => setState(() => completedExpanded = !completedExpanded),
-          onClear: () => ref
-              .read(appControllerProvider.notifier)
-              .clearCompletedWithUndo(),
+          onToggle: () =>
+              setState(() => completedExpanded = !completedExpanded),
+          onClear: () =>
+              ref.read(appControllerProvider.notifier).clearCompletedWithUndo(),
         ),
       );
     }
@@ -684,10 +700,15 @@ class _HeroHeader extends StatelessWidget {
           ),
         ),
         if (wide)
-          FilledButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('新建日子'),
+          Row(
+            children: [
+              FilledButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('新建日子'),
+              ),
+              const SizedBox(width: 56),
+            ],
           ),
       ],
     );
@@ -826,8 +847,8 @@ class _GlassTabBar extends StatelessWidget {
               ),
               Expanded(
                 child: _TabButton(
-                  label: '设置',
-                  icon: Icons.tune_rounded,
+                  label: '日历',
+                  icon: Icons.calendar_month_rounded,
                   selected: selectedIndex == 1,
                   onTap: () => onChanged(1),
                 ),
@@ -916,8 +937,8 @@ class _GlassRail extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             _RailButton(
-              icon: Icons.tune_rounded,
-              label: '设置',
+              icon: Icons.calendar_month_rounded,
+              label: '日历',
               selected: selectedIndex == 1,
               onTap: () => onChanged(1),
             ),

@@ -10,6 +10,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('萤'), findsWidgets);
-    expect(find.text('设置'), findsWidgets);
+    expect(find.text('日历'), findsWidgets);
+    expect(find.byTooltip('设置'), findsWidgets);
   });
 }

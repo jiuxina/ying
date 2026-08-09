@@ -26,7 +26,7 @@ void main() {
     expect(dark.scaffoldBackgroundColor, const Color(0xFF0F1115));
   });
 
-  testWidgets('mobile navigation keeps days, add and settings entries', (
+  testWidgets('mobile navigation keeps days, add and calendar entries', (
     tester,
   ) async {
     final controller = AppController(
@@ -51,8 +51,9 @@ void main() {
     await tester.pump();
 
     expect(find.text('日子'), findsOneWidget);
-    expect(find.text('设置'), findsOneWidget);
+    expect(find.text('日历'), findsOneWidget);
     expect(find.byTooltip('新建倒数日'), findsOneWidget);
+    expect(find.byTooltip('设置'), findsOneWidget);
   });
 
   testWidgets('勾选完成后卡片带动画搬入已展开的已完成分组', (tester) async {
