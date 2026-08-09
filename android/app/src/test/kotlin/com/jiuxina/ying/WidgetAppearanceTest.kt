@@ -105,6 +105,30 @@ class WidgetAppearanceTest {
     }
 
     @Test
+    fun urgentLevelSwitchesAtSevenThreeOneDays() {
+        assertEquals(0, urgentLevel(-1))
+        assertEquals(1, urgentLevel(0))
+        assertEquals(1, urgentLevel(1))
+        assertEquals(3, urgentLevel(2))
+        assertEquals(3, urgentLevel(3))
+        assertEquals(7, urgentLevel(4))
+        assertEquals(7, urgentLevel(7))
+        assertEquals(0, urgentLevel(8))
+    }
+
+    @Test
+    fun urgentAccentAndLabelMatchLevels() {
+        assertEquals(argb(0xB4, 0x53, 0x09), urgentAccent(7))
+        assertEquals(argb(0xC2, 0x41, 0x0C), urgentAccent(3))
+        assertEquals(argb(0xB9, 0x1C, 0x1C), urgentAccent(1))
+        assertEquals(null, urgentAccent(0))
+        assertEquals("快到了", urgentLabel(7, 5))
+        assertEquals("只剩3天", urgentLabel(3, 3))
+        assertEquals("只剩1天", urgentLabel(1, 1))
+        assertEquals("就是今天", urgentLabel(1, 0))
+    }
+
+    @Test
     fun preciseTimeAndProgressAreDerivedFromTimestamps() {
         val now = java.time.ZonedDateTime.of(2026, 8, 8, 12, 0, 0, 0, java.time.ZoneId.systemDefault())
             .toInstant().toEpochMilli()
@@ -216,6 +240,16 @@ class WidgetAppearanceTest {
             "add button must sit in the header above the rows",
             addIndex in 0 until rowIndex,
         )
+    }
+
+    @Test
+    fun detailWidgetProviderIsRegisteredWithOwnInfo() {
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        assertTrue(manifest.contains("DaymarkDetailWidgetProvider"))
+        assertTrue(manifest.contains("daymark_detail_widget_info"))
+        val info = File("src/main/res/xml/daymark_detail_widget_info.xml").readText()
+        assertTrue("detail widget should reuse single-event layout", "daymark_widget" in info)
+        assertTrue("detail widget should be home-screen only", "home_screen" in info)
     }
 
     private fun eventAt(iso: String): WidgetEvent {

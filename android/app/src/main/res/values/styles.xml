@@ -2,6 +2,7 @@
 <resources>
     <color name="ic_launcher_background">#090C16</color>
     <string name="daymark_widget_description">萤：切换查看倒数日并快速标记完成</string>
+    <string name="daymark_detail_widget_description">萤：专注单个倒数日，左右切换事件</string>
     <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is off -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <!-- Show a splash screen on the activity. Automatically removed when

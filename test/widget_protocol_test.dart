@@ -18,6 +18,7 @@ void main() {
       expect(legacy.widgetShowLunarWeek, isFalse);
       expect(legacy.widgetMysteryMode, isFalse);
       expect(legacy.widgetQuoteMode, isFalse);
+      expect(legacy.widgetUrgentHighlight, isFalse);
       expect(legacy.widgetListMode, isFalse);
       expect(legacy.widgetFontFamily, 'system');
       expect(legacy.widgetTextOutline, isFalse);
@@ -42,6 +43,7 @@ void main() {
         widgetShowLunarWeek: true,
         widgetMysteryMode: true,
         widgetQuoteMode: true,
+        widgetUrgentHighlight: true,
         widgetListMode: true,
         widgetFontFamily: 'mono',
         widgetTextOutline: true,
@@ -59,6 +61,7 @@ void main() {
       expect(restored.widgetShowLunarWeek, isTrue);
       expect(restored.widgetMysteryMode, isTrue);
       expect(restored.widgetQuoteMode, isTrue);
+      expect(restored.widgetUrgentHighlight, isTrue);
       expect(restored.widgetListMode, isTrue);
       expect(restored.widgetFontFamily, 'mono');
       expect(restored.widgetTextOutline, isTrue);
@@ -157,7 +160,7 @@ void main() {
 
     test('preference values include protocol version and every key', () {
       final values = widgetPreferenceValues(const AppSettings());
-      expect(values['widget_protocol_version'], 4);
+      expect(values['widget_protocol_version'], 5);
       expect(values['widget_color'], 'ff0f766e');
       expect(
         values.keys,
@@ -176,6 +179,7 @@ void main() {
           'widget_show_lunar_week',
           'widget_mystery_mode',
           'widget_quote_mode',
+          'widget_urgent_highlight',
           'widget_list_mode',
           'widget_font_family',
           'widget_text_outline',
@@ -206,6 +210,7 @@ void main() {
           widgetUnitText: '距离',
           widgetShowIcon: true,
           widgetMysteryMode: true,
+          widgetUrgentHighlight: true,
           widgetWallpaperColor: 0xFF001122,
         ),
       );
@@ -216,6 +221,7 @@ void main() {
       expect(values['widget_unit_text'], '距离');
       expect(values['widget_show_icon'], isTrue);
       expect(values['widget_mystery_mode'], isTrue);
+      expect(values['widget_urgent_highlight'], isTrue);
       expect(values['widget_wallpaper_color'], 0xFF001122);
     });
   });

@@ -26,6 +26,7 @@ class StorageService {
   static const _widgetShowLunarWeekKey = 'widget_show_lunar_week';
   static const _widgetMysteryModeKey = 'widget_mystery_mode';
   static const _widgetQuoteModeKey = 'widget_quote_mode';
+  static const _widgetUrgentHighlightKey = 'widget_urgent_highlight';
   static const _widgetListModeKey = 'widget_list_mode';
   static const _widgetFontFamilyKey = 'widget_font_family';
   static const _widgetTextOutlineKey = 'widget_text_outline';
@@ -75,6 +76,9 @@ class StorageService {
       ),
       'widgetMysteryMode': preferences.getBool(_widgetMysteryModeKey),
       'widgetQuoteMode': preferences.getBool(_widgetQuoteModeKey),
+      'widgetUrgentHighlight': preferences.getBool(
+        _widgetUrgentHighlightKey,
+      ),
       'widgetListMode': preferences.getBool(_widgetListModeKey),
       'widgetFontFamily': preferences.getString(_widgetFontFamilyKey),
       'widgetTextOutline': preferences.getBool(_widgetTextOutlineKey),
@@ -130,6 +134,10 @@ class StorageService {
       ),
       preferences.setBool(_widgetMysteryModeKey, settings.widgetMysteryMode),
       preferences.setBool(_widgetQuoteModeKey, settings.widgetQuoteMode),
+      preferences.setBool(
+        _widgetUrgentHighlightKey,
+        settings.widgetUrgentHighlight,
+      ),
       preferences.setBool(_widgetListModeKey, settings.widgetListMode),
       preferences.setString(_widgetFontFamilyKey, settings.widgetFontFamily),
       preferences.setBool(_widgetTextOutlineKey, settings.widgetTextOutline),

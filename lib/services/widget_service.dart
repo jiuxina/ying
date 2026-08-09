@@ -32,6 +32,8 @@ class WidgetService {
   static const iOSWidgetName = 'DaymarkWidget';
   static const qualifiedAndroidWidgetName =
       'com.jiuxina.ying.DaymarkWidgetProvider';
+  static const qualifiedDetailWidgetName =
+      'com.jiuxina.ying.DaymarkDetailWidgetProvider';
 
   static Future<void> initialize() async {
     await HomeWidget.setAppGroupId(appGroupId);
@@ -76,10 +78,18 @@ class WidgetService {
       for (final entry in widgetPreferenceValues(settings).entries)
         HomeWidget.saveWidgetData(entry.key, entry.value),
     ]);
-    await HomeWidget.updateWidget(
-      qualifiedAndroidName: qualifiedAndroidWidgetName,
-      iOSName: iOSWidgetName,
-    );
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await Future.wait([
+        HomeWidget.updateWidget(
+          qualifiedAndroidName: qualifiedAndroidWidgetName,
+        ),
+        HomeWidget.updateWidget(
+          qualifiedAndroidName: qualifiedDetailWidgetName,
+        ),
+      ]);
+    } else {
+      await HomeWidget.updateWidget(iOSName: iOSWidgetName);
+    }
   }
 
   static Future<WidgetStatus> status() async {
@@ -117,13 +127,25 @@ class WidgetService {
     qualifiedAndroidName: qualifiedAndroidWidgetName,
   );
 
+  static Future<void> requestDetailPin() => HomeWidget.requestPinWidget(
+    qualifiedAndroidName: qualifiedDetailWidgetName,
+  );
+
   /// 只刷新已保存的小部件数据（不重写事件与偏好），用于 Toast 等轻量更新。
   static Future<void> syncWidgetDataOnly() async {
     await HomeWidget.setAppGroupId(appGroupId);
-    await HomeWidget.updateWidget(
-      qualifiedAndroidName: qualifiedAndroidWidgetName,
-      iOSName: iOSWidgetName,
-    );
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await Future.wait([
+        HomeWidget.updateWidget(
+          qualifiedAndroidName: qualifiedAndroidWidgetName,
+        ),
+        HomeWidget.updateWidget(
+          qualifiedAndroidName: qualifiedDetailWidgetName,
+        ),
+      ]);
+    } else {
+      await HomeWidget.updateWidget(iOSName: iOSWidgetName);
+    }
   }
 }
 
@@ -161,7 +183,7 @@ Map<String, Object?> widgetPreferenceValues(
 }) {
   final today = now ?? DateTime.now();
   return {
-    'widget_protocol_version': 4,
+    'widget_protocol_version': 5,
     'widget_color': settings.widgetColor.toRadixString(16).padLeft(8, '0'),
     'widget_font_scale': settings.widgetFontScale,
     'widget_show_note': settings.widgetShowNote,
@@ -175,6 +197,7 @@ Map<String, Object?> widgetPreferenceValues(
     'widget_show_lunar_week': settings.widgetShowLunarWeek,
     'widget_mystery_mode': settings.widgetMysteryMode,
     'widget_quote_mode': settings.widgetQuoteMode,
+    'widget_urgent_highlight': settings.widgetUrgentHighlight,
     'widget_list_mode': settings.widgetListMode,
     'widget_font_family': settings.widgetFontFamily,
     'widget_text_outline': settings.widgetTextOutline,

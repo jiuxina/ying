@@ -895,6 +895,31 @@ void main() {
       expect(find.text('学习'), findsOneWidget);
       handle.dispose();
     });
+
+    testWidgets('临近高亮在预览中替换文案', (tester) async {
+      final base = DateTime.now();
+      final today = DateTime(base.year, base.month, base.day);
+      final urgentEvent = CountdownEvent(
+        id: 'urgent-preview',
+        title: '考试',
+        targetDate: today.add(const Duration(days: 2, hours: 9)),
+        category: '学习',
+        createdAt: today.subtract(const Duration(days: 2)),
+      );
+      await tester.pumpWidget(
+        glassApp(
+          Scaffold(
+            body: WidgetPreviewSection(
+              events: [urgentEvent],
+              settings: const AppSettings(widgetUrgentHighlight: true),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('只剩2天'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 

@@ -23,26 +23,48 @@ object MidnightRefreshScheduler {
 
     fun schedule(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        alarmManager.setWindow(
-            AlarmManager.RTC_WAKEUP,
-            nextMidnightMillis(ZonedDateTime.now()),
-            WINDOW_MILLIS,
-            pendingIntent(context),
+        scheduleProvider(context, alarmManager, DaymarkWidgetProvider::class.java, 0)
+        scheduleProvider(
+            context,
+            alarmManager,
+            DaymarkDetailWidgetProvider::class.java,
+            1,
         )
     }
 
     fun cancel(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        alarmManager.cancel(pendingIntent(context))
+        alarmManager.cancel(pendingIntent(context, DaymarkWidgetProvider::class.java, 0))
+        alarmManager.cancel(
+            pendingIntent(context, DaymarkDetailWidgetProvider::class.java, 1),
+        )
     }
 
-    private fun pendingIntent(context: Context): PendingIntent {
-        val intent = Intent(context, DaymarkWidgetProvider::class.java).apply {
+    private fun scheduleProvider(
+        context: Context,
+        alarmManager: AlarmManager,
+        providerClass: Class<out Any>,
+        requestCode: Int,
+    ) {
+        alarmManager.setWindow(
+            AlarmManager.RTC_WAKEUP,
+            nextMidnightMillis(ZonedDateTime.now()),
+            WINDOW_MILLIS,
+            pendingIntent(context, providerClass, requestCode),
+        )
+    }
+
+    private fun pendingIntent(
+        context: Context,
+        providerClass: Class<out Any>,
+        requestCode: Int,
+    ): PendingIntent {
+        val intent = Intent(context, providerClass).apply {
             action = ACTION_MIDNIGHT_REFRESH
         }
         return PendingIntent.getBroadcast(
             context,
-            0,
+            requestCode,
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )

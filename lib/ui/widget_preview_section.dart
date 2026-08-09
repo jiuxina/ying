@@ -206,6 +206,18 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
                       ],
                     ],
                   ),
+                  if (defaultTargetPlatform == TargetPlatform.android &&
+                      status.pinSupported) ...[
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        await WidgetService.requestDetailPin();
+                        if (mounted) _reloadStatus();
+                      },
+                      icon: const Icon(Icons.filter_center_focus_rounded),
+                      label: const Text('添加单事件小部件'),
+                    ),
+                  ],
                 ],
               );
             },
@@ -398,6 +410,16 @@ class _PreviewBody extends StatelessWidget {
     final mystery = settings.widgetMysteryMode;
     final mainText = mystery ? '🕯️' : countDisplay.mainText;
     final unitText = mystery ? '快到了' : countDisplay.unitText;
+    final urgentLevel = settings.widgetUrgentHighlight
+        ? widgetUrgentLevel(current)
+        : 0;
+    final urgentActive = urgentLevel > 0 && !mystery;
+    final displayUnitText = urgentActive
+        ? widgetUrgentLabel(urgentLevel, current.displayDays)
+        : unitText;
+    final displayMainColor = urgentActive
+        ? Color(widgetUrgentArgb(urgentLevel))
+        : primaryText;
     final showIcon = settings.widgetShowIcon && current.icon.isNotEmpty;
     final fontFamily = widgetFontName(settings.widgetFontFamily);
     final italic = settings.widgetFontFamily == 'hand';
@@ -478,7 +500,7 @@ class _PreviewBody extends StatelessWidget {
             Text(
               mainText,
               style: TextStyle(
-                color: primaryText,
+                color: displayMainColor,
                 fontSize: mainFontSize,
                 fontWeight: FontWeight.w800,
                 height: 0.95,
@@ -487,13 +509,18 @@ class _PreviewBody extends StatelessWidget {
                 fontStyle: italic ? FontStyle.italic : null,
               ),
             ),
-            if (unitText.isNotEmpty) ...[
+            if (displayUnitText.isNotEmpty) ...[
               const SizedBox(width: 6),
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
-                  unitText,
-                  style: TextStyle(color: secondaryText, shadows: shadow),
+                  displayUnitText,
+                  style: TextStyle(
+                    color: urgentActive
+                        ? displayMainColor.withValues(alpha: 0.92)
+                        : secondaryText,
+                    shadows: shadow,
+                  ),
                 ),
               ),
             ],
@@ -735,6 +762,16 @@ class _ListRow extends StatelessWidget {
     final mystery = settings.widgetMysteryMode;
     final mainText = mystery ? '🕯️' : countDisplay.mainText;
     final unitText = mystery ? '快到了' : countDisplay.unitText;
+    final urgentLevel = settings.widgetUrgentHighlight
+        ? widgetUrgentLevel(event)
+        : 0;
+    final urgentActive = urgentLevel > 0 && !mystery;
+    final displayUnitText = urgentActive
+        ? widgetUrgentLabel(urgentLevel, event.displayDays)
+        : unitText;
+    final displayMainColor = urgentActive
+        ? Color(widgetUrgentArgb(urgentLevel))
+        : primaryText;
     final fontFamily = widgetFontName(settings.widgetFontFamily);
     final showIcon = settings.widgetShowIcon && event.icon.isNotEmpty;
     final subtitle = [
@@ -779,17 +816,22 @@ class _ListRow extends StatelessWidget {
         Text(
           mainText,
           style: TextStyle(
-            color: primaryText,
+            color: displayMainColor,
             fontSize: compact ? 18 : 20,
             fontWeight: FontWeight.w800,
             fontFamily: fontFamily,
           ),
         ),
-        if (unitText.isNotEmpty) ...[
+        if (displayUnitText.isNotEmpty) ...[
           const SizedBox(width: 4),
           Text(
-            unitText,
-            style: TextStyle(color: secondaryText, fontSize: 11),
+            displayUnitText,
+            style: TextStyle(
+              color: urgentActive
+                  ? displayMainColor.withValues(alpha: 0.92)
+                  : secondaryText,
+              fontSize: 11,
+            ),
           ),
         ],
       ],

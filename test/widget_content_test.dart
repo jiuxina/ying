@@ -112,6 +112,42 @@ void main() {
     expect(widgetFontName('hand'), 'serif');
   });
 
+  group('最后 N 天高亮', () {
+    test('7 / 3 / 1 天内按阈值切换等级', () {
+      final base = DateTime(2026, 8, 8);
+      CountdownEvent atDays(int days) => CountdownEvent(
+        id: 'urgent-$days',
+        title: '考试',
+        targetDate: DateTime(
+          base.year,
+          base.month,
+          base.day,
+        ).add(Duration(days: days)),
+        category: '学习',
+        createdAt: base.subtract(const Duration(days: 30)),
+      );
+      expect(widgetUrgentLevel(atDays(0), now: base), 1);
+      expect(widgetUrgentLevel(atDays(1), now: base), 1);
+      expect(widgetUrgentLevel(atDays(2), now: base), 3);
+      expect(widgetUrgentLevel(atDays(3), now: base), 3);
+      expect(widgetUrgentLevel(atDays(4), now: base), 7);
+      expect(widgetUrgentLevel(atDays(7), now: base), 7);
+      expect(widgetUrgentLevel(atDays(8), now: base), 0);
+      expect(widgetUrgentLevel(atDays(-1), now: base), 0);
+    });
+
+    test('标签与强调色按等级返回', () {
+      expect(widgetUrgentArgb(7), 0xFFB45309);
+      expect(widgetUrgentArgb(3), 0xFFC2410C);
+      expect(widgetUrgentArgb(1), 0xFFB91C1C);
+      expect(widgetUrgentArgb(0), 0);
+      expect(widgetUrgentLabel(7, 5), '快到了');
+      expect(widgetUrgentLabel(3, 3), '只剩3天');
+      expect(widgetUrgentLabel(1, 1), '只剩1天');
+      expect(widgetUrgentLabel(1, 0), '就是今天');
+    });
+  });
+
   test('Emoji 图标预设始终包含空选项', () {
     expect(eventIconOptions.first, '');
     expect(eventIconOptions.length, greaterThan(10));

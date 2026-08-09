@@ -71,7 +71,21 @@ internal fun launchIntent(
     }
 }
 
-class DaymarkWidgetProvider : HomeWidgetProvider() {
+open class DaymarkWidgetProvider : HomeWidgetProvider() {
+    protected open fun providerClass(): Class<out DaymarkWidgetProvider> =
+        DaymarkWidgetProvider::class.java
+
+    protected open fun perWidgetIndexKey(widgetId: Int): String =
+        "daymark_widget_index_$widgetId"
+
+    protected open fun supportsListMode(): Boolean = true
+
+    protected open fun prefsName(): String = "HomeWidgetPreferences"
+
+    protected open fun refreshAll(context: Context) {
+        updateAllWidgets(context)
+    }
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -88,7 +102,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
                 val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
                 val newIndex = intent.getIntExtra(EXTRA_INDEX, 0)
                 val data = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                data.edit().putInt("daymark_widget_index_$widgetId", newIndex).apply()
+                data.edit().putInt(perWidgetIndexKey(widgetId), newIndex).apply()
                 val manager = AppWidgetManager.getInstance(context)
                 onUpdate(context, manager, intArrayOf(widgetId), data)
                 return
@@ -101,7 +115,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
             Intent.ACTION_TIMEZONE_CHANGED,
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_MY_PACKAGE_REPLACED -> {
-                updateAllWidgets(context)
+                refreshAll(context)
                 MidnightRefreshScheduler.schedule(context)
                 return
             }
@@ -109,13 +123,13 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         if (intent.action == ACTION_REFRESH_FLIP) {
             val data = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             data.edit().remove(FLIP_DAY_KEY).apply()
-            updateAllWidgets(context)
+            refreshAll(context)
             return
         }
         super.onReceive(context, intent)
     }
 
-    private fun updateWidgets(
+    protected open fun updateWidgets(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
@@ -123,7 +137,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
     ) {
         showPendingToast(context, widgetData)
         val events = parseEvents(widgetData.getString("widget_events", "[]") ?: "[]")
-        val listMode = widgetData.getBoolean("widget_list_mode", false)
+        val listMode = widgetData.getBoolean("widget_list_mode", false) && supportsListMode()
         val rawPending = widgetData.getString(PENDING_UNDO_KEY, "")
         val expired = pendingUndoPayload(rawPending)?.takeIf { it.isExpired() }
         if (expired != null) {
@@ -176,7 +190,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
             val holiday = resolveHoliday(
                 widgetData.getString("widget_holiday", ""),
                 LocalDate.now(),
-                events.getOrNull(widgetData.getInt("daymark_widget_index_$widgetId", 0)),
+                events.getOrNull(widgetData.getInt(perWidgetIndexKey(widgetId), 0)),
             )
             if (listMode) {
                 updateListWidget(context, views, widgetData, style)
@@ -214,7 +228,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_add,
             launchIntent(context, "ying://add", LAUNCH_REQUEST_ADD),
         )
-        val indexKey = "daymark_widget_index_$widgetId"
+        val indexKey = perWidgetIndexKey(widgetId)
         val requestedIndex = widgetData.getInt(indexKey, 0)
         val index = if (events.isEmpty()) 0 else requestedIndex.coerceIn(0, events.lastIndex)
         val event = events.getOrNull(index)
@@ -283,6 +297,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_unit,
             if (mystery) "快到了" else countUnitText(event, preset, days, countUp),
         )
+        applyUrgentHighlight(views, widgetData, days, mystery, preset)
         if (!compact && widgetData.getBoolean("widget_show_category", true)) {
             views.setTextViewText(R.id.widget_category, event.category)
             views.setViewVisibility(R.id.widget_category, View.VISIBLE)
@@ -360,7 +375,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
 
     private fun scheduleFlipRefresh(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, DaymarkWidgetProvider::class.java).apply {
+        val intent = Intent(context, providerClass()).apply {
             action = ACTION_REFRESH_FLIP
         }
         alarmManager.set(
@@ -428,6 +443,17 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
                 ids.unit,
                 if (mystery) "快到了" else countUnitText(event, preset, days, countUp),
             )
+            if (widgetData.getBoolean("widget_urgent_highlight", false) && !mystery) {
+                val level = urgentLevel(days)
+                val accent = urgentAccent(level)
+                if (accent != null) {
+                    views.setTextColor(ids.days, accent)
+                    views.setTextColor(ids.unit, accent)
+                    if (preset != "weeks") {
+                        views.setTextViewText(ids.unit, urgentLabel(level, days))
+                    }
+                }
+            }
             val subtitle = buildList {
                 if (showCategory) add(event.category)
                 if (showPrecise) add(preciseTimeText(event, System.currentTimeMillis()))
@@ -466,7 +492,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
 
     private fun scheduleUndoExpiry(context: Context, pending: PendingUndoPayload) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, DaymarkWidgetProvider::class.java).apply {
+        val intent = Intent(context, providerClass()).apply {
             action = ACTION_REFRESH_PENDING_UNDO
             data = Uri.parse("ying://undo-expire/${pending.eventId}")
         }
@@ -485,7 +511,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
 
     private fun cancelUndoExpiry(context: Context, eventId: String) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, DaymarkWidgetProvider::class.java).apply {
+        val intent = Intent(context, providerClass()).apply {
             action = ACTION_REFRESH_PENDING_UNDO
             data = Uri.parse("ying://undo-expire/$eventId")
         }
@@ -539,6 +565,28 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         val scale = widgetFontScale(data)
         views.setTextViewTextSize(R.id.widget_title, 2, 18f * scale)
         views.setTextViewTextSize(R.id.widget_note, 2, 14f * scale)
+    }
+
+    private fun applyUrgentHighlight(
+        views: RemoteViews,
+        data: SharedPreferences,
+        days: Long,
+        mystery: Boolean,
+        preset: String?,
+    ) {
+        if (!data.getBoolean("widget_urgent_highlight", false) || mystery) return
+        val level = urgentLevel(days)
+        val accent = urgentAccent(level) ?: return
+        listOf(
+            R.id.widget_days,
+            R.id.widget_days_mono,
+            R.id.widget_days_pixel,
+            R.id.widget_days_hand,
+        ).forEach { id -> views.setTextColor(id, accent) }
+        views.setTextColor(R.id.widget_unit, accent)
+        if (preset != "weeks") {
+            views.setTextViewText(R.id.widget_unit, urgentLabel(level, days))
+        }
     }
 
     private fun applyBackdrop(
@@ -868,7 +916,7 @@ class DaymarkWidgetProvider : HomeWidgetProvider() {
         size: Int,
     ): PendingIntent {
         val index = if (size == 0) 0 else (requested % size + size) % size
-        val intent = Intent(context, DaymarkWidgetProvider::class.java).apply {
+        val intent = Intent(context, providerClass()).apply {
             action = ACTION_NAVIGATE
             data = Uri.parse("ying://navigate/$widgetId/$index")
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
@@ -1074,6 +1122,28 @@ internal fun countUnitText(
         }
     }
     return if (verb == "就是今天") "就是今天" else "天 · $verb"
+}
+
+internal fun urgentLevel(days: Long): Int = when {
+    days < 0L -> 0
+    days <= 1L -> 1
+    days <= 3L -> 3
+    days <= 7L -> 7
+    else -> 0
+}
+
+internal fun urgentAccent(level: Int): Int? = when (level) {
+    7 -> argb(0xB4, 0x53, 0x09)
+    3 -> argb(0xC2, 0x41, 0x0C)
+    1 -> argb(0xB9, 0x1C, 0x1C)
+    else -> null
+}
+
+internal fun urgentLabel(level: Int, days: Long): String = when (level) {
+    7 -> "快到了"
+    3 -> "只剩${days}天"
+    1 -> if (days == 0L) "就是今天" else "只剩${days}天"
+    else -> ""
 }
 
 internal fun weekCount(days: Long): Long =

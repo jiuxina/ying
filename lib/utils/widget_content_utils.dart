@@ -162,3 +162,30 @@ String widgetFontName(String family) => switch (family) {
   'hand' => 'serif',
   _ => '',
 };
+
+/// 最后 N 天高亮等级：0 表示未触发，7 / 3 / 1 对应 7 天、3 天、1 天内。
+/// 已过去的事件（正计时）不触发高亮。
+int widgetUrgentLevel(CountdownEvent event, {DateTime? now}) {
+  final days = event.dayDelta(now);
+  if (days < 0) return 0;
+  if (days <= 1) return 1;
+  if (days <= 3) return 3;
+  if (days <= 7) return 7;
+  return 0;
+}
+
+/// 临近高亮对应的 ARGB 强调色；0 表示未触发，调用方自行决定是否使用。
+int widgetUrgentArgb(int level) => switch (level) {
+  7 => 0xFFB45309,
+  3 => 0xFFC2410C,
+  1 => 0xFFB91C1C,
+  _ => 0,
+};
+
+/// 临近高亮替换单位区域的文案；[days] 为剩余天数（非负）。
+String widgetUrgentLabel(int level, int days) => switch (level) {
+  7 => '快到了',
+  3 => '只剩$days天',
+  1 => days == 0 ? '就是今天' : '只剩$days天',
+  _ => '',
+};

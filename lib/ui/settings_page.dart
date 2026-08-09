@@ -298,6 +298,16 @@ class SettingsPage extends ConsumerWidget {
                 ),
               ),
               const _InsetDivider(),
+              _SettingSwitch(
+                icon: Icons.local_fire_department_outlined,
+                title: '临近高亮',
+                subtitle: '7 天、3 天、1 天内自动切换强调色与文案',
+                value: settings.widgetUrgentHighlight,
+                onChanged: (value) => controller.updateSettings(
+                  settings.copyWith(widgetUrgentHighlight: value),
+                ),
+              ),
+              const _InsetDivider(),
               _ChoiceSetting(
                 icon: Icons.text_fields_rounded,
                 title: '单位文案',

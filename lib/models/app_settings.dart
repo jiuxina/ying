@@ -34,6 +34,7 @@ class AppSettings {
     this.widgetShowLunarWeek = false,
     this.widgetMysteryMode = false,
     this.widgetQuoteMode = false,
+    this.widgetUrgentHighlight = false,
     this.widgetListMode = false,
     this.widgetFontFamily = 'system',
     this.widgetTextOutline = false,
@@ -60,6 +61,7 @@ class AppSettings {
   final bool widgetShowLunarWeek;
   final bool widgetMysteryMode;
   final bool widgetQuoteMode;
+  final bool widgetUrgentHighlight;
   final bool widgetListMode;
   final String widgetFontFamily;
   final bool widgetTextOutline;
@@ -86,6 +88,7 @@ class AppSettings {
     bool? widgetShowLunarWeek,
     bool? widgetMysteryMode,
     bool? widgetQuoteMode,
+    bool? widgetUrgentHighlight,
     bool? widgetListMode,
     String? widgetFontFamily,
     bool? widgetTextOutline,
@@ -113,6 +116,8 @@ class AppSettings {
       widgetShowLunarWeek: widgetShowLunarWeek ?? this.widgetShowLunarWeek,
       widgetMysteryMode: widgetMysteryMode ?? this.widgetMysteryMode,
       widgetQuoteMode: widgetQuoteMode ?? this.widgetQuoteMode,
+      widgetUrgentHighlight:
+          widgetUrgentHighlight ?? this.widgetUrgentHighlight,
       widgetListMode: widgetListMode ?? this.widgetListMode,
       widgetFontFamily: widgetFontFamily ?? this.widgetFontFamily,
       widgetTextOutline: widgetTextOutline ?? this.widgetTextOutline,
@@ -143,6 +148,7 @@ class AppSettings {
     'widgetShowLunarWeek': widgetShowLunarWeek,
     'widgetMysteryMode': widgetMysteryMode,
     'widgetQuoteMode': widgetQuoteMode,
+    'widgetUrgentHighlight': widgetUrgentHighlight,
     'widgetListMode': widgetListMode,
     'widgetFontFamily': widgetFontFamily,
     'widgetTextOutline': widgetTextOutline,
@@ -180,6 +186,7 @@ class AppSettings {
       widgetShowLunarWeek: (map['widgetShowLunarWeek'] as bool?) ?? false,
       widgetMysteryMode: (map['widgetMysteryMode'] as bool?) ?? false,
       widgetQuoteMode: (map['widgetQuoteMode'] as bool?) ?? false,
+      widgetUrgentHighlight: (map['widgetUrgentHighlight'] as bool?) ?? false,
       widgetListMode: (map['widgetListMode'] as bool?) ?? false,
       widgetFontFamily: (map['widgetFontFamily'] as String?) ?? 'system',
       widgetTextOutline: (map['widgetTextOutline'] as bool?) ?? false,
