@@ -1,0 +1,17 @@
+name = "ying-verify"
+main = "verify_worker.js"
+compatibility_date = "2024-09-23"
+workers_dev = true
+
+# 1) 先创建 KV namespace：
+#    wrangler kv namespace create ying-unlock
+# 2) 把输出的 id 填到下面。
+[[kv_namespaces]]
+binding = "UNLOCK_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# 3) 设置两个 secret：
+#    wrangler secret put ADMIN_TOKEN
+#    wrangler secret put SIGN_PRIVATE_JWK   （值来自 node server/generate_signing_keys.mjs 输出的 privateJwk JSON）
+# 4) 部署：
+#    wrangler deploy

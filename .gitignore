@@ -45,6 +45,12 @@ app.*.map.json
 /android/app/release
 tools/vision_bridge/.env
 
+# 赞助解锁：密钥库存与签名私钥绝不入库
+server/signing-keys.json
+server/.dev-secrets
+keys.csv
+*.keys.csv
+
 # Release signing
 key.properties
 *.jks
