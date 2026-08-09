@@ -100,7 +100,7 @@
 - `lib/ui/settings_page_widgets.dart` `_CategoryCard`：删除图标外 40x40 的 `primary 10%` 圆角色块，图标颜色从 `primary` 改为 `onSurfaceVariant`。这是用户点名的“外观与显示”入口。
 - `lib/ui/glass_ui.dart` `GlassIconButton`：删除选中态 `primary 10%` 背景与 `primary` 图标，改为透明背景加中性图标。
 - `lib/ui/glass_ui.dart` `GlassChoiceTile`：删除选中态 `primary 10%` 背景、`primary 32%` 边框、`primary` 图标与 `primary` 对勾，全部改中性；选中由字重与中性对勾表达。
-- `lib/ui/glass_ui.dart` `GlassStatusPill`：改为中性底（`surfaceContainerHighest` 或 `outlineVariant 40%`）加中性文字；语义状态用前置 6px 圆点表达，不再整块上色。
+- `lib/ui/glass_ui.dart` `GlassStatusPill`：改为纯中性文字，无背景、无边框、无状态圆点；状态仅通过文字表达。
 - `lib/ui/event_filter_bar.dart` `_FilterButton`：删除选中态整块 `primary` 填充，改为中性填充加 `onSurface` 图标文字；有筛选条件时仅在图标右上角显示 5px 主色圆点。
 - `lib/ui/event_filter_bar.dart` `_CategoryChip`：删除选中态 `primary` 填充，改为中性填充、中性文字加粗。
 - `lib/ui/event_filter_bar.dart` “清除筛选”文字按钮：前景色从 `primary` 改为中性 `onSurfaceVariant`，其中的图标不再用品牌色。
@@ -116,7 +116,7 @@
 - `lib/ui/event_card.dart` 卡片菜单 `_CardActionRow`：删除图标从 `error` 改为 `onSurfaceVariant`，红色只保留给“删除”文字。
 - `lib/ui/settings_page_widgets.dart` `_StyleOption`：删除选中态 `primary 10%` 背景、`primary 38%` 边框与 `primary` 图标/文字，改中性。
 - `lib/ui/app_theme.dart` `chipTheme`：`selectedColor` 从 `primary` 改为中性 `surfaceContainerHighest`，选中标签用 `onSurface`。
-- `lib/ui/reminder_diagnostics_section.dart` 与 `lib/ui/widget_preview_section.dart` 的状态行：行首图标保持 `onSurfaceVariant`，右侧 `GlassStatusPill` 随新规则改中性底，颜色只保留给 6px 状态圆点。
+- `lib/ui/reminder_diagnostics_section.dart` 与 `lib/ui/widget_preview_section.dart` 的状态行：行首图标保持 `onSurfaceVariant`，右侧 `GlassStatusPill` 随新规则改为纯中性文字。
 - `lib/ui/widget_preview_painters.dart` 与预览卡片内的彩色图标：属于小部件样式预览本身，不改；预览区外壳按钮与图标保持中性。
 
 例外保留：实底主按钮/底部新建圆钮内的图标使用 `onPrimary` 白色；颜色选择器 `_ColorButton` 的白色对勾保留（色块本身就是选项值）；滑块、开关等控件轨道保留单一主色。
@@ -125,7 +125,7 @@
 
 统一规则：正文与标签不使用彩色文字，也不放在彩色垫底上；选中态、状态标签全部改中性。语义色只保留两种用途：倒计时数字的状态色（临近琥珀、已过红、完成灰，数字下方不垫色块）与破坏性操作的红字（如“删除”，无底色）。下列位置全部按此规则修改：
 
-- `lib/ui/glass_ui.dart` `GlassStatusPill`：彩色文字 + 彩色底（`accent 11%` 背景与 `accent` 文字）改为中性文字加中性底，语义色只留给 6px 前置圆点（与 2.8 同项）。
+- `lib/ui/glass_ui.dart` `GlassStatusPill`：彩色文字 + 彩色底改为纯中性文字，不保留状态圆点（与 2.8 同项）。
 - `lib/ui/event_filter_bar.dart` `_FilterButton` 选中态：`onPrimary` 白字 + `primary` 实底改为 `onSurface` 文字 + 中性填充（与 2.8 同项）。
 - `lib/ui/event_filter_bar.dart` `_CategoryChip` 选中态：`onPrimary` 白字 + `primary` 实底改为中性文字 + 中性填充（与 2.8 同项）。
 - `lib/ui/calendar_page.dart` `_ModeButton` 选中态：`onPrimary` 白字 + `primary` 实底改为中性文字 + 中性填充（与 2.8 同项）。
@@ -167,3 +167,4 @@
 - 已按 2.1-2.9 完成全应用视觉改版：主题令牌、玻璃通用控件、首页、事件卡片、筛选工具栏、日历、表单、详情页、设置页与测试同步更新。
 - 验证：`flutter analyze` 0 issues；`flutter test --concurrency=1` 133 项全部通过；debug APK 已构建并安装到模拟器。
 - 模拟器手工验收：首页空态与事件卡片、表单、详情页、设置页、日历页截图通过视觉桥复核，确认无装饰文案、无彩色图标与垫底色块、工具栏图标化、黑白灰层级成立。
+- 追加调整：按用户反馈移除提醒诊断等处状态文字的圆角矩形底与边框，并进一步移除状态小圆点，只保留纯文字。
