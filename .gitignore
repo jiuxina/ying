@@ -50,6 +50,7 @@ server/signing-keys.json
 server/.dev-secrets
 keys.csv
 *.keys.csv
+keys_activity.csv
 
 # Release signing
 key.properties
