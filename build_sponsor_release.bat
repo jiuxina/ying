@@ -1,15 +1,13 @@
 @echo off
-rem 正式赞助版构建：混淆 + 树摇图标 + Worker 地址注入。
-rem 使用前先设置 UNLOCK_API_BASE，例如：
-rem   set UNLOCK_API_BASE=https://ying-verify.xxx.workers.dev
+rem Universal sponsor release build: obfuscation + tree-shaken icons + Worker URL.
+rem Uses the live Worker URL by default; override with UNLOCK_API_BASE.
 if "%UNLOCK_API_BASE%"=="" (
-  echo 请先设置 UNLOCK_API_BASE 环境变量
-  exit /b 1
+  set "UNLOCK_API_BASE=https://ying-verify.00000721.xyz"
 )
 if not exist android\key.properties (
   if "%ANDROID_KEYSTORE_PATH%"=="" (
-    echo 缺少签名配置：请创建 android\key.properties 或设置 ANDROID_KEYSTORE_*
-    echo 生成与配置方法见 docs\sponsor-unlock-plan.md
+    echo Missing signing config: create android\key.properties or set ANDROID_KEYSTORE_*
+    echo See docs\sponsor-unlock-plan.md for details
     exit /b 1
   )
 )
