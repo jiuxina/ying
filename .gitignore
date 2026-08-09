@@ -44,6 +44,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 tools/vision_bridge/.env
+.env
 
 # 赞助解锁：密钥库存与签名私钥绝不入库
 server/signing-keys.json

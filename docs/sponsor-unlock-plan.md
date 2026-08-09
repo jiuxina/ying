@@ -2,7 +2,7 @@
 
 > 目标：核心功能完全免费，只把不常用的趣味 / 装饰功能作为"赞助解锁"；赞助走爱发电自动发货密钥，采用"密钥验证 + 设备绑定 + 本地解锁"；不走应用商店、不做订阅、不限制核心功能，最大限度保护免费用户与口碑。
 
-> 实施状态：代码已完成并提交（v3.0.0+6）；待你部署 Cloudflare Worker、生成密钥库存并配置爱发电自动随机回复后即可启用。
+> 实施状态：代码已完成并提交（v3.0.0+6）；正式签名 APK 已构建；Cloudflare Worker 部署脚本已就绪，等待 Token 权限补齐后上传。
 
 ## 1. 模式定位
 
@@ -167,7 +167,7 @@ tools/
 
 1. 仓库转私有（或按需保留 README / 文档），不再公开完整源码。
 2. 构建启用 Flutter 混淆（`--obfuscate --split-debug-info`）与 Android R8 / ProGuard。
-3. APK 接入第三方加固（腾讯乐固、梆梆、爱加密等），并做签名校验。
+3. v1 暂不接入付费第三方加固：采用 Flutter 混淆 + 图标树摇 + 签名校验；R8 已尝试但受 `integration_test` release 编译兼容限制，后续需要再单独启用。
 4. 验证接口启用 HTTPS、TLS 固定与频率限制。
 5. 用 `build_sponsor_release.bat` 构建混淆 APK，发布到公开 release 仓库。
 6. 用 `tools/publish_release.js` 更新 Worker `/v1/latest` 版本清单。

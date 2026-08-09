@@ -19,6 +19,17 @@ node server/generate_signing_keys.mjs
 
 ## 部署
 
+推荐方式（自动创建 KV 并写入 secret）：
+
+```bash
+# 需要 Cloudflare API Token 具备以下权限：
+#   Account - Workers Scripts: Edit
+#   Account - Workers KV Storage: Edit
+node server/deploy_worker.mjs
+```
+
+也可以使用 wrangler 手动部署：
+
 ```bash
 cd server
 wrangler kv namespace create ying-unlock
