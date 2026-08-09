@@ -353,6 +353,8 @@ Android 桌面小部件的个性化路线图、开发顺序、注意事项与完
 
 UI 视觉改版计划见 [docs/ui-visual-redesign-plan.md](docs/ui-visual-redesign-plan.md)。
 
+赞助制解锁方案见 [docs/sponsor-unlock-plan.md](docs/sponsor-unlock-plan.md)。
+
 ---
 
 ## 版本计划
