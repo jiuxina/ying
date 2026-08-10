@@ -56,7 +56,7 @@ void main() {
     });
   });
 
-  group('小部件协议 v6', () {
+  group('小部件协议 v7', () {
     test('偏好值携带协议版本与节日字段', () {
       final values = widgetPreferenceValues(
         const AppSettings(),
