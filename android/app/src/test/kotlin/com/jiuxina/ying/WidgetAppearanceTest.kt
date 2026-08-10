@@ -263,6 +263,19 @@ class WidgetAppearanceTest {
     }
 
     @Test
+    fun widgetWeightUsesRemoteViewsSafeFontVariation() {
+        val source = File("src/main/kotlin/com/jiuxina/ying/DaymarkWidgetProvider.kt").readText()
+        assertFalse(
+            "RemoteViews cannot call TextPaint.setFakeBoldText on TextView",
+            "\"setFakeBoldText\"" in source,
+        )
+        assertTrue(
+            "bold approximation should use RemoteViews-safe setFontVariationSettings",
+            "\"setFontVariationSettings\"" in source,
+        )
+    }
+
+    @Test
     fun phase5SingleWidgetLayoutHasEnvelopeHealthAndNeonViews() {
         val layout = File("src/main/res/layout/daymark_widget.xml").readText()
         assertTrue("single layout should have neon day view", "widget_days_neon" in layout)

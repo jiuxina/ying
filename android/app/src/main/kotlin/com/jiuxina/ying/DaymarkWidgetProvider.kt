@@ -1146,10 +1146,10 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
 
         val holidayVisible =
             branch.element("holidayBadge").visible && holiday.isNotEmpty()
-        views.setBoolean(
+        applyBoldApprox(
+            views,
             R.id.widget_holiday_badge,
-            "setFakeBoldText",
-            branch.element("holidayBadge").weight >= 600,
+            branch.element("holidayBadge").weight,
         )
         if (holidayVisible) {
             views.setTextViewText(R.id.widget_holiday_badge, holidayLabel(holiday))
@@ -2036,6 +2036,15 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         }
     }
 
+    private fun applyBoldApprox(
+        views: RemoteViews,
+        viewId: Int,
+        weight: Int,
+    ) {
+        if (weight < 600 || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        views.setString(viewId, "setFontVariationSettings", "'wght' 700")
+    }
+
     private fun renderDaysCustom(
         context: Context,
         views: RemoteViews,
@@ -2318,10 +2327,10 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             renderAlignGravity(branch.element("progress").align),
             branch.element("progress").weight,
         )
-        views.setBoolean(
+        applyBoldApprox(
+            views,
             R.id.widget_precise,
-            "setFakeBoldText",
-            branch.element("precise").weight >= 600,
+            branch.element("precise").weight,
         )
     }
 

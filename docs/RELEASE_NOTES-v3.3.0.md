@@ -15,5 +15,6 @@
 - 新功能全部免费开放。
 - 小部件渲染协议升级到 v10，旧配置缺省回退默认值，无需重新配置。
 - Android 动态字重通过位图通道渲染；精确秒与节日徽章使用加粗近似。
+- 修复 Android 小部件因 RemoteViews 无法调用 setFakeBoldText 而显示“无法加载微件”的问题；精确秒与节日徽章改用 setFontVariationSettings 实现加粗近似（Android 8+ 生效）。
 - 旧版本相册背景缺少源图时，重新裁切会引导重新选择照片。
 - iOS WidgetKit 本轮保持原有独立实现。
