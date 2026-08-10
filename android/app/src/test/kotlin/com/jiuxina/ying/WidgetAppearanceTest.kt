@@ -1,6 +1,8 @@
 package com.jiuxina.ying
 
+import android.view.Gravity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -281,6 +283,141 @@ class WidgetAppearanceTest {
         val info = File("src/main/res/xml/daymark_detail_widget_info.xml").readText()
         assertTrue("detail widget should reuse single-event layout", "daymark_widget" in info)
         assertTrue("detail widget should be home-screen only", "home_screen" in info)
+    }
+
+    @Test
+    fun elementStylesParseJsonAndFallBack() {
+        val styles = parseElementStyles(
+            """{"title":{"size":"large","colorMode":"custom","color":-65536,"align":"center"},"prevButton":{"visible":"hide"}}""",
+        )
+        assertEquals(WidgetElementSize.large, styles.getValue("title").size)
+        assertEquals(WidgetColorMode.custom, styles.getValue("title").colorMode)
+        assertEquals(-65536, styles.getValue("title").color)
+        assertEquals(WidgetAlign.center, styles.getValue("title").align)
+        assertEquals(WidgetElementVisible.follow, styles.getValue("title").visible)
+        assertEquals(WidgetElementVisible.hide, styles.getValue("prevButton").visible)
+        assertTrue(parseElementStyles(null).isEmpty())
+        assertTrue(parseElementStyles("{broken").isEmpty())
+    }
+
+    @Test
+    fun verticalAlignParsesWithCenterFallback() {
+        assertEquals(WidgetVerticalAlign.top, parseVerticalAlign("top"))
+        assertEquals(WidgetVerticalAlign.bottom, parseVerticalAlign("bottom"))
+        assertEquals(WidgetVerticalAlign.center, parseVerticalAlign(null))
+        assertEquals(WidgetVerticalAlign.center, parseVerticalAlign("unknown"))
+    }
+
+    @Test
+    fun visibilityTristateOverridesFollowDefault() {
+        assertTrue(effectiveVisible(null, true))
+        assertFalse(effectiveVisible(null, false))
+        assertTrue(
+            effectiveVisible(
+                WidgetElementStyle(visible = WidgetElementVisible.show),
+                false,
+            ),
+        )
+        assertFalse(
+            effectiveVisible(
+                WidgetElementStyle(visible = WidgetElementVisible.hide),
+                true,
+            ),
+        )
+        assertTrue(
+            effectiveVisible(
+                WidgetElementStyle(visible = WidgetElementVisible.follow),
+                true,
+            ),
+        )
+    }
+
+    @Test
+    fun elementColorsResolveModesAndCustom() {
+        val colors = WidgetTextColors(0xFFFFFFFF.toInt(), 0x80FFFFFF.toInt())
+        assertEquals(colors.primary, elementColor(null, colors, defaultPrimary = true))
+        assertEquals(colors.secondary, elementColor(null, colors, defaultPrimary = false))
+        assertEquals(
+            colors.secondary,
+            elementColor(
+                WidgetElementStyle(colorMode = WidgetColorMode.secondary),
+                colors,
+                defaultPrimary = true,
+            ),
+        )
+        assertEquals(
+            0xFF112233.toInt(),
+            elementColor(
+                WidgetElementStyle(
+                    colorMode = WidgetColorMode.custom,
+                    color = 0xFF112233.toInt(),
+                ),
+                colors,
+                defaultPrimary = false,
+            ),
+        )
+        assertEquals(
+            colors.secondary,
+            elementColor(
+                WidgetElementStyle(
+                    colorMode = WidgetColorMode.custom,
+                    color = -1,
+                ),
+                colors,
+                defaultPrimary = false,
+            ),
+        )
+        assertEquals(
+            null,
+            customElementColor(
+                WidgetElementStyle(colorMode = WidgetColorMode.primary),
+            ),
+        )
+        assertEquals(
+            0xFF112233.toInt(),
+            customElementColor(
+                WidgetElementStyle(
+                    colorMode = WidgetColorMode.custom,
+                    color = 0xFF112233.toInt(),
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun elementSizeAndGravityHelpers() {
+        assertEquals(
+            0.8f,
+            elementSizeScale(WidgetElementStyle(size = WidgetElementSize.small)),
+        )
+        assertEquals(1.0f, elementSizeScale(null))
+        assertEquals(
+            1.25f,
+            elementSizeScale(WidgetElementStyle(size = WidgetElementSize.large)),
+        )
+        assertEquals(Gravity.START, elementGravity(null))
+        assertEquals(
+            Gravity.CENTER_HORIZONTAL,
+            elementGravity(WidgetElementStyle(align = WidgetAlign.center)),
+        )
+        assertEquals(
+            Gravity.END,
+            elementGravity(WidgetElementStyle(align = WidgetAlign.end)),
+        )
+        assertEquals(Gravity.TOP, widgetVerticalGravity(WidgetVerticalAlign.top))
+        assertEquals(
+            Gravity.CENTER_VERTICAL,
+            widgetVerticalGravity(WidgetVerticalAlign.center),
+        )
+        assertEquals(
+            Gravity.BOTTOM,
+            widgetVerticalGravity(WidgetVerticalAlign.bottom),
+        )
+        assertEquals(Gravity.START or Gravity.BOTTOM, widgetDateRowGravity(null))
+        assertEquals(
+            Gravity.END or Gravity.BOTTOM,
+            widgetDateRowGravity(WidgetElementStyle(align = WidgetAlign.end)),
+        )
     }
 
     private fun eventAt(iso: String): WidgetEvent {

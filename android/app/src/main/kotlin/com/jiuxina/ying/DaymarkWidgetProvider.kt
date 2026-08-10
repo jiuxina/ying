@@ -227,6 +227,12 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             } else {
                 ""
             }
+            val elementStyles = parseElementStyles(
+                widgetData.getString(WIDGET_ELEMENT_STYLES_KEY, ""),
+            )
+            val verticalAlign = parseVerticalAlign(
+                widgetData.getString(WIDGET_VERTICAL_ALIGN_KEY, "center"),
+            )
             if (listMode) {
                 updateListWidget(
                     context,
@@ -235,6 +241,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                     style,
                     compact,
                     size,
+                    elementStyles,
                 )
             } else {
                 updateSingleWidget(
@@ -247,6 +254,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                     style,
                     holiday,
                     size,
+                    elementStyles,
+                    verticalAlign,
                 )
             }
             appWidgetManager.updateAppWidget(widgetId, views)
@@ -263,6 +272,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         style: WidgetStyle,
         holiday: String,
         size: WidgetBackdropSize,
+        styles: Map<String, WidgetElementStyle>,
+        verticalAlign: WidgetVerticalAlign,
     ) {
         views.setOnClickPendingIntent(
             R.id.widget_root,
@@ -295,6 +306,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             holiday,
             size.width,
             size.height,
+            styles,
+            verticalAlign,
         )
         if (compact) {
             views.setViewPadding(R.id.widget_content, 12, 12, 12, 12)
@@ -304,13 +317,44 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         }
         views.setViewVisibility(R.id.widget_previous, if (compact) View.GONE else View.VISIBLE)
         views.setViewVisibility(R.id.widget_next, if (compact) View.GONE else View.VISIBLE)
+        views.setViewVisibility(
+            R.id.widget_add,
+            if (effectiveVisible(styles["addButton"], true)) View.VISIBLE else View.GONE,
+        )
+        views.setInt(
+            R.id.widget_date_row,
+            "setGravity",
+            widgetDateRowGravity(styles["days"]),
+        )
 
         if (event == null) {
             views.setTextViewText(R.id.widget_title, "添加一个倒数日")
-            setDaysText(views, "--", widgetData, compact, style)
+            setDaysText(
+                views,
+                "--",
+                widgetData,
+                compact,
+                style,
+                elementSizeScale(styles["days"]),
+            )
+            if (!effectiveVisible(styles["days"], true)) {
+                hideDays(views)
+            }
             views.setViewVisibility(R.id.widget_days_old, View.GONE)
             views.setTextViewText(R.id.widget_unit, "天")
             views.setTextViewText(R.id.widget_category, "萤")
+            views.setViewVisibility(
+                R.id.widget_title,
+                if (effectiveVisible(styles["title"], true)) View.VISIBLE else View.GONE,
+            )
+            views.setViewVisibility(
+                R.id.widget_unit,
+                if (effectiveVisible(styles["unit"], true)) View.VISIBLE else View.GONE,
+            )
+            views.setViewVisibility(
+                R.id.widget_category,
+                if (effectiveVisible(styles["category"], true)) View.VISIBLE else View.GONE,
+            )
             views.setViewVisibility(R.id.widget_icon, View.GONE)
             views.setViewVisibility(R.id.widget_note, View.GONE)
             views.setViewVisibility(R.id.widget_complete, View.GONE)
@@ -335,7 +379,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 R.id.widget_days_old,
                 2,
                 (if (flipDay.toString().length > 3) 26f else 44f) *
-                    widgetFontScale(widgetData),
+                    widgetFontScale(widgetData) *
+                    elementSizeScale(styles["days"]),
             )
             views.setViewVisibility(R.id.widget_days_old, View.VISIBLE)
             scheduleFlipRefresh(context)
@@ -343,10 +388,17 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             views.setViewVisibility(R.id.widget_days_old, View.GONE)
         }
         views.setTextViewText(R.id.widget_title, event.title)
-        if (!compact &&
-            widgetData.getBoolean("widget_show_icon", false) &&
-            event.icon.isNotBlank()
-        ) {
+        views.setViewVisibility(
+            R.id.widget_title,
+            if (effectiveVisible(styles["title"], true)) View.VISIBLE else View.GONE,
+        )
+        val iconVisible = effectiveVisible(
+            styles["icon"],
+            !compact &&
+                widgetData.getBoolean("widget_show_icon", false) &&
+                event.icon.isNotBlank(),
+        )
+        if (iconVisible) {
             views.setTextViewText(R.id.widget_icon, event.icon)
             views.setViewVisibility(R.id.widget_icon, View.VISIBLE)
         } else {
@@ -358,39 +410,70 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             widgetData,
             compact,
             style,
+            elementSizeScale(styles["days"]),
         )
+        if (!effectiveVisible(styles["days"], true)) {
+            hideDays(views)
+        }
         views.setTextViewText(
             R.id.widget_unit,
             if (mystery) "快到了" else countUnitText(event, preset, days, countUp),
         )
-        applyUrgentHighlight(views, widgetData, days, mystery, preset)
+        views.setViewVisibility(
+            R.id.widget_unit,
+            if (effectiveVisible(styles["unit"], true)) View.VISIBLE else View.GONE,
+        )
+        applyUrgentHighlight(views, widgetData, days, mystery, preset, styles)
         if (style == WidgetStyle.capsule && days == 0L) {
             val congratsAccent = accentColor(widgetData, holiday)
             views.setTextViewText(R.id.widget_title, "恭喜！${event.title}")
-            setDaysText(views, "🎉", widgetData, compact, style)
+            setDaysText(
+                views,
+                "🎉",
+                widgetData,
+                compact,
+                style,
+                elementSizeScale(styles["days"]),
+            )
             views.setTextViewText(R.id.widget_unit, "就是今天")
-            listOf(
-                R.id.widget_days,
-                R.id.widget_days_mono,
-                R.id.widget_days_pixel,
-                R.id.widget_days_hand,
-                R.id.widget_days_neon,
-            ).forEach { id -> views.setTextColor(id, congratsAccent) }
-            views.setTextColor(R.id.widget_unit, congratsAccent)
+            if (customElementColor(styles["days"]) == null) {
+                listOf(
+                    R.id.widget_days,
+                    R.id.widget_days_mono,
+                    R.id.widget_days_pixel,
+                    R.id.widget_days_hand,
+                    R.id.widget_days_neon,
+                ).forEach { id -> views.setTextColor(id, congratsAccent) }
+            }
+            if (customElementColor(styles["unit"]) == null) {
+                views.setTextColor(R.id.widget_unit, congratsAccent)
+            }
         }
-        if (!compact && widgetData.getBoolean("widget_show_category", true)) {
+        val categoryVisible = effectiveVisible(
+            styles["category"],
+            !compact && widgetData.getBoolean("widget_show_category", true),
+        )
+        if (categoryVisible) {
             views.setTextViewText(R.id.widget_category, event.category)
             views.setViewVisibility(R.id.widget_category, View.VISIBLE)
         } else {
             views.setViewVisibility(R.id.widget_category, View.INVISIBLE)
         }
 
-        if (widgetData.getBoolean("widget_show_precise_time", false)) {
+        if (effectiveVisible(
+                styles["precise"],
+                widgetData.getBoolean("widget_show_precise_time", false),
+            )
+        ) {
             applyPreciseTime(views, event)
         } else {
             views.setViewVisibility(R.id.widget_precise, View.GONE)
         }
-        if (!compact && widgetData.getBoolean("widget_show_lunar_week", false)) {
+        if (effectiveVisible(
+                styles["dateInfo"],
+                !compact && widgetData.getBoolean("widget_show_lunar_week", false),
+            )
+        ) {
             val info = widgetData.getString("widget_date_info", "")
                 ?.takeIf { it.isNotBlank() }
                 ?: widgetDateInfo(LocalDate.now())
@@ -399,7 +482,11 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         } else {
             views.setViewVisibility(R.id.widget_date_info, View.GONE)
         }
-        if (!compact && widgetData.getBoolean("widget_show_progress", false)) {
+        if (effectiveVisible(
+                styles["progress"],
+                !compact && widgetData.getBoolean("widget_show_progress", false),
+            )
+        ) {
             val progress = progressOf(event, System.currentTimeMillis())
             views.setImageViewBitmap(
                 R.id.widget_progress_ring,
@@ -415,7 +502,11 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             views.setViewVisibility(R.id.widget_progress_ring, View.GONE)
             views.setViewVisibility(R.id.widget_progress_text, View.GONE)
         }
-        if (style == WidgetStyle.pixelHealth && !compact) {
+        if (effectiveVisible(
+                styles["progress"],
+                style == WidgetStyle.pixelHealth && !compact,
+            )
+        ) {
             val progress = progressOf(event, System.currentTimeMillis())
             views.setImageViewBitmap(
                 R.id.widget_health_bar,
@@ -437,7 +528,11 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             ""
         }
         val showNote = widgetData.getBoolean("widget_show_note", true)
-        if (!compact && (quote.isNotEmpty() || (showNote && event.note.isNotBlank()))) {
+        if (effectiveVisible(
+                styles["note"],
+                !compact && (quote.isNotEmpty() || (showNote && event.note.isNotBlank())),
+            )
+        ) {
             views.setTextViewText(R.id.widget_note, quote.ifEmpty { event.note })
             views.setViewVisibility(R.id.widget_note, View.VISIBLE)
         } else {
@@ -445,7 +540,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         }
         views.setViewVisibility(
             R.id.widget_complete,
-            if (compact) View.GONE else View.VISIBLE,
+            if (effectiveVisible(styles["completeButton"], !compact)) View.VISIBLE else View.GONE,
         )
         views.setOnClickPendingIntent(
             R.id.widget_complete,
@@ -543,6 +638,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         style: WidgetStyle,
         compact: Boolean,
         size: WidgetBackdropSize,
+        styles: Map<String, WidgetElementStyle>,
     ) {
         views.setOnClickPendingIntent(
             R.id.widget_root,
@@ -555,12 +651,35 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         applyBackdrop(context, views, widgetData, style, size.width, size.height)
         val events = parseEvents(widgetData.getString("widget_events", "[]") ?: "[]")
         val colors = resolveTextColors(widgetData, style)
+        val scale = widgetFontScale(widgetData)
         val showIcon = widgetData.getBoolean("widget_show_icon", false)
         val mystery = sponsorUnlocked(widgetData) &&
             widgetData.getBoolean("widget_mystery_mode", false)
         val preset = widgetData.getString("widget_unit_text", "")
         val showCategory = widgetData.getBoolean("widget_show_category", true)
         val showPrecise = widgetData.getBoolean("widget_show_precise_time", false)
+        views.setTextColor(
+            R.id.widget_list_header,
+            elementColor(styles["listHeader"], colors, defaultPrimary = false),
+        )
+        views.setTextViewTextSize(
+            R.id.widget_list_header,
+            2,
+            13f * scale * elementSizeScale(styles["listHeader"]),
+        )
+        views.setInt(
+            R.id.widget_list_header,
+            "setGravity",
+            elementGravity(styles["listHeader"]),
+        )
+        views.setViewVisibility(
+            R.id.widget_list_header,
+            if (effectiveVisible(styles["listHeader"], true)) View.VISIBLE else View.GONE,
+        )
+        views.setViewVisibility(
+            R.id.widget_add,
+            if (effectiveVisible(styles["addButton"], true)) View.VISIBLE else View.GONE,
+        )
         var visibleCount = 0
         val maxRows = if (compact) 2 else MAX_LIST_ROWS
         repeat(maxRows) { rowIndex ->
@@ -573,12 +692,75 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             visibleCount++
             views.setViewVisibility(ids.root, View.VISIBLE)
             views.setTextViewText(ids.title, event.title)
-            views.setTextColor(ids.title, colors.primary)
-            views.setTextColor(ids.days, colors.primary)
-            views.setTextColor(ids.unit, colors.secondary)
-            views.setTextColor(ids.subtitle, colors.secondary)
-            if (showIcon && event.icon.isNotBlank()) {
+            views.setTextColor(
+                ids.title,
+                elementColor(styles["rowTitle"], colors, defaultPrimary = true),
+            )
+            views.setTextColor(
+                ids.days,
+                elementColor(styles["rowDays"], colors, defaultPrimary = true),
+            )
+            views.setTextColor(
+                ids.unit,
+                elementColor(styles["rowUnit"], colors, defaultPrimary = false),
+            )
+            views.setTextColor(
+                ids.subtitle,
+                elementColor(styles["rowSubtitle"], colors, defaultPrimary = false),
+            )
+            views.setTextViewTextSize(
+                ids.title,
+                2,
+                14f * scale * elementSizeScale(styles["rowTitle"]),
+            )
+            views.setTextViewTextSize(
+                ids.days,
+                2,
+                18f * scale * elementSizeScale(styles["rowDays"]),
+            )
+            views.setTextViewTextSize(
+                ids.unit,
+                2,
+                11f * scale * elementSizeScale(styles["rowUnit"]),
+            )
+            views.setTextViewTextSize(
+                ids.subtitle,
+                2,
+                11f * scale * elementSizeScale(styles["rowSubtitle"]),
+            )
+            views.setInt(ids.title, "setGravity", elementGravity(styles["rowTitle"]))
+            views.setInt(
+                ids.subtitle,
+                "setGravity",
+                elementGravity(styles["rowSubtitle"]),
+            )
+            views.setViewVisibility(
+                ids.title,
+                if (effectiveVisible(styles["rowTitle"], true)) View.VISIBLE else View.GONE,
+            )
+            views.setViewVisibility(
+                ids.days,
+                if (effectiveVisible(styles["rowDays"], true)) View.VISIBLE else View.GONE,
+            )
+            views.setViewVisibility(
+                ids.unit,
+                if (effectiveVisible(styles["rowUnit"], true)) View.VISIBLE else View.GONE,
+            )
+            val iconVisible = effectiveVisible(
+                styles["icon"],
+                showIcon && event.icon.isNotBlank(),
+            )
+            if (iconVisible) {
                 views.setTextViewText(ids.icon, event.icon)
+                views.setTextColor(
+                    ids.icon,
+                    elementColor(styles["icon"], colors, defaultPrimary = true),
+                )
+                views.setTextViewTextSize(
+                    ids.icon,
+                    2,
+                    16f * scale * elementSizeScale(styles["icon"]),
+                )
                 views.setViewVisibility(ids.icon, View.VISIBLE)
             } else {
                 views.setViewVisibility(ids.icon, View.GONE)
@@ -597,8 +779,12 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 val level = urgentLevel(days)
                 val accent = urgentAccent(level)
                 if (accent != null) {
-                    views.setTextColor(ids.days, accent)
-                    views.setTextColor(ids.unit, accent)
+                    if (customElementColor(styles["rowDays"]) == null) {
+                        views.setTextColor(ids.days, accent)
+                    }
+                    if (customElementColor(styles["rowUnit"]) == null) {
+                        views.setTextColor(ids.unit, accent)
+                    }
                     if (preset != "weeks") {
                         views.setTextViewText(ids.unit, urgentLabel(level, days))
                     }
@@ -608,7 +794,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 if (showCategory) add(event.category)
                 if (showPrecise) add(preciseTimeText(event, System.currentTimeMillis()))
             }.joinToString(" · ")
-            if (subtitle.isNotEmpty()) {
+            if (effectiveVisible(styles["rowSubtitle"], subtitle.isNotEmpty())) {
                 views.setTextViewText(ids.subtitle, subtitle)
                 views.setViewVisibility(ids.subtitle, View.VISIBLE)
             } else {
@@ -617,6 +803,10 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             views.setOnClickPendingIntent(
                 ids.complete,
                 backgroundIntent(context, "complete", event.id),
+            )
+            views.setViewVisibility(
+                ids.complete,
+                if (effectiveVisible(styles["completeButton"], true)) View.VISIBLE else View.GONE,
             )
             views.setOnClickPendingIntent(
                 ids.root,
@@ -627,9 +817,27 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 ),
             )
         }
+        views.setTextColor(
+            R.id.widget_empty,
+            elementColor(styles["empty"], colors, defaultPrimary = false),
+        )
+        views.setTextViewTextSize(
+            R.id.widget_empty,
+            2,
+            15f * scale * elementSizeScale(styles["empty"]),
+        )
+        views.setInt(
+            R.id.widget_empty,
+            "setGravity",
+            elementGravity(styles["empty"]),
+        )
         views.setViewVisibility(
             R.id.widget_empty,
-            if (visibleCount == 0) View.VISIBLE else View.GONE,
+            if (effectiveVisible(styles["empty"], visibleCount == 0)) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            },
         )
     }
 
@@ -684,33 +892,76 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         holiday: String,
         width: Int,
         height: Int,
+        styles: Map<String, WidgetElementStyle>,
+        verticalAlign: WidgetVerticalAlign,
     ) {
         val colors = resolveTextColors(data, style)
         applyBackdrop(context, views, data, style, width, height)
 
-        val holidayVisible = holiday.isNotEmpty() && !compact
+        val holidayVisible = effectiveVisible(
+            styles["holidayBadge"],
+            holiday.isNotEmpty() && !compact,
+        )
         if (holidayVisible) {
             views.setTextViewText(R.id.widget_holiday_badge, holidayLabel(holiday))
+            views.setTextColor(
+                R.id.widget_holiday_badge,
+                elementColor(styles["holidayBadge"], colors, defaultPrimary = false),
+            )
+            views.setTextViewTextSize(
+                R.id.widget_holiday_badge,
+                2,
+                11f * widgetFontScale(data) * elementSizeScale(styles["holidayBadge"]),
+            )
             views.setViewVisibility(R.id.widget_holiday_badge, View.VISIBLE)
         } else {
             views.setViewVisibility(R.id.widget_holiday_badge, View.GONE)
         }
 
-        views.setTextColor(R.id.widget_title, colors.primary)
-        views.setTextColor(R.id.widget_unit, colors.secondary)
-        views.setTextColor(R.id.widget_category, colors.secondary)
-        views.setTextColor(R.id.widget_note, colors.secondary)
-        views.setTextColor(R.id.widget_icon, colors.primary)
-        views.setTextColor(R.id.widget_precise, colors.secondary)
-        views.setTextColor(R.id.widget_date_info, colors.secondary)
-        views.setTextColor(R.id.widget_progress_text, colors.secondary)
+        views.setTextColor(
+            R.id.widget_title,
+            elementColor(styles["title"], colors, defaultPrimary = true),
+        )
+        views.setTextColor(
+            R.id.widget_unit,
+            elementColor(styles["unit"], colors, defaultPrimary = false),
+        )
+        views.setTextColor(
+            R.id.widget_category,
+            elementColor(styles["category"], colors, defaultPrimary = false),
+        )
+        views.setTextColor(
+            R.id.widget_note,
+            elementColor(styles["note"], colors, defaultPrimary = false),
+        )
+        views.setTextColor(
+            R.id.widget_icon,
+            elementColor(styles["icon"], colors, defaultPrimary = true),
+        )
+        views.setTextColor(
+            R.id.widget_precise,
+            elementColor(styles["precise"], colors, defaultPrimary = false),
+        )
+        views.setTextColor(
+            R.id.widget_date_info,
+            elementColor(styles["dateInfo"], colors, defaultPrimary = false),
+        )
+        views.setTextColor(
+            R.id.widget_progress_text,
+            elementColor(styles["progress"], colors, defaultPrimary = false),
+        )
         listOf(
             R.id.widget_days,
             R.id.widget_days_mono,
             R.id.widget_days_pixel,
             R.id.widget_days_hand,
             R.id.widget_days_neon,
-        ).forEach { id -> views.setTextColor(id, colors.primary) }
+        ).forEach { id ->
+            views.setTextColor(
+                id,
+                elementColor(styles["days"], colors, defaultPrimary = true),
+            )
+        }
         views.setInt(R.id.widget_previous, "setColorFilter", colors.secondary)
         views.setInt(R.id.widget_next, "setColorFilter", colors.secondary)
         views.setInt(R.id.widget_complete, "setColorFilter", colors.secondary)
@@ -719,9 +970,65 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         views.setTextViewTextSize(
             R.id.widget_title,
             2,
-            (if (compact) 15f else 18f) * scale,
+            (if (compact) 15f else 18f) * scale * elementSizeScale(styles["title"]),
         )
-        views.setTextViewTextSize(R.id.widget_note, 2, 14f * scale)
+        views.setTextViewTextSize(
+            R.id.widget_note,
+            2,
+            14f * scale * elementSizeScale(styles["note"]),
+        )
+        views.setTextViewTextSize(
+            R.id.widget_category,
+            2,
+            14f * scale * elementSizeScale(styles["category"]),
+        )
+        views.setTextViewTextSize(
+            R.id.widget_unit,
+            2,
+            14f * scale * elementSizeScale(styles["unit"]),
+        )
+        views.setTextViewTextSize(
+            R.id.widget_precise,
+            2,
+            14f * scale * elementSizeScale(styles["precise"]),
+        )
+        views.setTextViewTextSize(
+            R.id.widget_date_info,
+            2,
+            12f * scale * elementSizeScale(styles["dateInfo"]),
+        )
+        views.setTextViewTextSize(
+            R.id.widget_progress_text,
+            2,
+            13f * scale * elementSizeScale(styles["progress"]),
+        )
+        views.setTextViewTextSize(
+            R.id.widget_icon,
+            2,
+            18f * scale * elementSizeScale(styles["icon"]),
+        )
+        views.setInt(
+            R.id.widget_category,
+            "setGravity",
+            elementGravity(styles["category"]),
+        )
+        views.setInt(R.id.widget_title, "setGravity", elementGravity(styles["title"]))
+        views.setInt(R.id.widget_note, "setGravity", elementGravity(styles["note"]))
+        views.setInt(
+            R.id.widget_precise,
+            "setGravity",
+            elementGravity(styles["precise"]),
+        )
+        views.setInt(
+            R.id.widget_date_info,
+            "setGravity",
+            elementGravity(styles["dateInfo"]),
+        )
+        views.setInt(
+            R.id.widget_content,
+            "setGravity",
+            widgetVerticalGravity(verticalAlign),
+        )
     }
 
     private fun applyUrgentHighlight(
@@ -730,18 +1037,23 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         days: Long,
         mystery: Boolean,
         preset: String?,
+        styles: Map<String, WidgetElementStyle>,
     ) {
         if (!data.getBoolean("widget_urgent_highlight", false) || mystery) return
         val level = urgentLevel(days)
         val accent = urgentAccent(level) ?: return
-        listOf(
-            R.id.widget_days,
-            R.id.widget_days_mono,
-            R.id.widget_days_pixel,
-            R.id.widget_days_hand,
-            R.id.widget_days_neon,
-        ).forEach { id -> views.setTextColor(id, accent) }
-        views.setTextColor(R.id.widget_unit, accent)
+        if (customElementColor(styles["days"]) == null) {
+            listOf(
+                R.id.widget_days,
+                R.id.widget_days_mono,
+                R.id.widget_days_pixel,
+                R.id.widget_days_hand,
+                R.id.widget_days_neon,
+            ).forEach { id -> views.setTextColor(id, accent) }
+        }
+        if (customElementColor(styles["unit"]) == null) {
+            views.setTextColor(R.id.widget_unit, accent)
+        }
         if (preset != "weeks") {
             views.setTextViewText(R.id.widget_unit, urgentLabel(level, days))
         }
@@ -1338,12 +1650,13 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         data: SharedPreferences,
         compact: Boolean,
         style: WidgetStyle = WidgetStyle.card,
+        elementScale: Float = 1f,
     ) {
         val scale = widgetFontScale(data)
         val size = if (text.length > 3) {
-            (if (compact) 22f else 26f) * scale
+            (if (compact) 22f else 26f) * scale * elementScale
         } else {
-            (if (compact) 32f else 44f) * scale
+            (if (compact) 32f else 44f) * scale * elementScale
         }
         listOf(
             R.id.widget_days,
@@ -1364,6 +1677,16 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             },
             style,
         )
+    }
+
+    private fun hideDays(views: RemoteViews) {
+        listOf(
+            R.id.widget_days,
+            R.id.widget_days_mono,
+            R.id.widget_days_pixel,
+            R.id.widget_days_hand,
+            R.id.widget_days_neon,
+        ).forEach { id -> views.setViewVisibility(id, View.GONE) }
     }
 
     private fun applyFontVariant(
