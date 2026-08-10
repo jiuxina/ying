@@ -167,7 +167,7 @@ tools/
 
 1. 仓库转私有（或按需保留 README / 文档），不再公开完整源码。
 2. 构建启用 Flutter 混淆（`--obfuscate --split-debug-info`）与 Android R8 / ProGuard。
-3. v1 暂不接入付费第三方加固：采用 Flutter 混淆 + 图标树摇 + 签名校验；R8 已尝试但受 `integration_test` release 编译兼容限制，后续需要再单独启用。
+3. v1 暂不接入付费第三方加固：采用 Flutter 混淆 + 图标树摇 + 签名校验；R8 已随发布脚本启用，uCrop 缺失的 OkHttp 依赖已在 `android/app/build.gradle.kts` 显式声明。
 4. 验证接口启用 HTTPS、TLS 固定与频率限制。
 5. 用 `build_sponsor_release.bat`（通用单包）或 `build_abi_release.bat`（ABI 分包）构建混淆 APK，发布到公开 release 仓库。
 6. 用 `tools/publish_release.js` 更新 Worker `/v1/latest` 版本清单。

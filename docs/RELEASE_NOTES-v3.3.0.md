@@ -19,4 +19,5 @@
 - Android 动态字重通过位图通道渲染；精确秒与节日徽章使用加粗近似。
 - 修复 Android 小部件因 RemoteViews 无法调用 setFakeBoldText 而显示“无法加载微件”的问题；精确秒与节日徽章改用 setFontVariationSettings 实现加粗近似（Android 8+ 生效）。
 - 旧版本相册背景缺少源图时，重新裁切会引导重新选择照片。
+- 修复 Release 混淆构建时 uCrop 缺少 OkHttp 类导致 R8 失败的问题。
 - iOS WidgetKit 本轮保持原有独立实现。
