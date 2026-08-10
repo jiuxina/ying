@@ -36,7 +36,6 @@ import kotlin.math.max
 import kotlin.math.roundToLong
 
 private const val LAUNCH_REQUEST_ROOT = 0
-private const val LAUNCH_REQUEST_ADD = 1
 private const val LAUNCH_REQUEST_OPEN = 2
 private const val ROW_LAUNCH_REQUEST_BASE = 0x10000000
 private const val MAX_LIST_ROWS = 4
@@ -198,10 +197,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                     ),
                 )
                 views.setOnClickPendingIntent(
-                    R.id.widget_add,
-                    launchIntent(context, "ying://add", LAUNCH_REQUEST_ADD),
-                )
-                views.setOnClickPendingIntent(
                     R.id.widget_root,
                     launchIntent(context, null, LAUNCH_REQUEST_ROOT),
                 )
@@ -288,10 +283,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_root,
             launchIntent(context, null, LAUNCH_REQUEST_ROOT),
         )
-        views.setOnClickPendingIntent(
-            R.id.widget_add,
-            launchIntent(context, "ying://add", LAUNCH_REQUEST_ADD),
-        )
         val indexKey = perWidgetIndexKey(widgetId)
         val requestedIndex = widgetData.getInt(indexKey, 0)
         val index = if (events.isEmpty()) 0 else requestedIndex.coerceIn(0, events.lastIndex)
@@ -331,10 +322,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         views.setViewVisibility(
             R.id.widget_next,
             if (branch.element("nextButton").visible) View.VISIBLE else View.GONE,
-        )
-        views.setViewVisibility(
-            R.id.widget_add,
-            if (branch.element("addButton").visible) View.VISIBLE else View.GONE,
         )
         views.setInt(
             R.id.widget_date_row,
@@ -641,10 +628,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_root,
             launchIntent(context, null, LAUNCH_REQUEST_ROOT),
         )
-        views.setOnClickPendingIntent(
-            R.id.widget_add,
-            launchIntent(context, "ying://add", LAUNCH_REQUEST_ADD),
-        )
         applyBackdrop(context, views, widgetData, style, size.width, size.height)
         val events = parseEvents(widgetData.getString("widget_events", "[]") ?: "[]")
         val scale = widgetFontScale(widgetData)
@@ -670,10 +653,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         views.setViewVisibility(
             R.id.widget_list_header,
             if (branch.element("listHeader").visible) View.VISIBLE else View.GONE,
-        )
-        views.setViewVisibility(
-            R.id.widget_add,
-            if (branch.element("addButton").visible) View.VISIBLE else View.GONE,
         )
         var visibleCount = 0
         val maxRows = if (compact) 2 else MAX_LIST_ROWS

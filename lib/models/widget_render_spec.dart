@@ -30,7 +30,6 @@ const widgetRenderElementIds = <String>[
   'empty',
   'prevButton',
   'nextButton',
-  'addButton',
   'completeButton',
 ];
 
@@ -373,7 +372,6 @@ bool _policyVisible(
     case 'rowDays':
     case 'rowUnit':
     case 'empty':
-    case 'addButton':
       return true;
     case 'note':
       return !compact;

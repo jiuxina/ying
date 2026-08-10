@@ -463,7 +463,6 @@ class _PreviewBody extends StatelessWidget {
     final progressElement = _element('progress');
     final prevElement = _element('prevButton');
     final nextElement = _element('nextButton');
-    final addElement = _element('addButton');
     final completeElement = _element('completeButton');
     final daysAlign = daysElement.align;
 
@@ -491,11 +490,6 @@ class _PreviewBody extends StatelessWidget {
             Icons.chevron_right_rounded,
             nextElement.visible,
             Color(nextElement.color),
-          ),
-          _iconButton(
-            Icons.add_circle_outline_rounded,
-            addElement.visible,
-            Color(addElement.color),
           ),
         ],
       );
@@ -624,7 +618,6 @@ class _PreviewBody extends StatelessWidget {
             (settings.widgetShowNote && current.note.isNotEmpty));
     final prevVisible = prevElement.visible;
     final nextVisible = nextElement.visible;
-    final addVisible = addElement.visible;
     final completeVisible = completeElement.visible;
     final mainFontSize = mainText.length > 3
         ? (compact ? 22 : 26) * scale * daysElement.size
@@ -640,8 +633,7 @@ class _PreviewBody extends StatelessWidget {
         if (categoryVisible ||
             holidayVisible ||
             prevVisible ||
-            nextVisible ||
-            addVisible)
+            nextVisible)
           Row(
             children: [
               if (categoryVisible)
@@ -672,11 +664,6 @@ class _PreviewBody extends StatelessWidget {
                 Icons.chevron_right_rounded,
                 nextVisible,
                 Color(nextElement.color),
-              ),
-              _iconButton(
-                Icons.add_circle_outline_rounded,
-                addVisible,
-                Color(addElement.color),
               ),
             ],
           ),
@@ -854,7 +841,6 @@ class _WidgetListPreview extends StatelessWidget {
     final accent = Color(settings.widgetColor);
     final scale = settings.widgetFontScale;
     final listHeader = render.element('listHeader');
-    final addButton = render.element('addButton');
     final empty = render.element('empty');
     final rowTitle = render.element('rowTitle');
     final primaryText = Color(rowTitle.color);
@@ -862,7 +848,6 @@ class _WidgetListPreview extends StatelessWidget {
         ? <CountdownEvent>[]
         : events.take(compact ? 2 : 4).toList();
     final listHeaderVisible = listHeader.visible;
-    final addVisible = addButton.visible;
     final emptyVisible = empty.visible && rows.isEmpty;
     return Semantics(
       label: compact ? '小号事件列表预览' : '中号事件列表预览',
@@ -927,14 +912,6 @@ class _WidgetListPreview extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (addVisible) ...[
-                          const SizedBox(width: 6),
-                          Icon(
-                            Icons.add_circle_outline_rounded,
-                            size: 20,
-                            color: Color(addButton.color),
-                          ),
-                        ],
                       ],
                     ),
                     const SizedBox(height: 6),

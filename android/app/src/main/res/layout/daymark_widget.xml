@@ -79,14 +79,6 @@
                 android:contentDescription="下一个事件"
                 android:src="@android:drawable/ic_media_next"
                 android:tint="#FFFFFFFF" />
-            <ImageButton
-                android:id="@+id/widget_add"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="@android:color/transparent"
-                android:contentDescription="新建倒数日"
-                android:src="@android:drawable/ic_menu_add"
-                android:tint="#FFFFFFFF" />
         </LinearLayout>
 
         <LinearLayout

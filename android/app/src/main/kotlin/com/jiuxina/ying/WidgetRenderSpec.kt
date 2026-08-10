@@ -26,7 +26,6 @@ internal val widgetRenderElementIds = listOf(
     "empty",
     "prevButton",
     "nextButton",
-    "addButton",
     "completeButton",
 )
 
@@ -160,7 +159,6 @@ internal fun fallbackRenderBranch(
             "rowDays",
             "rowUnit",
             "empty",
-            "addButton",
             -> true
             "note" -> !compact
             "precise" -> data.getBoolean("widget_show_precise_time", false)

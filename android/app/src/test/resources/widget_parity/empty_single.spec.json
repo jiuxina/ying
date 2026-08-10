@@ -120,12 +120,6 @@
         "size": 1.0,
         "align": "start"
       },
-      "addButton": {
-        "visible": true,
-        "color": 3187671039,
-        "size": 1.0,
-        "align": "start"
-      },
       "completeButton": {
         "visible": false,
         "color": 3187671039,
@@ -240,12 +234,6 @@
         "align": "start"
       },
       "nextButton": {
-        "visible": true,
-        "color": 3187671039,
-        "size": 1.0,
-        "align": "start"
-      },
-      "addButton": {
         "visible": true,
         "color": 3187671039,
         "size": 1.0,

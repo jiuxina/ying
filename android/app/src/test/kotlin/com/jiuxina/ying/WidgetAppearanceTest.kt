@@ -256,12 +256,8 @@ class WidgetAppearanceTest {
         assertTrue("list layout should keep an empty-state view", "widget_empty" in list)
         assertTrue("list layout should have a header row", "widget_list_header" in list)
         assertTrue("list layout should render static rows", "widget_row_1_complete" in list)
-        val addIndex = list.indexOf("widget_add")
-        val rowIndex = list.indexOf("widget_row_1_root")
-        assertTrue(
-            "add button must sit in the header above the rows",
-            addIndex in 0 until rowIndex,
-        )
+        assertTrue("widget add button must be removed", "widget_add" !in list)
+        assertTrue("undo layout must not keep add button", "widget_add" !in undo)
     }
 
     @Test
@@ -318,7 +314,7 @@ class WidgetAppearanceTest {
         assertEquals("single", spec.full?.mode)
         assertEquals(false, spec.compact?.element("category")?.visible)
         assertEquals(true, spec.full?.element("category")?.visible)
-        assertEquals(true, spec.compact?.element("addButton")?.visible)
+        assertEquals(false, spec.compact?.elements?.containsKey("addButton"))
         assertEquals(false, spec.compact?.element("completeButton")?.visible)
         assertEquals(true, spec.full?.element("completeButton")?.visible)
         assertEquals("添加一个倒数日", spec.texts.title)

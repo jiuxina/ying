@@ -40,7 +40,6 @@ const widgetTextElementOptions = <(String, String, IconData)>[
 const widgetButtonElementOptions = <(String, String, IconData)>[
   ('prevButton', '上一个事件', Icons.chevron_left_rounded),
   ('nextButton', '下一个事件', Icons.chevron_right_rounded),
-  ('addButton', '添加事件', Icons.add_circle_outline_rounded),
   ('completeButton', '标记完成', Icons.check_circle_outline_rounded),
 ];
 

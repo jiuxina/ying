@@ -48,14 +48,6 @@
                 android:text="已完成"
                 android:textColor="#D9FFFFFF"
                 android:textSize="14sp" />
-            <ImageButton
-                android:id="@+id/widget_add"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="@android:color/transparent"
-                android:contentDescription="新建倒数日"
-                android:src="@android:drawable/ic_menu_add"
-                android:tint="#FFFFFFFF" />
         </LinearLayout>
 
         <LinearLayout

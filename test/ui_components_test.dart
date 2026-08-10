@@ -590,11 +590,11 @@ void main() {
       );
       await flushPlatform(tester);
 
-      await tester.scrollUntilVisible(find.text('添加事件'), 400);
-      await tester.ensureVisible(find.text('添加事件'));
+      await tester.scrollUntilVisible(find.text('标记完成'), 400);
+      await tester.ensureVisible(find.text('标记完成'));
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.text('按钮显隐'), findsOneWidget);
-      await tester.tap(find.text('添加事件'));
+      await tester.tap(find.text('标记完成'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
@@ -612,11 +612,11 @@ void main() {
       await tester.tap(find.widgetWithText(ChoiceChip, '隐藏'));
       await tester.pump(const Duration(milliseconds: 300));
       expect(
-        controller.state.settings.widgetElementStyles['addButton']?.visible,
+        controller.state.settings.widgetElementStyles['completeButton']?.visible,
         WidgetElementVisible.hide,
       );
       expect(
-        saved.last.widgetElementStyles['addButton']?.visible,
+        saved.last.widgetElementStyles['completeButton']?.visible,
         WidgetElementVisible.hide,
       );
     });
@@ -1118,7 +1118,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('空状态预览补齐天数占位与添加按钮', (tester) async {
+    testWidgets('空状态预览补齐天数占位', (tester) async {
       await tester.pumpWidget(
         glassApp(
           Scaffold(
@@ -1136,7 +1136,7 @@ void main() {
       expect(find.text('添加一个倒数日'), findsNWidgets(2));
       expect(find.text('--'), findsNWidgets(2));
       expect(find.text('天'), findsNWidgets(2));
-      expect(find.byIcon(Icons.add_circle_outline_rounded), findsNWidgets(2));
+      expect(find.byIcon(Icons.add_circle_outline_rounded), findsNothing);
       expect(find.byIcon(Icons.chevron_left_rounded), findsOneWidget);
       expect(find.text('萤'), findsOneWidget);
       expect(tester.takeException(), isNull);
