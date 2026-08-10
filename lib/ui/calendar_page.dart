@@ -35,6 +35,17 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     final events = ref.watch(appControllerProvider).events;
     final wide = MediaQuery.sizeOf(context).width >= 760;
     final now = DateTime.now();
+    final subtitleText = DateFormat('yyyy年M月d日 EEEE', 'zh_CN').format(now);
+    final subtitleStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w500,
+    );
+    final subtitleHeight =
+        (TextPainter(
+          text: TextSpan(text: subtitleText, style: subtitleStyle),
+          maxLines: 1,
+          textDirection: Directionality.of(context),
+        )..layout()).height;
     return ListView(
       padding: EdgeInsets.fromLTRB(
         wide ? 34 : 20,
@@ -51,24 +62,40 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           ),
         ),
         const SizedBox(height: 5),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                DateFormat('yyyy年M月d日 EEEE', 'zh_CN').format(now),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
+        SizedBox(
+          height: subtitleHeight,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                right: _showTodayButton ? 72 : 0,
+                child: Text(
+                  subtitleText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: subtitleStyle,
                 ),
               ),
-            ),
-            if (_showTodayButton)
-              TextButton(
-                key: const ValueKey('calendar-today'),
-                onPressed: _jumpToToday,
-                child: const Text('今天'),
-              ),
-          ],
+              if (_showTodayButton)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 8, right: 8),
+                    child: TextButton(
+                      key: const ValueKey('calendar-today'),
+                      onPressed: _jumpToToday,
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(0, 24),
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('今天'),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: 18),
         _ModeSelector(value: _mode, onChanged: _changeMode),

@@ -260,6 +260,31 @@ void main() {
       expect(find.text('今天'), findsNothing);
     });
 
+    testWidgets('今天按钮出现时副标题行高度不变', (tester) async {
+      phoneViewport(tester);
+      final now = DateTime.now();
+      final target = currentMonthDay(now);
+      final controller = await readyController([]);
+      await tester.pumpWidget(buildCalendar(controller));
+      await tester.pump();
+
+      final before = tester
+          .getTopLeft(find.byKey(const ValueKey('calendar-mode-month')))
+          .dy;
+
+      await tester.tap(
+        find.byKey(
+          ValueKey('calendar-day-${target.year}-${target.month}-${target.day}'),
+        ),
+      );
+      await tester.pump();
+
+      final after = tester
+          .getTopLeft(find.byKey(const ValueKey('calendar-mode-month')))
+          .dy;
+      expect(after, before);
+    });
+
     testWidgets('年视图仅在非当前年份显示今天按钮', (tester) async {
       phoneViewport(tester);
       final now = DateTime.now();
