@@ -47,6 +47,14 @@
                 android:textColor="#D9FFFFFF"
                 android:textSize="13sp"
                 android:textStyle="bold" />
+            <ImageView
+                android:id="@+id/widget_list_header_custom"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout
@@ -83,6 +91,13 @@
                     android:textColor="#FFFFFFFF"
                     android:textSize="14sp"
                     android:textStyle="bold" />
+                <ImageView
+                    android:id="@+id/widget_row_1_title_custom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitStart"
+                    android:visibility="gone" />
                 <TextView
                     android:id="@+id/widget_row_1_subtitle"
                     android:layout_width="match_parent"
@@ -95,6 +110,13 @@
                     android:shadowRadius="2"
                     android:textColor="#D9FFFFFF"
                     android:textSize="11sp"
+                    android:visibility="gone" />
+                <ImageView
+                    android:id="@+id/widget_row_1_subtitle_custom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitStart"
                     android:visibility="gone" />
             </LinearLayout>
             <TextView
@@ -109,6 +131,13 @@
                 android:textColor="#FFFFFFFF"
                 android:textSize="18sp"
                 android:textStyle="bold" />
+            <ImageView
+                android:id="@+id/widget_row_1_days_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
             <TextView
                 android:id="@+id/widget_row_1_unit"
                 android:layout_width="wrap_content"
@@ -120,6 +149,13 @@
                 android:shadowRadius="2"
                 android:textColor="#D9FFFFFF"
                 android:textSize="11sp" />
+            <ImageView
+                android:id="@+id/widget_row_1_unit_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout
@@ -156,6 +192,13 @@
                     android:textColor="#FFFFFFFF"
                     android:textSize="14sp"
                     android:textStyle="bold" />
+                <ImageView
+                    android:id="@+id/widget_row_2_title_custom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitStart"
+                    android:visibility="gone" />
                 <TextView
                     android:id="@+id/widget_row_2_subtitle"
                     android:layout_width="match_parent"
@@ -168,6 +211,13 @@
                     android:shadowRadius="2"
                     android:textColor="#D9FFFFFF"
                     android:textSize="11sp"
+                    android:visibility="gone" />
+                <ImageView
+                    android:id="@+id/widget_row_2_subtitle_custom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitStart"
                     android:visibility="gone" />
             </LinearLayout>
             <TextView
@@ -182,6 +232,13 @@
                 android:textColor="#FFFFFFFF"
                 android:textSize="18sp"
                 android:textStyle="bold" />
+            <ImageView
+                android:id="@+id/widget_row_2_days_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
             <TextView
                 android:id="@+id/widget_row_2_unit"
                 android:layout_width="wrap_content"
@@ -193,6 +250,13 @@
                 android:shadowRadius="2"
                 android:textColor="#D9FFFFFF"
                 android:textSize="11sp" />
+            <ImageView
+                android:id="@+id/widget_row_2_unit_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout
@@ -229,6 +293,13 @@
                     android:textColor="#FFFFFFFF"
                     android:textSize="14sp"
                     android:textStyle="bold" />
+                <ImageView
+                    android:id="@+id/widget_row_3_title_custom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitStart"
+                    android:visibility="gone" />
                 <TextView
                     android:id="@+id/widget_row_3_subtitle"
                     android:layout_width="match_parent"
@@ -241,6 +312,13 @@
                     android:shadowRadius="2"
                     android:textColor="#D9FFFFFF"
                     android:textSize="11sp"
+                    android:visibility="gone" />
+                <ImageView
+                    android:id="@+id/widget_row_3_subtitle_custom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitStart"
                     android:visibility="gone" />
             </LinearLayout>
             <TextView
@@ -255,6 +333,13 @@
                 android:textColor="#FFFFFFFF"
                 android:textSize="18sp"
                 android:textStyle="bold" />
+            <ImageView
+                android:id="@+id/widget_row_3_days_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
             <TextView
                 android:id="@+id/widget_row_3_unit"
                 android:layout_width="wrap_content"
@@ -266,6 +351,13 @@
                 android:shadowRadius="2"
                 android:textColor="#D9FFFFFF"
                 android:textSize="11sp" />
+            <ImageView
+                android:id="@+id/widget_row_3_unit_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout
@@ -302,6 +394,13 @@
                     android:textColor="#FFFFFFFF"
                     android:textSize="14sp"
                     android:textStyle="bold" />
+                <ImageView
+                    android:id="@+id/widget_row_4_title_custom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitStart"
+                    android:visibility="gone" />
                 <TextView
                     android:id="@+id/widget_row_4_subtitle"
                     android:layout_width="match_parent"
@@ -314,6 +413,13 @@
                     android:shadowRadius="2"
                     android:textColor="#D9FFFFFF"
                     android:textSize="11sp"
+                    android:visibility="gone" />
+                <ImageView
+                    android:id="@+id/widget_row_4_subtitle_custom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitStart"
                     android:visibility="gone" />
             </LinearLayout>
             <TextView
@@ -328,6 +434,13 @@
                 android:textColor="#FFFFFFFF"
                 android:textSize="18sp"
                 android:textStyle="bold" />
+            <ImageView
+                android:id="@+id/widget_row_4_days_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
             <TextView
                 android:id="@+id/widget_row_4_unit"
                 android:layout_width="wrap_content"
@@ -339,6 +452,13 @@
                 android:shadowRadius="2"
                 android:textColor="#D9FFFFFF"
                 android:textSize="11sp" />
+            <ImageView
+                android:id="@+id/widget_row_4_unit_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
         </LinearLayout>
 
         <TextView

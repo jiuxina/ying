@@ -48,6 +48,14 @@
                 android:text="DAYMARK"
                 android:textColor="#D9FFFFFF"
                 android:textSize="14sp" />
+            <ImageView
+                android:id="@+id/widget_category_custom"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
             <TextView
                 android:id="@+id/widget_holiday_badge"
                 android:layout_width="wrap_content"
@@ -111,6 +119,14 @@
                 android:textColor="#FFFFFFFF"
                 android:textSize="20sp"
                 android:textStyle="bold" />
+            <ImageView
+                android:id="@+id/widget_title_custom"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout
@@ -152,6 +168,13 @@
                 android:textColor="#D9FFFFFF"
                 android:textSize="13sp"
                 android:visibility="gone" />
+            <ImageView
+                android:id="@+id/widget_progress_text_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
             <TextView
                 android:id="@+id/widget_days"
                 android:layout_width="wrap_content"
@@ -177,6 +200,13 @@
                 android:textColor="#FFFFFFFF"
                 android:textSize="44sp"
                 android:textStyle="bold"
+                android:visibility="gone" />
+            <ImageView
+                android:id="@+id/widget_days_old_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
                 android:visibility="gone" />
             <TextView
                 android:id="@+id/widget_days_mono"
@@ -221,6 +251,13 @@
                 android:textSize="44sp"
                 android:textStyle="italic"
                 android:visibility="gone" />
+            <ImageView
+                android:id="@+id/widget_days_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
             <TextView
                 android:id="@+id/widget_days_neon"
                 android:layout_width="wrap_content"
@@ -248,6 +285,15 @@
                 android:text="天"
                 android:textColor="#D9FFFFFF"
                 android:textSize="14sp" />
+            <ImageView
+                android:id="@+id/widget_unit_custom"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
         </LinearLayout>
 
         <Chronometer
@@ -275,6 +321,13 @@
             android:textColor="#D9FFFFFF"
             android:textSize="12sp"
             android:visibility="gone" />
+        <ImageView
+            android:id="@+id/widget_date_info_custom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:scaleType="fitStart"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/widget_note"
@@ -288,6 +341,13 @@
             android:shadowRadius="2"
             android:textColor="#D9FFFFFF"
             android:textSize="14sp" />
+        <ImageView
+            android:id="@+id/widget_note_custom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:scaleType="fitStart"
+            android:visibility="gone" />
     </LinearLayout>
 
     <ImageView

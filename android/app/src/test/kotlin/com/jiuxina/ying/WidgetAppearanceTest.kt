@@ -311,7 +311,7 @@ class WidgetAppearanceTest {
         val raw = File("src/test/resources/widget_parity/empty_single.spec.json").readText()
         val spec = parseRenderSpec(raw)
         assertTrue(spec != null)
-        assertEquals(8, spec!!.version)
+        assertEquals(9, spec!!.version)
         assertEquals("single", spec.compact?.mode)
         assertEquals("single", spec.full?.mode)
         assertEquals(false, spec.compact?.element("category")?.visible)
@@ -356,6 +356,38 @@ class WidgetAppearanceTest {
             renderAlignGravity(WidgetAlign.center),
         )
         assertEquals(Gravity.END, renderAlignGravity(WidgetAlign.end))
+    }
+
+    @Test
+    fun customFontSelectionKindRecognizesCatalogAndLocal() {
+        assertEquals("catalog", customFontSelectionKind("catalog:dseg7"))
+        assertEquals("local", customFontSelectionKind("local:imported-1"))
+        assertEquals(null, customFontSelectionKind("system"))
+        assertEquals(null, customFontSelectionKind(null))
+        assertEquals(null, customFontSelectionKind("mono"))
+        assertTrue(isPureDigitText("123"))
+        assertFalse(isPureDigitText("12天"))
+        assertFalse(isPureDigitText(""))
+        assertFalse(isPureDigitText("🕯️"))
+    }
+
+    @Test
+    fun customFontViewsAndProtocolKeysExist() {
+        val single = File("src/main/res/layout/daymark_widget.xml").readText()
+        val list = File("src/main/res/layout/daymark_widget_list.xml").readText()
+        assertTrue(single.contains("widget_days_custom"))
+        assertTrue(single.contains("widget_title_custom"))
+        assertTrue(single.contains("widget_unit_custom"))
+        assertTrue(single.contains("widget_note_custom"))
+        assertTrue(list.contains("widget_list_header_custom"))
+        assertTrue(list.contains("widget_row_1_title_custom"))
+        assertTrue(list.contains("widget_row_1_days_custom"))
+        val source = File("src/main/kotlin/com/jiuxina/ying/DaymarkWidgetProvider.kt").readText()
+        assertTrue(source.contains("widget_text_font_family"))
+        assertTrue(source.contains("widget_digit_font_path"))
+        assertTrue(source.contains("widget_text_font_path"))
+        assertTrue(source.contains("setImageViewBitmap"))
+        assertTrue(source.contains("customFontSelectionKind"))
     }
 
     @Test

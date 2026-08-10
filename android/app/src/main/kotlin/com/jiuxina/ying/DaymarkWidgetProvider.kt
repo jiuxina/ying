@@ -16,10 +16,12 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.os.Build
 import android.os.SystemClock
+import android.text.TextPaint
 import android.view.Gravity
 import android.view.View
 import android.widget.RemoteViews
@@ -232,6 +234,18 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             val verticalAlign = parseVerticalAlign(
                 widgetData.getString(WIDGET_VERTICAL_ALIGN_KEY, "center"),
             )
+            val digitTypeface = customFontTypeface(
+                context,
+                widgetData,
+                "widget_font_family",
+                "widget_digit_font_path",
+            )
+            val textTypeface = customFontTypeface(
+                context,
+                widgetData,
+                "widget_text_font_family",
+                "widget_text_font_path",
+            )
             if (listMode) {
                 updateListWidget(
                     context,
@@ -242,6 +256,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                     size,
                     elementStyles,
                     renderSpec,
+                    digitTypeface,
+                    textTypeface,
                 )
             } else {
                 updateSingleWidget(
@@ -257,6 +273,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                     elementStyles,
                     verticalAlign,
                     renderSpec,
+                    digitTypeface,
+                    textTypeface,
                 )
             }
             appWidgetManager.updateAppWidget(widgetId, views)
@@ -276,6 +294,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         styles: Map<String, WidgetElementStyle>,
         verticalAlign: WidgetVerticalAlign,
         renderSpec: WidgetRenderSpec?,
+        digitTypeface: Typeface?,
+        textTypeface: Typeface?,
     ) {
         val branch = renderSpec?.branch(compact)?.takeIf { it.mode == "single" }
             ?: fallbackRenderBranch(widgetData, styles, compact, "single", style)
@@ -328,16 +348,28 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             "setGravity",
             renderAlignGravity(branch.element("days").align) or Gravity.BOTTOM,
         )
+        val scale = widgetFontScale(widgetData)
+        val maxDaysWidth = (size.width * 0.9f).toInt().coerceAtLeast(80)
+        val maxTitleWidth = (size.width * 0.85f).toInt().coerceAtLeast(80)
+        val maxUnitWidth = (size.width * 0.6f).toInt().coerceAtLeast(80)
+        val maxCategoryWidth = (size.width * 0.8f).toInt().coerceAtLeast(80)
+        val maxNoteWidth = (size.width * 0.9f).toInt().coerceAtLeast(80)
+        val maxDateInfoWidth = (size.width * 0.9f).toInt().coerceAtLeast(80)
+        val maxProgressWidth = (size.width * 0.5f).toInt().coerceAtLeast(80)
 
         if (event == null) {
             views.setTextViewText(R.id.widget_title, "添加一个倒数日")
             setDaysText(
+                context,
                 views,
                 "--",
                 widgetData,
                 compact,
                 style,
                 branch.element("days").size,
+                branch.element("days").color,
+                digitTypeface,
+                maxDaysWidth,
             )
             if (!branch.element("days").visible) {
                 hideDays(views)
@@ -365,6 +397,47 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             views.setViewVisibility(R.id.widget_progress_text, View.GONE)
             views.setViewVisibility(R.id.widget_health_bar, View.GONE)
             views.setViewVisibility(R.id.widget_envelope_cover, View.GONE)
+            if (textTypeface != null) {
+                setCustomText(
+                    context,
+                    views,
+                    R.id.widget_title,
+                    R.id.widget_title_custom,
+                    "添加一个倒数日",
+                    textTypeface,
+                    branch.element("title").color,
+                    (if (compact) 15f else 18f) * scale * branch.element("title").size,
+                    maxTitleWidth,
+                    branch.element("title").visible,
+                    renderAlignGravity(branch.element("title").align),
+                )
+                setCustomText(
+                    context,
+                    views,
+                    R.id.widget_unit,
+                    R.id.widget_unit_custom,
+                    "天",
+                    textTypeface,
+                    branch.element("unit").color,
+                    14f * scale * branch.element("unit").size,
+                    maxUnitWidth,
+                    branch.element("unit").visible,
+                    renderAlignGravity(branch.element("unit").align),
+                )
+                setCustomText(
+                    context,
+                    views,
+                    R.id.widget_category,
+                    R.id.widget_category_custom,
+                    "萤",
+                    textTypeface,
+                    branch.element("category").color,
+                    14f * scale * branch.element("category").size,
+                    maxCategoryWidth,
+                    branch.element("category").visible,
+                    renderAlignGravity(branch.element("category").align),
+                )
+            }
             return
         }
 
@@ -375,18 +448,36 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             widgetData.getBoolean("widget_mystery_mode", false)
         val flipDay = widgetData.getInt(FLIP_DAY_KEY, -1)
         if (flipDay >= 0 && abs(days.toInt()) != flipDay && !mystery) {
-            views.setTextViewText(R.id.widget_days_old, countMainText(event, preset, flipDay.toLong()))
+            val oldText = countMainText(event, preset, flipDay.toLong())
+            val oldSize = (if (flipDay.toString().length > 3) 26f else 44f) *
+                scale *
+                branch.element("days").size
+            views.setTextViewText(R.id.widget_days_old, oldText)
             views.setTextViewTextSize(
                 R.id.widget_days_old,
                 2,
-                (if (flipDay.toString().length > 3) 26f else 44f) *
-                    widgetFontScale(widgetData) *
-                    branch.element("days").size,
+                oldSize,
             )
-            views.setViewVisibility(R.id.widget_days_old, View.VISIBLE)
+            if (digitTypeface != null && isPureDigitText(oldText)) {
+                views.setViewVisibility(R.id.widget_days_old, View.GONE)
+                renderDaysCustom(
+                    context,
+                    views,
+                    oldText,
+                    digitTypeface,
+                    branch.element("days").color,
+                    oldSize,
+                    maxDaysWidth,
+                    R.id.widget_days_old_custom,
+                )
+            } else {
+                views.setViewVisibility(R.id.widget_days_old, View.VISIBLE)
+                views.setViewVisibility(R.id.widget_days_old_custom, View.GONE)
+            }
             scheduleFlipRefresh(context)
         } else {
             views.setViewVisibility(R.id.widget_days_old, View.GONE)
+            views.setViewVisibility(R.id.widget_days_old_custom, View.GONE)
         }
         views.setTextViewText(R.id.widget_title, event.title)
         views.setViewVisibility(
@@ -402,12 +493,16 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             views.setViewVisibility(R.id.widget_icon, View.GONE)
         }
         setDaysText(
+            context,
             views,
             if (mystery) "🕯️" else countMainText(event, preset, days),
             widgetData,
             compact,
             style,
             branch.element("days").size,
+            branch.element("days").color,
+            digitTypeface,
+            maxDaysWidth,
         )
         if (!branch.element("days").visible) {
             hideDays(views)
@@ -425,12 +520,16 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             val congratsAccent = accentColor(widgetData, holiday)
             views.setTextViewText(R.id.widget_title, "恭喜！${event.title}")
             setDaysText(
+                context,
                 views,
                 "🎉",
                 widgetData,
                 compact,
                 style,
                 branch.element("days").size,
+                branch.element("days").color,
+                digitTypeface,
+                maxDaysWidth,
             )
             views.setTextViewText(R.id.widget_unit, "就是今天")
             if (customElementColor(styles["days"]) == null) {
@@ -545,6 +644,32 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             views.setViewVisibility(R.id.widget_envelope_cover, View.GONE)
         }
 
+        applyCustomTextPass(
+            context,
+            views,
+            widgetData,
+            event,
+            branch,
+            compact,
+            style,
+            textTypeface,
+            size,
+            styles,
+            holiday,
+        )
+        applyCustomDaysPass(
+            context,
+            views,
+            widgetData,
+            event,
+            branch,
+            compact,
+            style,
+            digitTypeface,
+            maxDaysWidth,
+            holiday,
+        )
+
         views.setOnClickPendingIntent(
             R.id.widget_previous,
             navigationIntent(context, widgetId, index - 1, events.size),
@@ -612,6 +737,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         size: WidgetBackdropSize,
         styles: Map<String, WidgetElementStyle>,
         renderSpec: WidgetRenderSpec?,
+        digitTypeface: Typeface?,
+        textTypeface: Typeface?,
     ) {
         val branch = renderSpec?.branch(compact)?.takeIf { it.mode == "list" }
             ?: fallbackRenderBranch(widgetData, styles, compact, "list", style)
@@ -644,6 +771,19 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         views.setViewVisibility(
             R.id.widget_list_header,
             if (branch.element("listHeader").visible) View.VISIBLE else View.GONE,
+        )
+        setCustomText(
+            context,
+            views,
+            R.id.widget_list_header,
+            R.id.widget_list_header_custom,
+            "事件列表",
+            textTypeface,
+            branch.element("listHeader").color,
+            13f * scale * branch.element("listHeader").size,
+            (size.width * 0.9f).toInt().coerceAtLeast(80),
+            branch.element("listHeader").visible,
+            renderAlignGravity(branch.element("listHeader").align),
         )
         var visibleCount = 0
         val maxRows = if (compact) 2 else MAX_LIST_ROWS
@@ -767,6 +907,21 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             } else {
                 views.setViewVisibility(ids.subtitle, View.GONE)
             }
+            applyRowCustomText(
+                context,
+                views,
+                ids,
+                event,
+                widgetData,
+                branch,
+                scale,
+                size,
+                styles,
+                digitTypeface,
+                textTypeface,
+                mystery,
+                preset,
+            )
             views.setOnClickPendingIntent(
                 ids.root,
                 launchIntent(
@@ -797,6 +952,117 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             } else {
                 View.GONE
             },
+        )
+    }
+
+    private fun applyRowCustomText(
+        context: Context,
+        views: RemoteViews,
+        ids: WidgetRowIds,
+        event: WidgetEvent,
+        data: SharedPreferences,
+        branch: WidgetRenderBranch,
+        scale: Float,
+        size: WidgetBackdropSize,
+        styles: Map<String, WidgetElementStyle>,
+        digitTypeface: Typeface?,
+        textTypeface: Typeface?,
+        mystery: Boolean,
+        preset: String?,
+    ) {
+        val days = event.daysFromToday()
+        val countUp = event.isCountUp || days < 0
+        val daysText = if (mystery) "🕯️" else countMainText(event, preset, days)
+        val urgentLevel = if (data.getBoolean("widget_urgent_highlight", false) &&
+            !mystery
+        ) {
+            urgentLevel(days)
+        } else {
+            0
+        }
+        val urgentAccent = urgentAccent(urgentLevel)
+        val unitText = if (mystery) {
+            "快到了"
+        } else if (urgentAccent != null && preset != "weeks") {
+            urgentLabel(urgentLevel, days)
+        } else {
+            countUnitText(event, preset, days, countUp)
+        }
+        val daysColor = if (customElementColor(styles["rowDays"]) == null &&
+            urgentAccent != null
+        ) {
+            urgentAccent
+        } else {
+            branch.element("rowDays").color
+        }
+        val unitColor = if (customElementColor(styles["rowUnit"]) == null &&
+            urgentAccent != null
+        ) {
+            urgentAccent
+        } else {
+            branch.element("rowUnit").color
+        }
+        val subtitle = buildList {
+            if (data.getBoolean("widget_show_category", true)) add(event.category)
+            if (data.getBoolean("widget_show_precise_time", false)) {
+                add(preciseTimeText(event, System.currentTimeMillis()))
+            }
+        }.joinToString(" · ")
+        val maxTitle = (size.width * 0.5f).toInt().coerceAtLeast(80)
+        val maxSubtitle = maxTitle
+        val maxDays = (size.width * 0.3f).toInt().coerceAtLeast(60)
+        val maxUnit = (size.width * 0.25f).toInt().coerceAtLeast(50)
+        setCustomText(
+            context,
+            views,
+            ids.title,
+            ids.titleCustom,
+            event.title,
+            textTypeface,
+            branch.element("rowTitle").color,
+            14f * scale * branch.element("rowTitle").size,
+            maxTitle,
+            branch.element("rowTitle").visible,
+            renderAlignGravity(branch.element("rowTitle").align),
+        )
+        setCustomText(
+            context,
+            views,
+            ids.subtitle,
+            ids.subtitleCustom,
+            subtitle,
+            textTypeface,
+            branch.element("rowSubtitle").color,
+            11f * scale * branch.element("rowSubtitle").size,
+            maxSubtitle,
+            branch.element("rowSubtitle").visible && subtitle.isNotEmpty(),
+            renderAlignGravity(branch.element("rowSubtitle").align),
+        )
+        setCustomText(
+            context,
+            views,
+            ids.days,
+            ids.daysCustom,
+            daysText,
+            digitTypeface,
+            daysColor,
+            18f * scale * branch.element("rowDays").size,
+            maxDays,
+            branch.element("rowDays").visible,
+            renderAlignGravity(branch.element("rowDays").align),
+        )
+        setCustomText(
+            context,
+            views,
+            ids.unit,
+            ids.unitCustom,
+            unitText,
+            textTypeface,
+            unitColor,
+            11f * scale * branch.element("rowUnit").size,
+            maxUnit,
+            branch.element("rowUnit").visible && unitText.isNotEmpty(),
+            renderAlignGravity(branch.element("rowUnit").align),
         )
     }
 
@@ -1614,13 +1880,145 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         }
     }
 
+    private fun customFontTypeface(
+        context: Context,
+        data: SharedPreferences,
+        selectionKey: String,
+        pathKey: String,
+    ): Typeface? {
+        val selection = data.getString(selectionKey, "system") ?: "system"
+        val kind = customFontSelectionKind(selection)
+        if (kind == null) return null
+        if (kind == "local" && !sponsorUnlocked(data)) return null
+        val path = data.getString(pathKey, "") ?: ""
+        if (path.isBlank()) return null
+        return try {
+            val file = File(path)
+            if (file.exists() && file.isFile) Typeface.createFromFile(file) else null
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun renderCustomTextBitmap(
+        context: Context,
+        text: String,
+        typeface: Typeface,
+        color: Int,
+        textSizeSp: Float,
+        maxWidthPx: Int,
+        align: Int,
+    ): Bitmap {
+        val density = context.resources.displayMetrics.density
+        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.typeface = typeface
+            textSize = textSizeSp * density
+            this.color = color
+            setShadowLayer(2f * density, 0f, 1f * density, 0x40000000)
+        }
+        val ellipsized = ellipsizeText(text, paint, maxWidthPx)
+        val measured = paint.measureText(ellipsized)
+        val width = minOf(measured.toInt() + 1, maxWidthPx.coerceAtLeast(1)).coerceAtLeast(1)
+        val height = (paint.fontMetrics.bottom - paint.fontMetrics.top).toInt() + 2
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val x = when (align) {
+            Gravity.CENTER_HORIZONTAL, Gravity.CENTER -> (width - measured) / 2f
+            Gravity.END, Gravity.RIGHT -> width - measured
+            else -> 0f
+        }
+        canvas.drawText(ellipsized, x, -paint.fontMetrics.top, paint)
+        return bitmap
+    }
+
+    private fun ellipsizeText(text: String, paint: TextPaint, maxWidthPx: Int): String {
+        if (maxWidthPx <= 0 || paint.measureText(text) <= maxWidthPx) return text
+        var end = text.length
+        while (end > 0 && paint.measureText(text.substring(0, end) + "…") > maxWidthPx) {
+            end--
+        }
+        return text.substring(0, end) + "…"
+    }
+
+    private fun setCustomText(
+        context: Context,
+        views: RemoteViews,
+        textViewId: Int,
+        imageViewId: Int,
+        text: String,
+        typeface: Typeface?,
+        color: Int,
+        sizeSp: Float,
+        maxWidthPx: Int,
+        visible: Boolean,
+        align: Int,
+    ) {
+        views.setTextViewText(textViewId, text)
+        views.setTextColor(textViewId, color)
+        views.setTextViewTextSize(textViewId, 2, sizeSp)
+        views.setInt(textViewId, "setGravity", align)
+        views.setViewVisibility(
+            textViewId,
+            if (!visible || typeface == null) View.VISIBLE else View.GONE,
+        )
+        views.setViewVisibility(
+            imageViewId,
+            if (!visible || typeface == null) View.GONE else View.VISIBLE,
+        )
+        if (typeface != null && visible) {
+            val bitmap = renderCustomTextBitmap(
+                context,
+                text,
+                typeface,
+                color,
+                sizeSp,
+                maxWidthPx,
+                align,
+            )
+            views.setImageViewBitmap(imageViewId, bitmap)
+            views.setContentDescription(imageViewId, text)
+        }
+    }
+
+    private fun renderDaysCustom(
+        context: Context,
+        views: RemoteViews,
+        text: String,
+        typeface: Typeface?,
+        color: Int,
+        sizeSp: Float,
+        maxWidthPx: Int,
+        imageViewId: Int,
+    ) {
+        if (typeface == null || !isPureDigitText(text)) {
+            views.setViewVisibility(imageViewId, View.GONE)
+            return
+        }
+        val bitmap = renderCustomTextBitmap(
+            context,
+            text,
+            typeface,
+            color,
+            sizeSp,
+            maxWidthPx,
+            Gravity.START,
+        )
+        views.setImageViewBitmap(imageViewId, bitmap)
+        views.setContentDescription(imageViewId, text)
+        views.setViewVisibility(imageViewId, View.VISIBLE)
+    }
+
     private fun setDaysText(
+        context: Context,
         views: RemoteViews,
         text: String,
         data: SharedPreferences,
         compact: Boolean,
         style: WidgetStyle = WidgetStyle.card,
         elementScale: Float = 1f,
+        color: Int = 0xFFFFFFFF.toInt(),
+        digitTypeface: Typeface? = null,
+        maxWidthPx: Int = 320,
     ) {
         val scale = widgetFontScale(data)
         val size = if (text.length > 3) {
@@ -1628,25 +2026,47 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         } else {
             (if (compact) 32f else 44f) * scale * elementScale
         }
+        val useCustom = digitTypeface != null && isPureDigitText(text)
+        val selected = if (useCustom) {
+            R.id.widget_days_custom
+        } else {
+            when {
+                style == WidgetStyle.neonSign -> R.id.widget_days_neon
+                data.getString("widget_font_family", "system") == "mono" ->
+                    R.id.widget_days_mono
+                data.getString("widget_font_family", "system") == "pixel" ->
+                    R.id.widget_days_pixel
+                data.getString("widget_font_family", "system") == "hand" ->
+                    R.id.widget_days_hand
+                else -> R.id.widget_days
+            }
+        }
         listOf(
             R.id.widget_days,
             R.id.widget_days_mono,
             R.id.widget_days_pixel,
             R.id.widget_days_hand,
             R.id.widget_days_neon,
+            R.id.widget_days_custom,
         ).forEach { id ->
-            views.setTextViewText(id, text)
-            views.setTextViewTextSize(id, 2, size)
+            views.setViewVisibility(id, if (id == selected) View.VISIBLE else View.GONE)
+            if (id == selected && id != R.id.widget_days_custom) {
+                views.setTextViewText(id, text)
+                views.setTextViewTextSize(id, 2, size)
+            }
         }
-        applyFontVariant(
-            views,
-            if (sponsorUnlocked(data)) {
-                data.getString("widget_font_family", "system")
-            } else {
-                "system"
-            },
-            style,
-        )
+        if (useCustom) {
+            renderDaysCustom(
+                context,
+                views,
+                text,
+                digitTypeface,
+                color,
+                size,
+                maxWidthPx,
+                R.id.widget_days_custom,
+            )
+        }
     }
 
     private fun hideDays(views: RemoteViews) {
@@ -1656,30 +2076,223 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_days_pixel,
             R.id.widget_days_hand,
             R.id.widget_days_neon,
+            R.id.widget_days_custom,
+            R.id.widget_days_old,
+            R.id.widget_days_old_custom,
         ).forEach { id -> views.setViewVisibility(id, View.GONE) }
     }
 
-    private fun applyFontVariant(
+    private fun applyCustomTextPass(
+        context: Context,
         views: RemoteViews,
-        family: String?,
-        style: WidgetStyle = WidgetStyle.card,
+        data: SharedPreferences,
+        event: WidgetEvent,
+        branch: WidgetRenderBranch,
+        compact: Boolean,
+        style: WidgetStyle,
+        textTypeface: Typeface?,
+        size: WidgetBackdropSize,
+        styles: Map<String, WidgetElementStyle>,
+        holiday: String,
     ) {
-        val selected = when {
-            style == WidgetStyle.neonSign -> R.id.widget_days_neon
-            family == "mono" -> R.id.widget_days_mono
-            family == "pixel" -> R.id.widget_days_pixel
-            family == "hand" -> R.id.widget_days_hand
-            else -> R.id.widget_days
+        if (textTypeface == null) return
+        val scale = widgetFontScale(data)
+        val days = event.daysFromToday()
+        val countUp = event.isCountUp || days < 0
+        val preset = data.getString("widget_unit_text", "")
+        val mystery = sponsorUnlocked(data) &&
+            data.getBoolean("widget_mystery_mode", false)
+        val capsuleToday = style == WidgetStyle.capsule && days == 0L
+        val urgentLevel = if (data.getBoolean("widget_urgent_highlight", false) &&
+            !mystery
+        ) {
+            urgentLevel(days)
+        } else {
+            0
         }
-        listOf(
-            R.id.widget_days,
-            R.id.widget_days_mono,
-            R.id.widget_days_pixel,
-            R.id.widget_days_hand,
-            R.id.widget_days_neon,
-        ).forEach { id ->
-            views.setViewVisibility(id, if (id == selected) View.VISIBLE else View.GONE)
+        val urgentAccent = urgentAccent(urgentLevel)
+        val accent = accentColor(data, holiday)
+        val title = if (capsuleToday) "恭喜！${event.title}" else event.title
+        val category = if (capsuleToday) "时间胶囊" else event.category
+        val unitText = if (mystery) {
+            "快到了"
+        } else if (capsuleToday) {
+            "就是今天"
+        } else if (urgentAccent != null && preset != "weeks") {
+            urgentLabel(urgentLevel, days)
+        } else {
+            countUnitText(event, preset, days, countUp)
         }
+        val unitColor = when {
+            customElementColor(styles["unit"]) != null ->
+                branch.element("unit").color
+            capsuleToday -> accent
+            urgentAccent != null -> urgentAccent
+            else -> branch.element("unit").color
+        }
+        val unitVisible = branch.element("unit").visible && unitText.isNotEmpty()
+        val quote = if (sponsorUnlocked(data) &&
+            data.getBoolean("widget_quote_mode", false)
+        ) {
+            quoteText(event, LocalDate.now())
+        } else {
+            ""
+        }
+        val showNote = data.getBoolean("widget_show_note", true)
+        val noteText = if (quote.isNotEmpty()) {
+            quote
+        } else if (showNote) {
+            event.note
+        } else {
+            ""
+        }
+        val noteVisible =
+            branch.element("note").visible && noteText.isNotBlank()
+        val dateInfoText = data.getString("widget_date_info", "")
+            ?.takeIf { it.isNotBlank() }
+            ?: widgetDateInfo(LocalDate.now())
+        val progressText = if (branch.element("progress").visible &&
+            data.getBoolean("widget_show_progress", false)
+        ) {
+            "${(progressOf(event, System.currentTimeMillis()) * 100).toInt()}%"
+        } else {
+            ""
+        }
+        val maxTitle = (size.width * 0.85f).toInt().coerceAtLeast(80)
+        val maxCategory = (size.width * 0.8f).toInt().coerceAtLeast(80)
+        val maxUnit = (size.width * 0.6f).toInt().coerceAtLeast(80)
+        val maxNote = (size.width * 0.9f).toInt().coerceAtLeast(80)
+        val maxDateInfo = (size.width * 0.9f).toInt().coerceAtLeast(80)
+        val maxProgress = (size.width * 0.5f).toInt().coerceAtLeast(80)
+        setCustomText(
+            context,
+            views,
+            R.id.widget_title,
+            R.id.widget_title_custom,
+            title,
+            textTypeface,
+            if (capsuleToday) accent else branch.element("title").color,
+            (if (compact) 15f else 18f) * scale * branch.element("title").size,
+            maxTitle,
+            branch.element("title").visible,
+            renderAlignGravity(branch.element("title").align),
+        )
+        setCustomText(
+            context,
+            views,
+            R.id.widget_category,
+            R.id.widget_category_custom,
+            category,
+            textTypeface,
+            branch.element("category").color,
+            14f * scale * branch.element("category").size,
+            maxCategory,
+            branch.element("category").visible,
+            renderAlignGravity(branch.element("category").align),
+        )
+        setCustomText(
+            context,
+            views,
+            R.id.widget_unit,
+            R.id.widget_unit_custom,
+            unitText,
+            textTypeface,
+            unitColor,
+            14f * scale * branch.element("unit").size,
+            maxUnit,
+            unitVisible,
+            renderAlignGravity(branch.element("unit").align),
+        )
+        setCustomText(
+            context,
+            views,
+            R.id.widget_note,
+            R.id.widget_note_custom,
+            noteText,
+            textTypeface,
+            branch.element("note").color,
+            14f * scale * branch.element("note").size,
+            maxNote,
+            noteVisible,
+            renderAlignGravity(branch.element("note").align),
+        )
+        setCustomText(
+            context,
+            views,
+            R.id.widget_date_info,
+            R.id.widget_date_info_custom,
+            dateInfoText,
+            textTypeface,
+            branch.element("dateInfo").color,
+            12f * scale * branch.element("dateInfo").size,
+            maxDateInfo,
+            branch.element("dateInfo").visible,
+            renderAlignGravity(branch.element("dateInfo").align),
+        )
+        setCustomText(
+            context,
+            views,
+            R.id.widget_progress_text,
+            R.id.widget_progress_text_custom,
+            progressText,
+            textTypeface,
+            branch.element("progress").color,
+            13f * scale * branch.element("progress").size,
+            maxProgress,
+            progressText.isNotEmpty(),
+            renderAlignGravity(branch.element("progress").align),
+        )
+    }
+
+    private fun applyCustomDaysPass(
+        context: Context,
+        views: RemoteViews,
+        data: SharedPreferences,
+        event: WidgetEvent,
+        branch: WidgetRenderBranch,
+        compact: Boolean,
+        style: WidgetStyle,
+        digitTypeface: Typeface?,
+        maxWidthPx: Int,
+        holiday: String,
+    ) {
+        if (digitTypeface == null) return
+        val days = event.daysFromToday()
+        val preset = data.getString("widget_unit_text", "")
+        val mystery = sponsorUnlocked(data) &&
+            data.getBoolean("widget_mystery_mode", false)
+        val text = if (mystery) "🕯️" else countMainText(event, preset, days)
+        if (!isPureDigitText(text)) return
+        val capsuleToday = style == WidgetStyle.capsule && days == 0L
+        val urgentLevel = if (data.getBoolean("widget_urgent_highlight", false) &&
+            !mystery
+        ) {
+            urgentLevel(days)
+        } else {
+            0
+        }
+        val urgentAccent = urgentAccent(urgentLevel)
+        val color = when {
+            capsuleToday -> accentColor(data, holiday)
+            urgentAccent != null -> urgentAccent
+            else -> branch.element("days").color
+        }
+        val scale = widgetFontScale(data)
+        val size = if (text.length > 3) {
+            (if (compact) 22f else 26f) * scale * branch.element("days").size
+        } else {
+            (if (compact) 32f else 44f) * scale * branch.element("days").size
+        }
+        renderDaysCustom(
+            context,
+            views,
+            text,
+            digitTypeface,
+            color,
+            size,
+            maxWidthPx,
+            R.id.widget_days_custom,
+        )
     }
 
     private fun applyPreciseTime(views: RemoteViews, event: WidgetEvent) {
@@ -1792,9 +2405,13 @@ private data class WidgetRowIds(
     val root: Int,
     val icon: Int,
     val title: Int,
+    val titleCustom: Int,
     val subtitle: Int,
+    val subtitleCustom: Int,
     val days: Int,
+    val daysCustom: Int,
     val unit: Int,
+    val unitCustom: Int,
 )
 
 private fun widgetRowIds(row: Int): WidgetRowIds = when (row) {
@@ -1802,33 +2419,49 @@ private fun widgetRowIds(row: Int): WidgetRowIds = when (row) {
         R.id.widget_row_1_root,
         R.id.widget_row_1_icon,
         R.id.widget_row_1_title,
+        R.id.widget_row_1_title_custom,
         R.id.widget_row_1_subtitle,
+        R.id.widget_row_1_subtitle_custom,
         R.id.widget_row_1_days,
+        R.id.widget_row_1_days_custom,
         R.id.widget_row_1_unit,
+        R.id.widget_row_1_unit_custom,
     )
     2 -> WidgetRowIds(
         R.id.widget_row_2_root,
         R.id.widget_row_2_icon,
         R.id.widget_row_2_title,
+        R.id.widget_row_2_title_custom,
         R.id.widget_row_2_subtitle,
+        R.id.widget_row_2_subtitle_custom,
         R.id.widget_row_2_days,
+        R.id.widget_row_2_days_custom,
         R.id.widget_row_2_unit,
+        R.id.widget_row_2_unit_custom,
     )
     3 -> WidgetRowIds(
         R.id.widget_row_3_root,
         R.id.widget_row_3_icon,
         R.id.widget_row_3_title,
+        R.id.widget_row_3_title_custom,
         R.id.widget_row_3_subtitle,
+        R.id.widget_row_3_subtitle_custom,
         R.id.widget_row_3_days,
+        R.id.widget_row_3_days_custom,
         R.id.widget_row_3_unit,
+        R.id.widget_row_3_unit_custom,
     )
     else -> WidgetRowIds(
         R.id.widget_row_4_root,
         R.id.widget_row_4_icon,
         R.id.widget_row_4_title,
+        R.id.widget_row_4_title_custom,
         R.id.widget_row_4_subtitle,
+        R.id.widget_row_4_subtitle_custom,
         R.id.widget_row_4_days,
+        R.id.widget_row_4_days_custom,
         R.id.widget_row_4_unit,
+        R.id.widget_row_4_unit_custom,
     )
 }
 
@@ -1893,6 +2526,15 @@ internal fun baseColor(data: SharedPreferences): Int = try {
 
 internal fun accentColor(data: SharedPreferences, holiday: String): Int =
     holidayAccent(holiday) ?: baseColor(data)
+
+internal fun customFontSelectionKind(selection: String?): String? = when {
+    selection?.startsWith("catalog:") == true -> "catalog"
+    selection?.startsWith("local:") == true -> "local"
+    else -> null
+}
+
+internal fun isPureDigitText(text: String): Boolean =
+    text.isNotEmpty() && text.all { it.isDigit() }
 
 internal fun countMainText(event: WidgetEvent, preset: String?, days: Long): String {
     if (preset == "weeks" && days != 0L) return "约${weekCount(days)}周"
