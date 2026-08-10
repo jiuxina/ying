@@ -89,52 +89,57 @@ class _ThemeOption extends StatelessWidget {
         label: '主题：$label',
         child: Material(
           color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(14),
-            child: AnimatedContainer(
-              duration: motionDuration(
-                context,
-                const Duration(milliseconds: 180),
-              ),
-              constraints: const BoxConstraints(minHeight: 44),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-              decoration: BoxDecoration(
-                color: selected ? scheme.surface : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: selected
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ]
-                    : null,
-              ),
-              // 外层 Semantics 已提供完整 label，排除内部文字避免重复播报。
-              child: ExcludeSemantics(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      icon,
-                      color: selected
-                          ? scheme.onSurface
-                          : scheme.onSurfaceVariant,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      label,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          child: GlassPressable(
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onTap();
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: AnimatedContainer(
+                duration: motionDuration(
+                  context,
+                  const Duration(milliseconds: 180),
+                ),
+                constraints: const BoxConstraints(minHeight: 44),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                decoration: BoxDecoration(
+                  color: selected ? scheme.surface : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ]
+                      : null,
+                ),
+                // 外层 Semantics 已提供完整 label，排除内部文字避免重复播报。
+                child: ExcludeSemantics(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        icon,
                         color: selected
                             ? scheme.onSurface
                             : scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+                        size: 16,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 5),
+                      Text(
+                        label,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: selected
+                              ? scheme.onSurface
+                              : scheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -173,55 +178,66 @@ class _StyleOption extends StatelessWidget {
       label: '小部件样式：$label',
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          onTap: locked ? (onLockedTap ?? () {}) : onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: AnimatedContainer(
-            duration: motionDuration(
-              context,
-              const Duration(milliseconds: 180),
-            ),
-            constraints: const BoxConstraints(minHeight: 46, minWidth: 76),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(
-              color: selected
-                  ? scheme.surfaceContainerHighest
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: selected
-                    ? scheme.outlineVariant
-                    : scheme.outlineVariant.withValues(alpha: 0.5),
+        child: GlassPressable(
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              if (locked) {
+                (onLockedTap ?? () {})();
+              } else {
+                onTap();
+              }
+            },
+            borderRadius: BorderRadius.circular(14),
+            child: AnimatedContainer(
+              duration: motionDuration(
+                context,
+                const Duration(milliseconds: 180),
               ),
-            ),
-            child: ExcludeSemantics(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    icon,
-                    size: 17,
-                    color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              constraints: const BoxConstraints(minHeight: 46, minWidth: 76),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: selected
+                    ? scheme.surfaceContainerHighest
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: selected
+                      ? scheme.outlineVariant
+                      : scheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+              ),
+              child: ExcludeSemantics(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 17,
                       color: selected
                           ? scheme.onSurface
                           : scheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
                     ),
-                  ),
-                  if (locked) ...[
-                    const SizedBox(width: 5),
-                    Icon(
-                      Icons.lock_rounded,
-                      size: 12,
-                      color: scheme.onSurfaceVariant,
+                    const SizedBox(width: 6),
+                    Text(
+                      label,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: selected
+                            ? scheme.onSurface
+                            : scheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
+                    if (locked) ...[
+                      const SizedBox(width: 5),
+                      Icon(
+                        Icons.lock_rounded,
+                        size: 12,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -252,34 +268,39 @@ class _ColorButton extends StatelessWidget {
       label: '主色调：$label',
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: AnimatedContainer(
-            duration: motionDuration(
-              context,
-              const Duration(milliseconds: 180),
-            ),
-            // 48x48 触控热区，内部色块 36px。
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: selected ? color : Colors.transparent,
-                width: 2.5,
+        child: GlassPressable(
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onTap();
+            },
+            customBorder: const CircleBorder(),
+            child: AnimatedContainer(
+              duration: motionDuration(
+                context,
+                const Duration(milliseconds: 180),
               ),
-            ),
-            child: DecoratedBox(
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              child: selected
-                  ? const Icon(
-                      Icons.check_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    )
-                  : null,
+              // 48x48 触控热区，内部色块 36px。
+              width: 48,
+              height: 48,
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected ? color : Colors.transparent,
+                  width: 2.5,
+                ),
+              ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                child: selected
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      )
+                    : null,
+              ),
             ),
           ),
         ),
@@ -317,9 +338,7 @@ class _SettingSwitch extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: locked
-              ? (onLockedTap ?? () {})
-              : () => onChanged(!value),
+          onTap: locked ? (onLockedTap ?? () {}) : () => onChanged(!value),
           borderRadius: BorderRadius.circular(14),
           // 整行可点，扩大触控区域；最小高度保证 48px。
           child: ConstrainedBox(
@@ -445,12 +464,17 @@ class _ChoiceSetting extends StatelessWidget {
                         button: true,
                         selected: option.$1 == selected.$1,
                         label: '$title：${option.$2}',
-                        child: ChoiceChip(
-                          label: Text(option.$2),
-                          selected: option.$1 == selected.$1,
-                          onSelected: locked
-                              ? null
-                              : (_) => onSelected(option),
+                        child: GlassPressable(
+                          child: ChoiceChip(
+                            label: Text(option.$2),
+                            selected: option.$1 == selected.$1,
+                            onSelected: locked
+                                ? null
+                                : (_) {
+                                    HapticFeedback.selectionClick();
+                                    onSelected(option);
+                                  },
+                          ),
                         ),
                       ),
                   ],
@@ -557,10 +581,24 @@ class _SliderSetting extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              valueLabel,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
+            AnimatedSwitcher(
+              duration: motionDuration(context, AppMotion.state),
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.03),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              ),
+              child: Text(
+                valueLabel,
+                key: ValueKey(valueLabel),
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
             ),
           ],
@@ -604,43 +642,50 @@ class _SettingsActionTile extends StatelessWidget {
       hint: subtitle,
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(
-                children: [
-                  Icon(icon, color: scheme.onSurfaceVariant, size: 18),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: scheme.onSurfaceVariant),
-                        ),
-                      ],
+        child: GlassPressable(
+          child: InkWell(
+            onTap: onTap == null
+                ? null
+                : () {
+                    HapticFeedback.selectionClick();
+                    onTap!();
+                  },
+            borderRadius: BorderRadius.circular(14),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Icon(icon, color: scheme.onSurfaceVariant, size: 18),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: scheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  if (onTap != null) ...[
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: scheme.onSurfaceVariant,
-                      size: 20,
-                    ),
+                    if (onTap != null) ...[
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: scheme.onSurfaceVariant,
+                        size: 20,
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -666,46 +711,50 @@ class _AvatarSettingTile extends StatelessWidget {
       hint: path.isEmpty ? '选择自定义图片' : '点击更换头像',
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.transparent,
-                    backgroundImage:
-                        image ?? const AssetImage('app.png'),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '首页头像',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          path.isEmpty ? '点击设置自定义头像' : '点击更换头像',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: scheme.onSurfaceVariant),
-                        ),
-                      ],
+        child: GlassPressable(
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onTap();
+            },
+            borderRadius: BorderRadius.circular(14),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.transparent,
+                      backgroundImage: image ?? const AssetImage('app.png'),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: scheme.onSurfaceVariant,
-                    size: 20,
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '首页头像',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            path.isEmpty ? '点击设置自定义头像' : '点击更换头像',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: scheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: scheme.onSurfaceVariant,
+                      size: 20,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -743,10 +792,7 @@ class _FontSettingsSection extends StatelessWidget {
   WidgetFontAsset? _assetFor(String selection) =>
       FontLibraryService.findAssetBySelection(installed, selection);
 
-  AppSettings _withSelection({
-    required bool digit,
-    required String selection,
-  }) {
+  AppSettings _withSelection({required bool digit, required String selection}) {
     final asset = _assetFor(selection);
     return digit
         ? settings.copyWith(
@@ -825,6 +871,7 @@ class _CategoryCard extends StatelessWidget {
         radius: 20,
         padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
         onTap: onTap,
+        haptic: GlassHaptic.selectionClick,
         child: Row(
           children: [
             Icon(category.icon, color: scheme.onSurfaceVariant, size: 20),
@@ -879,6 +926,7 @@ class _SponsorCard extends ConsumerWidget {
         radius: 20,
         padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
         onTap: onTap,
+        haptic: GlassHaptic.selectionClick,
         child: Row(
           children: [
             Icon(
@@ -933,9 +981,7 @@ String _elementStyleSummary(AppSettings settings, String elementId) {
     return '当前：$visible';
   }
   final size = (style?.sizeScale ?? 1.0).toStringAsFixed(2);
-  final weight = style == null || style.weight == 0
-      ? '默认'
-      : '${style.weight}';
+  final weight = style == null || style.weight == 0 ? '默认' : '${style.weight}';
   final color = switch (style?.colorMode) {
     WidgetColorMode.custom => '自定义色',
     WidgetColorMode.secondary => '次要色',
@@ -963,10 +1009,10 @@ Future<void> _openElementStyleSheet(
   bool unlocked, {
   required bool isButton,
 }) async {
-  await showModalBottomSheet<void>(
+  await showGlassBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    showDragHandle: true,
     builder: (sheetContext) => Consumer(
       builder: (context, ref, _) {
         final current = ref.watch(appControllerProvider).settings;
@@ -1038,159 +1084,159 @@ class _ElementStyleSheet extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
           child: SingleChildScrollView(
             child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(icon, size: 20, color: scheme.onSurfaceVariant),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 20, color: scheme.onSurfaceVariant),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: '关闭',
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              _ChoiceSetting(
-                icon: Icons.visibility_outlined,
-                title: '显隐',
-                subtitle: '跟随默认，或强制显示 / 隐藏',
-                options: widgetVisibleOptions
-                    .map((option) => (option.$1.name, option.$2))
-                    .toList(),
-                selected: (
-                  current.visible.name,
-                  widgetVisibleOptions
-                      .firstWhere((option) => option.$1 == current.visible)
-                      .$2,
-                ),
-                locked: !unlocked,
-                onLockedTap: () => openSponsorPage(context),
-                onSelected: (option) => onChanged(
-                  current.copyWith(
-                    visible: WidgetElementVisible.values.firstWhere(
-                      (visible) => visible.name == option.$1,
+                    IconButton(
+                      tooltip: '关闭',
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                  ),
+                  ],
                 ),
-              ),
-              if (!isButton) ...[
-                const _InsetDivider(),
-                _SliderSetting(
-                  icon: Icons.text_fields_rounded,
-                  title: '字号',
-                  subtitle: '叠加在全局字号缩放之上',
-                  value: current.sizeScale,
-                  min: 0.5,
-                  max: 2.0,
-                  divisions: 30,
-                  valueLabel: '${(current.sizeScale * 100).round()}%',
-                  onChanged: (value) => onChanged(
-                    current.copyWith(
-                      sizeScale: value,
-                      size: _nearestSizeOption(value),
-                    ),
-                  ),
-                ),
-                const _InsetDivider(),
-                _SliderSetting(
-                  icon: Icons.format_bold_rounded,
-                  title: '粗细',
-                  subtitle: '0 表示跟随默认，100–900 为字重',
-                  value: current.weight.toDouble(),
-                  min: 0,
-                  max: 900,
-                  divisions: 9,
-                  valueLabel: current.weight == 0
-                      ? '默认'
-                      : '${current.weight}',
-                  onChanged: (value) => onChanged(
-                    current.copyWith(weight: value.round()),
-                  ),
-                ),
-                const _InsetDivider(),
+                const SizedBox(height: 10),
                 _ChoiceSetting(
-                  icon: Icons.palette_outlined,
-                  title: '颜色',
-                  subtitle: '跟随主色、次要色或自定义',
-                  options: widgetColorModeOptions
+                  icon: Icons.visibility_outlined,
+                  title: '显隐',
+                  subtitle: '跟随默认，或强制显示 / 隐藏',
+                  options: widgetVisibleOptions
                       .map((option) => (option.$1.name, option.$2))
                       .toList(),
                   selected: (
-                    current.colorMode.name,
-                    widgetColorModeOptions
-                        .firstWhere((option) => option.$1 == current.colorMode)
+                    current.visible.name,
+                    widgetVisibleOptions
+                        .firstWhere((option) => option.$1 == current.visible)
                         .$2,
                   ),
+                  locked: !unlocked,
+                  onLockedTap: () => openSponsorPage(context),
                   onSelected: (option) => onChanged(
                     current.copyWith(
-                      colorMode: WidgetColorMode.values.firstWhere(
-                        (mode) => mode.name == option.$1,
+                      visible: WidgetElementVisible.values.firstWhere(
+                        (visible) => visible.name == option.$1,
                       ),
                     ),
                   ),
                 ),
-                if (current.colorMode == WidgetColorMode.custom) ...[
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 13,
-                    runSpacing: 13,
-                    children: [
-                      for (final color in widgetElementColorPalette)
-                        _ElementColorSwatch(
-                          color: color,
-                          selected: current.color == color.toARGB32(),
-                          onTap: () => onChanged(
-                            current.copyWith(color: color.toARGB32()),
-                          ),
-                        ),
-                    ],
+                if (!isButton) ...[
+                  const _InsetDivider(),
+                  _SliderSetting(
+                    icon: Icons.text_fields_rounded,
+                    title: '字号',
+                    subtitle: '叠加在全局字号缩放之上',
+                    value: current.sizeScale,
+                    min: 0.5,
+                    max: 2.0,
+                    divisions: 30,
+                    valueLabel: '${(current.sizeScale * 100).round()}%',
+                    onChanged: (value) => onChanged(
+                      current.copyWith(
+                        sizeScale: value,
+                        size: _nearestSizeOption(value),
+                      ),
+                    ),
                   ),
-                ],
-                if (widgetAlignableElementIds.contains(elementId)) ...[
+                  const _InsetDivider(),
+                  _SliderSetting(
+                    icon: Icons.format_bold_rounded,
+                    title: '粗细',
+                    subtitle: '0 表示跟随默认，100–900 为字重',
+                    value: current.weight.toDouble(),
+                    min: 0,
+                    max: 900,
+                    divisions: 9,
+                    valueLabel: current.weight == 0
+                        ? '默认'
+                        : '${current.weight}',
+                    onChanged: (value) =>
+                        onChanged(current.copyWith(weight: value.round())),
+                  ),
                   const _InsetDivider(),
                   _ChoiceSetting(
-                    icon: Icons.format_align_left_rounded,
-                    title: '对齐',
-                    subtitle: '独立成行文字的水平位置',
-                    options: widgetAlignOptions
+                    icon: Icons.palette_outlined,
+                    title: '颜色',
+                    subtitle: '跟随主色、次要色或自定义',
+                    options: widgetColorModeOptions
                         .map((option) => (option.$1.name, option.$2))
                         .toList(),
                     selected: (
-                      current.align.name,
-                      widgetAlignOptions
-                          .firstWhere((option) => option.$1 == current.align)
+                      current.colorMode.name,
+                      widgetColorModeOptions
+                          .firstWhere(
+                            (option) => option.$1 == current.colorMode,
+                          )
                           .$2,
                     ),
                     onSelected: (option) => onChanged(
                       current.copyWith(
-                        align: WidgetAlign.values.firstWhere(
-                          (align) => align.name == option.$1,
+                        colorMode: WidgetColorMode.values.firstWhere(
+                          (mode) => mode.name == option.$1,
                         ),
                       ),
                     ),
                   ),
+                  if (current.colorMode == WidgetColorMode.custom) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 13,
+                      runSpacing: 13,
+                      children: [
+                        for (final color in widgetElementColorPalette)
+                          _ElementColorSwatch(
+                            color: color,
+                            selected: current.color == color.toARGB32(),
+                            onTap: () => onChanged(
+                              current.copyWith(color: color.toARGB32()),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                  if (widgetAlignableElementIds.contains(elementId)) ...[
+                    const _InsetDivider(),
+                    _ChoiceSetting(
+                      icon: Icons.format_align_left_rounded,
+                      title: '对齐',
+                      subtitle: '独立成行文字的水平位置',
+                      options: widgetAlignOptions
+                          .map((option) => (option.$1.name, option.$2))
+                          .toList(),
+                      selected: (
+                        current.align.name,
+                        widgetAlignOptions
+                            .firstWhere((option) => option.$1 == current.align)
+                            .$2,
+                      ),
+                      onSelected: (option) => onChanged(
+                        current.copyWith(
+                          align: WidgetAlign.values.firstWhere(
+                            (align) => align.name == option.$1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: onReset,
-                  icon: const Icon(Icons.restart_alt_rounded, size: 18),
-                  label: const Text('重置此元素'),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: onReset,
+                    icon: const Icon(Icons.restart_alt_rounded, size: 18),
+                    label: const Text('重置此元素'),
+                  ),
                 ),
-              ),
               ],
             ),
           ),
@@ -1219,33 +1265,38 @@ class _ElementColorSwatch extends StatelessWidget {
       label: '自定义颜色',
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: AnimatedContainer(
-            duration: motionDuration(
-              context,
-              const Duration(milliseconds: 180),
-            ),
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: selected ? color : Colors.transparent,
-                width: 2.5,
+        child: GlassPressable(
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onTap();
+            },
+            customBorder: const CircleBorder(),
+            child: AnimatedContainer(
+              duration: motionDuration(
+                context,
+                const Duration(milliseconds: 180),
               ),
-            ),
-            child: DecoratedBox(
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              child: selected
-                  ? const Icon(
-                      Icons.check_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    )
-                  : null,
+              width: 48,
+              height: 48,
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected ? color : Colors.transparent,
+                  width: 2.5,
+                ),
+              ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                child: selected
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      )
+                    : null,
+              ),
             ),
           ),
         ),
@@ -1352,10 +1403,26 @@ class _PhotoBackgroundEditorSheetState
   }
 
   List<double> _brightnessMatrix(double value) => [
-    value, 0, 0, 0, 0,
-    0, value, 0, 0, 0,
-    0, 0, value, 0, 0,
-    0, 0, 0, 1, 0,
+    value,
+    0,
+    0,
+    0,
+    0,
+    0,
+    value,
+    0,
+    0,
+    0,
+    0,
+    0,
+    value,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 
   @override
@@ -1373,24 +1440,26 @@ class _PhotoBackgroundEditorSheetState
       colorFilter: ColorFilter.matrix(_brightnessMatrix(_brightness)),
       child: _blur > 0
           ? ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(
-                sigmaX: _blur,
-                sigmaY: _blur,
-              ),
+              imageFilter: ui.ImageFilter.blur(sigmaX: _blur, sigmaY: _blur),
               child: rawImage,
             )
           : rawImage,
     );
-    final preview = Container(
-      height: 180,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [filteredImage],
+    final preview = AnimatedSwitcher(
+      duration: motionDuration(context, AppMotion.state),
+      switchInCurve: AppMotion.enter,
+      switchOutCurve: AppMotion.exit,
+      transitionBuilder: (child, animation) =>
+          FadeTransition(opacity: animation, child: child),
+      child: Container(
+        key: ValueKey('preview-${_brightness.toStringAsFixed(2)}-$_blur'),
+        height: 180,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Stack(fit: StackFit.expand, children: [filteredImage]),
       ),
     );
 

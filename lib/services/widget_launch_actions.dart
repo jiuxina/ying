@@ -17,14 +17,15 @@ const int widgetLaunchMaxRetries = 20;
 const Duration widgetLaunchRetryDelay = Duration(milliseconds: 50);
 const Duration widgetLaunchDedupeWindow = Duration(milliseconds: 1500);
 
-Future<void> handleWidgetLaunchUri(Uri? uri) =>
-    _handleWidgetLaunchUri(uri, 0);
+Future<void> handleWidgetLaunchUri(Uri? uri) => _handleWidgetLaunchUri(uri, 0);
 
 Future<void> _handleWidgetLaunchUri(Uri? uri, int attempt) async {
   if (uri == null || uri.scheme != 'ying') return;
   final key = uri.toString();
   final now = DateTime.now().millisecondsSinceEpoch;
-  if (now - (_handledLaunchUris[key] ?? -widgetLaunchDedupeWindow.inMilliseconds) <
+  if (now -
+          (_handledLaunchUris[key] ??
+              -widgetLaunchDedupeWindow.inMilliseconds) <
       widgetLaunchDedupeWindow.inMilliseconds) {
     return;
   }
@@ -84,10 +85,11 @@ Map<String, int> pruneWidgetLaunchUris(
 }
 
 Future<void> _showAddSheet(BuildContext context) async {
-  await showModalBottomSheet<void>(
+  await showGlassBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    showDragHandle: true,
     constraints: const BoxConstraints(maxWidth: 680),
     builder: (context) => const EventFormSheet(),
   );

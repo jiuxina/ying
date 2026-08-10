@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/event_reminder.dart';
 import 'glass_ui.dart';
@@ -39,27 +40,45 @@ class ReminderEditor extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (reminders.isEmpty)
-            Text(
-              '暂未设置提醒',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+          AnimatedSwitcher(
+            duration: motionDuration(context, AppMotion.state),
+            switchInCurve: AppMotion.enter,
+            switchOutCurve: AppMotion.exit,
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.9, end: 1).animate(
+                  CurvedAnimation(parent: animation, curve: AppMotion.enter),
+                ),
+                child: child,
               ),
-            )
-          else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final reminder in reminders)
-                  InputChip(
-                    label: Text(
-                      EventReminder.labelForMinutes(reminder.minutesBefore),
-                    ),
-                    onDeleted: () => onRemove(reminder),
-                  ),
-              ],
             ),
+            child: reminders.isEmpty
+                ? Text(
+                    '暂未设置提醒',
+                    key: const ValueKey('no-reminders'),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  )
+                : Wrap(
+                    key: const ValueKey('reminder-chips'),
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final reminder in reminders)
+                        InputChip(
+                          key: ValueKey('reminder-${reminder.id}'),
+                          label: Text(
+                            EventReminder.labelForMinutes(
+                              reminder.minutesBefore,
+                            ),
+                          ),
+                          onDeleted: () => onRemove(reminder),
+                        ),
+                    ],
+                  ),
+          ),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -68,15 +87,17 @@ class ReminderEditor extends StatelessWidget {
                   button: true,
                   label: '添加提醒，当前${options[reminderToAdd] ?? '未选择'}',
                   hint: '点击选择提醒时间',
-                  child: InkWell(
-                    onTap: () => _openPicker(context),
-                    borderRadius: BorderRadius.circular(14),
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: '添加提醒',
-                        isDense: true,
+                  child: GlassPressable(
+                    child: InkWell(
+                      onTap: () => _openPicker(context),
+                      borderRadius: BorderRadius.circular(14),
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: '添加提醒',
+                          isDense: true,
+                        ),
+                        child: Text(options[reminderToAdd] ?? '选择提醒'),
                       ),
-                      child: Text(options[reminderToAdd] ?? '选择提醒'),
                     ),
                   ),
                 ),
@@ -88,7 +109,12 @@ class ReminderEditor extends StatelessWidget {
                     : reminders.length >= maxCount
                     ? '最多 $maxCount 条提醒'
                     : '添加提醒',
-                onPressed: canAdd ? onAdd : null,
+                onPressed: canAdd
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        onAdd();
+                      }
+                    : null,
                 icon: const Icon(Icons.add_alert_rounded),
               ),
             ],
@@ -106,10 +132,9 @@ class ReminderEditor extends StatelessWidget {
   }
 
   Future<void> _openPicker(BuildContext context) async {
-    final value = await showModalBottomSheet<int>(
+    final value = await showGlassBottomSheet<int>(
       context: context,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),

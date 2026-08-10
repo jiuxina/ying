@@ -59,8 +59,7 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
       _error = null;
     });
     try {
-      final catalog = await (widget.catalogFetcher ??
-          fetchFontCatalog)();
+      final catalog = await (widget.catalogFetcher ?? fetchFontCatalog)();
       if (!mounted) return;
       setState(() {
         _catalog = catalog;
@@ -77,8 +76,7 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
     }
   }
 
-  AppSettings _currentSettings() =>
-      ref.read(appControllerProvider).settings;
+  AppSettings _currentSettings() => ref.read(appControllerProvider).settings;
 
   Future<void> _apply(WidgetFontAsset asset) async {
     var settings = _currentSettings();
@@ -99,15 +97,15 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
     _showMessage('已应用“${asset.name}”');
   }
 
-  Future<void> _downloadAndApply(
-    WidgetFontCatalogEntry entry,
-  ) async {
+  Future<void> _downloadAndApply(WidgetFontCatalogEntry entry) async {
     final catalog = _catalog;
     if (catalog == null) return;
     setState(() => _downloading.add(entry.id));
     try {
-      final bytes = await (widget.fontDownloader ??
-          downloadFontBytes)(catalog, entry);
+      final bytes = await (widget.fontDownloader ?? downloadFontBytes)(
+        catalog,
+        entry,
+      );
       final asset = await FontLibraryService.installCatalogFont(
         entry,
         bytes,
@@ -167,9 +165,9 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
   }
 
   Future<WidgetFontKind?> _chooseImportKind() async {
-    return showModalBottomSheet<WidgetFontKind>(
+    return showGlassBottomSheet<WidgetFontKind>(
       context: context,
-      backgroundColor: Colors.transparent,
+      showDragHandle: true,
       builder: (sheetContext) => SafeArea(
         child: GlassSurface(
           radius: 20,
@@ -282,87 +280,101 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              _ImportCard(
-                locked: !isSponsorUnlocked(ref),
-                onTap: _pickLocalFont,
-              ),
-              const SizedBox(height: 16),
-              GlassSurface(
-                radius: 20,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const GlassSectionTitle(
-                      title: '在线候选',
-                      subtitle: '免费下载并应用',
-                    ),
-                    const SizedBox(height: 12),
-                    if (_loading)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Center(
-                          child: CircularProgressIndicator.adaptive(),
-                        ),
-                      )
-                    else if (_error != null) ...[
-                      Text(
-                        _error!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: OutlinedButton.icon(
-                          onPressed: _loadCatalog,
-                          icon: const Icon(Icons.refresh_rounded),
-                          label: const Text('重试'),
-                        ),
-                      ),
-                    ] else if (_catalog == null ||
-                        _catalog!.fonts.isEmpty)
-                      Text(
-                        '暂无在线字体',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurfaceVariant,
-                        ),
-                      )
-                    else
-                      for (final entry in _catalog!.fonts) ...[
-                        if (entry != _catalog!.fonts.first)
-                          const _FontDivider(),
-                        _CatalogFontTile(
-                          entry: entry,
-                          installed: _installedFor(entry),
-                          applied: _isApplied(entry),
-                          downloading: _downloading.contains(entry.id),
-                          onDownload: () => unawaited(
-                            _downloadAndApply(entry),
-                          ),
-                          onApply: _apply,
-                          onDelete: _delete,
-                        ),
-                      ],
-                  ],
+              GlassReveal(
+                slide: false,
+                child: _ImportCard(
+                  locked: !isSponsorUnlocked(ref),
+                  onTap: _pickLocalFont,
                 ),
               ),
               const SizedBox(height: 16),
-              _InstalledFontsSection(
-                installed: ref
-                    .watch(fontLibraryProvider)
-                    .installed
-                    .where((asset) => asset.source == WidgetFontSource.local)
-                    .toList(),
-                locked: !isSponsorUnlocked(ref),
-                onApply: _apply,
-                onDelete: _delete,
+              GlassReveal(
+                delay: const Duration(milliseconds: 60),
+                slide: false,
+                child: GlassSurface(
+                  radius: 20,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const GlassSectionTitle(
+                        title: '在线候选',
+                        subtitle: '免费下载并应用',
+                      ),
+                      const SizedBox(height: 12),
+                      if (_loading)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(
+                            child: CircularProgressIndicator.adaptive(),
+                          ),
+                        )
+                      else if (_error != null) ...[
+                        Text(
+                          _error!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: OutlinedButton.icon(
+                            onPressed: _loadCatalog,
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('重试'),
+                          ),
+                        ),
+                      ] else if (_catalog == null || _catalog!.fonts.isEmpty)
+                        Text(
+                          '暂无在线字体',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        )
+                      else
+                        for (final entry in _catalog!.fonts) ...[
+                          if (entry != _catalog!.fonts.first)
+                            const _FontDivider(),
+                          _CatalogFontTile(
+                            entry: entry,
+                            installed: _installedFor(entry),
+                            applied: _isApplied(entry),
+                            downloading: _downloading.contains(entry.id),
+                            onDownload: () =>
+                                unawaited(_downloadAndApply(entry)),
+                            onApply: _apply,
+                            onDelete: _delete,
+                          ),
+                        ],
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
-              const _FontLicensesSection(),
+              GlassReveal(
+                delay: const Duration(milliseconds: 120),
+                slide: false,
+                child: _InstalledFontsSection(
+                  installed: ref
+                      .watch(fontLibraryProvider)
+                      .installed
+                      .where((asset) => asset.source == WidgetFontSource.local)
+                      .toList(),
+                  locked: !isSponsorUnlocked(ref),
+                  onApply: _apply,
+                  onDelete: _delete,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const GlassReveal(
+                delay: Duration(milliseconds: 180),
+                slide: false,
+                child: _FontLicensesSection(),
+              ),
             ],
           ),
         ),
@@ -404,6 +416,7 @@ class _ImportCard extends StatelessWidget {
       radius: 20,
       padding: const EdgeInsets.all(16),
       onTap: onTap,
+      haptic: GlassHaptic.selectionClick,
       child: Row(
         children: [
           Icon(
@@ -494,31 +507,62 @@ class _CatalogFontTile extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    if (downloading)
-                      const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    else if (installed != null)
-                      FilledButton.tonalIcon(
-                        key: ValueKey('font-apply-${entry.id}'),
-                        onPressed: applied ? null : () => onApply(installed!),
-                        icon: const Icon(Icons.check_rounded, size: 16),
-                        label: Text(applied ? '已应用' : '应用'),
-                      )
-                    else
-                      FilledButton.icon(
-                        key: ValueKey('font-download-${entry.id}'),
-                        onPressed: onDownload,
-                        icon: const Icon(Icons.download_rounded, size: 16),
-                        label: const Text('下载并应用'),
+                    AnimatedSwitcher(
+                      duration: motionDuration(context, AppMotion.state),
+                      switchInCurve: AppMotion.enter,
+                      switchOutCurve: AppMotion.exit,
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: ScaleTransition(
+                          scale: Tween<double>(begin: 0.9, end: 1).animate(
+                            CurvedAnimation(
+                              parent: animation,
+                              curve: AppMotion.enter,
+                            ),
+                          ),
+                          child: child,
+                        ),
                       ),
+                      child: downloading
+                          ? const SizedBox(
+                              key: ValueKey('font-downloading'),
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : installed != null
+                          ? FilledButton.tonalIcon(
+                              key: ValueKey('font-apply-${entry.id}'),
+                              onPressed: applied
+                                  ? null
+                                  : () {
+                                      HapticFeedback.selectionClick();
+                                      onApply(installed!);
+                                    },
+                              icon: const Icon(Icons.check_rounded, size: 16),
+                              label: Text(applied ? '已应用' : '应用'),
+                            )
+                          : FilledButton.icon(
+                              key: ValueKey('font-download-${entry.id}'),
+                              onPressed: () {
+                                HapticFeedback.selectionClick();
+                                onDownload();
+                              },
+                              icon: const Icon(
+                                Icons.download_rounded,
+                                size: 16,
+                              ),
+                              label: const Text('下载并应用'),
+                            ),
+                    ),
                     if (installed != null)
                       IconButton(
                         key: ValueKey('font-delete-${entry.id}'),
                         tooltip: '删除',
-                        onPressed: () => onDelete(installed!),
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          onDelete(installed!);
+                        },
                         icon: const Icon(Icons.delete_outline_rounded),
                       ),
                   ],
@@ -561,24 +605,21 @@ class _InstalledFontsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const GlassSectionTitle(
-            title: '本地已导入',
-            subtitle: '导入字体为赞助功能',
-          ),
+          const GlassSectionTitle(title: '本地已导入', subtitle: '导入字体为赞助功能'),
           const SizedBox(height: 10),
           if (locked)
             Text(
               '赞助解锁后可导入与管理本地字体',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             )
           else if (installed.isEmpty)
             Text(
               '还没有导入的字体',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             )
           else
             for (final asset in installed) ...[
@@ -674,10 +715,7 @@ class _FontLicensesSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const GlassSectionTitle(
-            title: '字体许可',
-            subtitle: '内置 SIL OFL 1.1 文本',
-          ),
+          const GlassSectionTitle(title: '字体许可', subtitle: '内置 SIL OFL 1.1 文本'),
           const SizedBox(height: 10),
           for (final (index, license) in licenses.indexed) ...[
             if (index > 0) const _FontDivider(),
@@ -696,9 +734,9 @@ class _FontLicensesSection extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '以上字体均以 SIL OFL 1.1 开源许可分发，可免费商用。',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ],
       ),

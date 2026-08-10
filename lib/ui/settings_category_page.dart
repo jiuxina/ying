@@ -63,7 +63,7 @@ class SettingsCategoryPage extends ConsumerWidget {
     final settings = unlocked
         ? incomingSettings
         : sanitizeSponsorSettings(incomingSettings);
-    return switch (category) {
+    final content = switch (category) {
       SettingsCategory.appearance => [
         _Section(
           title: '外观',
@@ -130,7 +130,8 @@ class SettingsCategoryPage extends ConsumerWidget {
                         label: preset.$2,
                         icon: preset.$3,
                         selected: settings.widgetStyle == preset.$1,
-                        locked: !unlocked &&
+                        locked:
+                            !unlocked &&
                             sponsorWidgetStyles.contains(preset.$1),
                         onLockedTap: () => openSponsorPage(context),
                         onTap: () => controller.updateSettings(
@@ -375,8 +376,7 @@ class SettingsCategoryPage extends ConsumerWidget {
                 min: 4,
                 max: 40,
                 divisions: 18,
-                valueLabel:
-                    '${settings.widgetContentMargin.round()} dp',
+                valueLabel: '${settings.widgetContentMargin.round()} dp',
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetContentMargin: value),
                 ),
@@ -393,8 +393,7 @@ class SettingsCategoryPage extends ConsumerWidget {
                   settings.widgetVerticalAlign.name,
                   widgetVerticalAlignOptions
                       .firstWhere(
-                        (option) =>
-                            option.$1 == settings.widgetVerticalAlign,
+                        (option) => option.$1 == settings.widgetVerticalAlign,
                       )
                       .$2,
                 ),
@@ -491,9 +490,7 @@ class SettingsCategoryPage extends ConsumerWidget {
       SettingsCategory.notifications => [
         ReminderDiagnosticsSection(events: appState.events),
       ],
-      SettingsCategory.permissions => [
-        const PermissionManageSection(),
-      ],
+      SettingsCategory.permissions => [const PermissionManageSection()],
       SettingsCategory.data => [
         _Section(
           title: '数据管理',
@@ -573,5 +570,13 @@ class SettingsCategoryPage extends ConsumerWidget {
         ),
       ],
     };
+    return [
+      for (final (index, widget) in content.indexed)
+        GlassReveal(
+          delay: Duration(milliseconds: index * 40),
+          slide: false,
+          child: widget,
+        ),
+    ];
   }
 }

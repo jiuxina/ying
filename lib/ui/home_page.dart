@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
@@ -79,7 +80,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                           ),
                         ),
                         Expanded(
-                          child: IndexedStack(
+                          child: CrossfadeIndexedStack(
                             index: selectedIndex,
                             children: pages,
                           ),
@@ -90,38 +91,39 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ],
               ),
             ),
-            if (state.latestUndo != null)
-              Positioned(
-                left: wide ? 122 : 18,
-                right: 18,
-                bottom: wide ? 18 : 94,
-                child: _UndoBanner(
-                  message: state.latestUndo!.message,
-                  pendingCount: state.pendingUndos.length,
-                  onUndo: () =>
-                      ref.read(appControllerProvider.notifier).undoLatest(),
-                ),
-              )
             // 撤销横幅优先展示；无撤销项时若检测到新版本，显示更新横幅。
-            else if (state.availableRelease != null)
-              Positioned(
-                left: wide ? 122 : 18,
-                right: 18,
-                bottom: wide ? 18 : 94,
-                child: _UpdateBanner(
-                  release: state.availableRelease!,
-                  onOpen: () => showReleaseDialog(
-                    context,
-                    state.availableRelease!,
-                    onSkip: () => ref
-                        .read(appControllerProvider.notifier)
-                        .dismissUpdateRelease(skipVersion: true),
-                  ),
-                  onDismiss: () => ref
-                      .read(appControllerProvider.notifier)
-                      .dismissUpdateRelease(),
-                ),
+            Positioned(
+              left: wide ? 122 : 18,
+              right: 18,
+              bottom: wide ? 18 : 94,
+              child: GlassAnimatedPresence(
+                visible:
+                    state.latestUndo != null || state.availableRelease != null,
+                child: state.latestUndo != null
+                    ? _UndoBanner(
+                        message: state.latestUndo!.message,
+                        pendingCount: state.pendingUndos.length,
+                        onUndo: () => ref
+                            .read(appControllerProvider.notifier)
+                            .undoLatest(),
+                      )
+                    : state.availableRelease != null
+                    ? _UpdateBanner(
+                        release: state.availableRelease!,
+                        onOpen: () => showReleaseDialog(
+                          context,
+                          state.availableRelease!,
+                          onSkip: () => ref
+                              .read(appControllerProvider.notifier)
+                              .dismissUpdateRelease(skipVersion: true),
+                        ),
+                        onDismiss: () => ref
+                            .read(appControllerProvider.notifier)
+                            .dismissUpdateRelease(),
+                      )
+                    : const SizedBox.shrink(),
               ),
+            ),
           ],
         ),
       ),
@@ -136,10 +138,11 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _openForm([CountdownEvent? event]) async {
-    await showModalBottomSheet<void>(
+    await showGlassBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      showDragHandle: true,
       constraints: const BoxConstraints(maxWidth: 680),
       builder: (context) => EventFormSheet(event: event),
     );
@@ -529,36 +532,43 @@ class _CompletedHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: InkWell(
-              onTap: onToggle,
-              borderRadius: BorderRadius.circular(18),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Row(
-                  children: [
-                    Icon(
-                      expanded
-                          ? Icons.expand_less_rounded
-                          : Icons.expand_more_rounded,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '已完成 $count',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+            child: GlassPressable(
+              child: InkWell(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onToggle();
+                },
+                borderRadius: BorderRadius.circular(18),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    children: [
+                      AnimatedRotation(
+                        turns: expanded ? 0.5 : 0,
+                        duration: motionDuration(context, AppMotion.state),
+                        curve: AppMotion.enter,
+                        child: const Icon(Icons.expand_more_rounded),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        '已完成 $count',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-          if (expanded)
-            TextButton.icon(
+          GlassAnimatedPresence(
+            visible: expanded,
+            child: TextButton.icon(
               onPressed: onClear,
               icon: const Icon(Icons.cleaning_services_outlined, size: 18),
               label: const Text('清理'),
             ),
+          ),
         ],
       ),
     );
@@ -831,42 +841,75 @@ class _GlassTabBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10),
         child: SizedBox(
           height: 70,
-          child: Row(
-            children: [
-              Expanded(
-                child: _TabButton(
-                  label: '日子',
-                  icon: Icons.calendar_today_rounded,
-                  selected: selectedIndex == 0,
-                  onTap: () => onChanged(0),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Tooltip(
-                  message: '新建倒数日',
-                  child: SizedBox.square(
-                    dimension: 46,
-                    child: FilledButton(
-                      onPressed: onAdd,
-                      style: FilledButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        shape: const CircleBorder(),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const fabSpace = 54.0;
+              final tabWidth = (constraints.maxWidth - fabSpace) / 2;
+              return Stack(
+                children: [
+                  AnimatedPositioned(
+                    duration: motionDuration(context, AppMotion.switchDuration),
+                    curve: AppMotion.crossFade,
+                    left: selectedIndex == 0 ? 0 : tabWidth + fabSpace,
+                    top: 6,
+                    bottom: 6,
+                    width: tabWidth,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.75),
+                        borderRadius: BorderRadius.circular(22),
                       ),
-                      child: const Icon(Icons.add_rounded, size: 24),
                     ),
                   ),
-                ),
-              ),
-              Expanded(
-                child: _TabButton(
-                  label: '日历',
-                  icon: Icons.calendar_month_rounded,
-                  selected: selectedIndex == 1,
-                  onTap: () => onChanged(1),
-                ),
-              ),
-            ],
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _TabButton(
+                          label: '日子',
+                          icon: Icons.calendar_today_rounded,
+                          selected: selectedIndex == 0,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onChanged(0);
+                          },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Tooltip(
+                          message: '新建倒数日',
+                          child: SizedBox.square(
+                            dimension: 46,
+                            child: FilledButton(
+                              onPressed: onAdd,
+                              style: FilledButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                shape: const CircleBorder(),
+                              ),
+                              child: const Icon(Icons.add_rounded, size: 24),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: _TabButton(
+                          label: '日历',
+                          icon: Icons.calendar_month_rounded,
+                          selected: selectedIndex == 1,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onChanged(1);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -892,22 +935,28 @@ class _TabButton extends StatelessWidget {
     final color = selected
         ? Theme.of(context).colorScheme.onSurface
         : Theme.of(context).colorScheme.onSurfaceVariant;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 21),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: color,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+    return GlassPressable(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 21, color: color),
+            const SizedBox(height: 3),
+            AnimatedDefaultTextStyle(
+              duration: motionDuration(context, AppMotion.state),
+              curve: AppMotion.crossFade,
+              style:
+                  Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: color,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ) ??
+                  TextStyle(color: color),
+              child: Text(label),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -954,14 +1003,20 @@ class _GlassRail extends StatelessWidget {
               icon: Icons.calendar_today_rounded,
               label: '日子',
               selected: selectedIndex == 0,
-              onTap: () => onChanged(0),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onChanged(0);
+              },
             ),
             const SizedBox(height: 14),
             _RailButton(
               icon: Icons.calendar_month_rounded,
               label: '日历',
               selected: selectedIndex == 1,
-              onTap: () => onChanged(1),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onChanged(1);
+              },
             ),
             const Spacer(),
           ],
@@ -986,34 +1041,38 @@ class _RailButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        width: 62,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              color: selected
-                  ? Theme.of(context).colorScheme.onSurface
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 5),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: selected
-                    ? Theme.of(context).colorScheme.onSurface
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+    final scheme = Theme.of(context).colorScheme;
+    return GlassPressable(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: AnimatedContainer(
+          duration: motionDuration(context, AppMotion.state),
+          curve: AppMotion.crossFade,
+          width: 62,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected
+                ? scheme.surfaceContainerHighest.withValues(alpha: 0.75)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
               ),
-            ),
-          ],
+              const SizedBox(height: 5),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

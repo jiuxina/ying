@@ -1,6 +1,28 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+/// 全局统一动效时长与曲线，避免各页面各自定义参数。
+abstract final class AppMotion {
+  static const press = Duration(milliseconds: 120);
+  static const state = Duration(milliseconds: 180);
+  static const switchDuration = Duration(milliseconds: 220);
+  static const page = Duration(milliseconds: 260);
+
+  static const enter = Curves.easeOutCubic;
+  static const exit = Curves.easeInCubic;
+  static const crossFade = Curves.easeInOutCubic;
+}
+
+/// 轻触觉反馈类型，仅用于关键操作。
+enum GlassHaptic {
+  selectionClick,
+  lightImpact,
+  mediumImpact,
+  heavyImpact,
+  vibrate,
+}
 
 class GlassPageTransitionsBuilder extends PageTransitionsBuilder {
   const GlassPageTransitionsBuilder();
@@ -86,6 +108,371 @@ bool reduceMotionOf(BuildContext context) {
 Duration motionDuration(BuildContext context, Duration duration) =>
     reduceMotionOf(context) ? Duration.zero : duration;
 
+/// 按压反馈包装器：仅做视觉缩放，不参与手势竞争，点击仍由子组件处理。
+class GlassPressable extends StatefulWidget {
+  const GlassPressable({
+    super.key,
+    required this.child,
+    this.enabled = true,
+    this.pressedScale = 0.97,
+    this.haptic,
+  });
+
+  final Widget child;
+  final bool enabled;
+  final double pressedScale;
+  final GlassHaptic? haptic;
+
+  @override
+  State<GlassPressable> createState() => _GlassPressableState();
+}
+
+class _GlassPressableState extends State<GlassPressable> {
+  bool _pressed = false;
+  Offset? _downPosition;
+
+  @override
+  Widget build(BuildContext context) {
+    final duration = widget.enabled
+        ? motionDuration(context, AppMotion.press)
+        : Duration.zero;
+    return Listener(
+      behavior: HitTestBehavior.deferToChild,
+      onPointerDown: widget.enabled ? _handleDown : null,
+      onPointerUp: widget.enabled ? _handleUp : null,
+      onPointerCancel: widget.enabled ? (_) => _setPressed(false) : null,
+      child: AnimatedScale(
+        scale: _pressed ? widget.pressedScale : 1,
+        duration: duration,
+        curve: AppMotion.enter,
+        child: widget.child,
+      ),
+    );
+  }
+
+  void _handleDown(PointerDownEvent event) {
+    _downPosition = event.position;
+    _setPressed(true);
+  }
+
+  void _handleUp(PointerUpEvent event) {
+    final down = _downPosition;
+    _setPressed(false);
+    final haptic = widget.haptic;
+    if (haptic == null || down == null) return;
+    if ((event.position - down).distance > 18) return;
+    switch (haptic) {
+      case GlassHaptic.selectionClick:
+        HapticFeedback.selectionClick();
+      case GlassHaptic.lightImpact:
+        HapticFeedback.lightImpact();
+      case GlassHaptic.mediumImpact:
+        HapticFeedback.mediumImpact();
+      case GlassHaptic.heavyImpact:
+        HapticFeedback.heavyImpact();
+      case GlassHaptic.vibrate:
+        HapticFeedback.vibrate();
+    }
+  }
+
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
+  }
+}
+
+/// 条件出现/消失的通用动效：进入时上滑+淡入+展开，退出时反向收缩。
+class GlassAnimatedPresence extends StatelessWidget {
+  const GlassAnimatedPresence({
+    super.key,
+    required this.visible,
+    required this.child,
+    this.duration = AppMotion.switchDuration,
+  });
+
+  final bool visible;
+  final Widget child;
+  final Duration duration;
+
+  @override
+  Widget build(BuildContext context) {
+    final effective = motionDuration(context, duration);
+    if (effective == Duration.zero) {
+      return visible ? child : const SizedBox.shrink();
+    }
+    return AnimatedSwitcher(
+      duration: effective,
+      switchInCurve: AppMotion.enter,
+      switchOutCurve: AppMotion.exit,
+      transitionBuilder: (child, animation) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: AppMotion.crossFade,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SizeTransition(
+            sizeFactor: curved,
+            axisAlignment: -1,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.06),
+                end: Offset.zero,
+              ).animate(curved),
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: visible
+          ? child
+          : const SizedBox.shrink(key: ValueKey('__glass_presence_hidden__')),
+    );
+  }
+}
+
+/// 保留所有子页面状态（同 [IndexedStack]）的交叉淡入切换；
+/// 切换结束后隐藏页以 [Offstage] 收起，避免仍被查找/命中。
+class CrossfadeIndexedStack extends StatefulWidget {
+  const CrossfadeIndexedStack({
+    super.key,
+    required this.index,
+    required this.children,
+    this.duration = AppMotion.switchDuration,
+  });
+
+  final int index;
+  final List<Widget> children;
+  final Duration duration;
+
+  @override
+  State<CrossfadeIndexedStack> createState() => _CrossfadeIndexedStackState();
+}
+
+class _CrossfadeIndexedStackState extends State<CrossfadeIndexedStack>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late int _current;
+  int? _previous;
+  bool _animating = false;
+  int _direction = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _current = widget.index.clamp(0, widget.children.length - 1);
+    _controller =
+        AnimationController(vsync: this, duration: AppMotion.switchDuration)
+          ..addStatusListener((status) {
+            if (status != AnimationStatus.completed) return;
+            if (!mounted) return;
+            setState(() {
+              _previous = null;
+              _animating = false;
+            });
+          });
+  }
+
+  @override
+  void didUpdateWidget(covariant CrossfadeIndexedStack oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.children.isEmpty) return;
+    final next = widget.index.clamp(0, widget.children.length - 1);
+    if (next == _current) return;
+    final direction = next > _current ? 1 : -1;
+    if (motionDuration(context, widget.duration) == Duration.zero) {
+      setState(() {
+        _current = next;
+        _previous = null;
+        _animating = false;
+        _direction = direction;
+      });
+      return;
+    }
+    setState(() {
+      _previous = _current;
+      _current = next;
+      _direction = direction;
+      _animating = true;
+    });
+    _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final t = Curves.easeInOutCubic.transform(_controller.value);
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            for (var i = 0; i < widget.children.length; i++)
+              Offstage(
+                offstage: !_animating && i != _current,
+                child: IgnorePointer(
+                  ignoring: i != widget.index,
+                  child: Opacity(
+                    opacity: _opacityFor(i, t),
+                    child: Transform.translate(
+                      offset: _offsetFor(i, t),
+                      child: widget.children[i],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  double _opacityFor(int index, double t) {
+    if (index == _current) return _animating ? t : 1;
+    if (index == _previous) return _animating ? 1 - t : 0;
+    return 0;
+  }
+
+  Offset _offsetFor(int index, double t) {
+    if (index == _current) {
+      return Offset(0.015 * _direction * (1 - t), 0);
+    }
+    if (index == _previous) {
+      return Offset(-0.015 * _direction * t, 0);
+    }
+    return Offset.zero;
+  }
+}
+
+/// 交错入场：延迟 [delay] 后透明度与 1.2% 高度位移渐入。
+class GlassReveal extends StatefulWidget {
+  const GlassReveal({
+    super.key,
+    required this.child,
+    this.delay = Duration.zero,
+    this.duration = AppMotion.state,
+    this.slide = true,
+  });
+
+  final Widget child;
+  final Duration delay;
+  final Duration duration;
+  final bool slide;
+
+  @override
+  State<GlassReveal> createState() => _GlassRevealState();
+}
+
+class _GlassRevealState extends State<GlassReveal>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _controller;
+  Animation<double>? _animation;
+  bool _initialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialized) return;
+    _initialized = true;
+    final reduce = reduceMotionOf(context);
+    final total = reduce ? Duration.zero : widget.delay + widget.duration;
+    final controller = AnimationController(vsync: this, duration: total);
+    _controller = controller;
+    final delayFraction = total == Duration.zero
+        ? 0.0
+        : widget.delay.inMicroseconds / total.inMicroseconds;
+    _animation = CurvedAnimation(
+      parent: controller,
+      curve: Interval(delayFraction, 1, curve: AppMotion.enter),
+    );
+    if (reduce) {
+      controller.value = 1;
+    } else {
+      controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final animation = _animation;
+    if (animation == null) return widget.child;
+    final faded = FadeTransition(
+      // 从 0.001 开始而非 0，避免透明度为 0 时语义树被裁剪。
+      opacity: Tween<double>(begin: 0.001, end: 1).animate(animation),
+      child: widget.child,
+    );
+    if (!widget.slide) return faded;
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, 0.012),
+        end: Offset.zero,
+      ).animate(animation),
+      child: faded,
+    );
+  }
+}
+
+/// 统一的玻璃底部弹层入口：滑入淡入 + 轻微缩放，遵守减少动画。
+Future<T?> showGlassBottomSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool isScrollControlled = false,
+  bool useSafeArea = false,
+  BoxConstraints? constraints,
+  bool showDragHandle = false,
+}) {
+  final duration = motionDuration(context, AppMotion.page);
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: isScrollControlled,
+    useSafeArea: useSafeArea,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: 0.28),
+    constraints: constraints,
+    sheetAnimationStyle: duration == Duration.zero
+        ? AnimationStyle.noAnimation
+        : AnimationStyle(
+            duration: duration,
+            reverseDuration: duration,
+            curve: AppMotion.enter,
+            reverseCurve: AppMotion.exit,
+          ),
+    builder: (sheetContext) {
+      final child = builder(sheetContext);
+      if (!showDragHandle) return child;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(top: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(sheetContext).colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+          ),
+          child,
+        ],
+      );
+    },
+  );
+}
+
 /// A deliberately small palette derived from the reference prototype.
 /// Teal leads the light theme while firefly green leads the dark theme.
 class GlassPalette {
@@ -121,8 +508,8 @@ class LiquidBackground extends StatelessWidget {
             ? null
             : RadialGradient(
                 center: const Alignment(0.86, -0.92),
-        radius: 1.15,
-        colors: dark
+                radius: 1.15,
+                colors: dark
                     ? const [Color(0x122B3A26), Color(0x00101115)]
                     : const [Color(0x120F766E), Color(0x00F5F4F0)],
               ),
@@ -139,6 +526,7 @@ class GlassSurface extends StatelessWidget {
     this.padding,
     this.radius = 22,
     this.onTap,
+    this.haptic,
     this.opacity,
     this.borderOpacity = 0.55,
     this.glass = false,
@@ -148,6 +536,7 @@ class GlassSurface extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final double radius;
   final VoidCallback? onTap;
+  final GlassHaptic? haptic;
   final double? opacity;
   final double? borderOpacity;
   final bool glass;
@@ -191,9 +580,16 @@ class GlassSurface extends StatelessWidget {
             ),
     );
     if (onTap == null) return surface;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(onTap: onTap, borderRadius: borderRadius, child: surface),
+    return GlassPressable(
+      haptic: haptic,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: borderRadius,
+          child: surface,
+        ),
+      ),
     );
   }
 }
@@ -247,7 +643,10 @@ class GlassSwitch extends StatelessWidget {
     final duration = motionDuration(context, const Duration(milliseconds: 160));
     return ExcludeSemantics(
       child: InkWell(
-        onTap: () => onChanged(!value),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onChanged(!value);
+        },
         borderRadius: BorderRadius.circular(999),
         child: Padding(
           // 扩大触控热区到 44px 高。

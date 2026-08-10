@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
@@ -12,6 +13,8 @@ import '../utils/event_date_utils.dart';
 import '../utils/widget_content_utils.dart';
 import 'glass_ui.dart';
 import 'reminder_editor.dart';
+
+enum _SaveState { idle, saving, done }
 
 class EventFormSheet extends ConsumerStatefulWidget {
   const EventFormSheet({super.key, this.event});
@@ -46,7 +49,7 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
   late TimeOfDay rememberedTime;
   late List<EventReminder> selectedReminders;
   int reminderToAdd = 1440;
-  bool isSaving = false;
+  _SaveState _saveState = _SaveState.idle;
 
   @override
   void initState() {
@@ -259,15 +262,39 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
-                        onPressed: isSaving ? null : _save,
-                        icon: isSaving
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                        onPressed: _saveState == _SaveState.idle ? _save : null,
+                        icon: AnimatedSwitcher(
+                          duration: motionDuration(context, AppMotion.state),
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(
+                                opacity: animation,
+                                child: ScaleTransition(
+                                  scale: Tween<double>(begin: 0.8, end: 1)
+                                      .animate(
+                                        CurvedAnimation(
+                                          parent: animation,
+                                          curve: AppMotion.enter,
+                                        ),
+                                      ),
+                                  child: child,
                                 ),
-                              )
-                            : const Icon(Icons.check_rounded),
+                              ),
+                          child: switch (_saveState) {
+                            _SaveState.idle => const Icon(
+                              Icons.check_rounded,
+                              key: ValueKey('save-idle'),
+                            ),
+                            _SaveState.saving => const SizedBox.square(
+                              key: ValueKey('save-loading'),
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            _SaveState.done => const Icon(
+                              Icons.check_circle_rounded,
+                              key: ValueKey('save-done'),
+                            ),
+                          },
+                        ),
                         label: Text(widget.event == null ? '创建日子' : '保存修改'),
                       ),
                     ),
@@ -282,10 +309,9 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
   }
 
   Future<void> _pickRepeat() async {
-    final value = await showModalBottomSheet<EventRepeatType>(
+    final value = await showGlassBottomSheet<EventRepeatType>(
       context: context,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => _FormChoiceSheet<EventRepeatType>(
         title: '重复周期',
         value: repeatType,
@@ -405,11 +431,12 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
 
   Future<void> _save() async {
     if (!formKey.currentState!.validate()) return;
-    setState(() => isSaving = true);
+    HapticFeedback.lightImpact();
+    setState(() => _saveState = _SaveState.saving);
     var notificationsAllowed = true;
     if (selectedReminders.isNotEmpty) {
-      notificationsAllowed =
-          await NotificationService.instance.ensureNotificationPermission();
+      notificationsAllowed = await NotificationService.instance
+          .ensureNotificationPermission();
     }
     final existing = widget.event;
     final event = CountdownEvent(
@@ -436,6 +463,9 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
     await ref.read(appControllerProvider.notifier).saveEvent(event);
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
+    setState(() => _saveState = _SaveState.done);
+    await Future<void>.delayed(motionDuration(context, AppMotion.state));
+    if (!mounted) return;
     Navigator.pop(context);
     if (selectedReminders.isNotEmpty && !notificationsAllowed) {
       messenger.showSnackBar(
@@ -489,14 +519,22 @@ class _QuickDatePicker extends StatelessWidget {
           runSpacing: 8,
           children: [
             for (final entry in values.entries)
-              ActionChip(
-                label: Text(entry.value),
-                onPressed: () => onSelected(entry.key),
+              GlassPressable(
+                child: ActionChip(
+                  label: Text(entry.value),
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    onSelected(entry.key);
+                  },
+                ),
               ),
             ActionChip(
               avatar: const Icon(Icons.edit_calendar_outlined, size: 18),
               label: const Text('自定义'),
-              onPressed: onCustom,
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                onCustom();
+              },
             ),
           ],
         ),
@@ -525,36 +563,41 @@ class _EmojiPicker extends StatelessWidget {
             label: emoji.isEmpty ? '不使用图标' : '图标：$emoji',
             child: Material(
               color: Colors.transparent,
-              child: InkWell(
-                onTap: () => onChanged(emoji),
-                customBorder: const CircleBorder(),
-                child: AnimatedContainer(
-                  duration: motionDuration(
-                    context,
-                    const Duration(milliseconds: 160),
-                  ),
-                  width: 42,
-                  height: 42,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: value == emoji
-                        ? scheme.surfaceContainerHighest
-                        : Colors.transparent,
-                    border: Border.all(
-                      color: value == emoji
-                          ? scheme.outlineVariant
-                          : scheme.outlineVariant.withValues(alpha: 0.45),
+              child: GlassPressable(
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onChanged(emoji);
+                  },
+                  customBorder: const CircleBorder(),
+                  child: AnimatedContainer(
+                    duration: motionDuration(
+                      context,
+                      const Duration(milliseconds: 160),
                     ),
-                  ),
-                  child: ExcludeSemantics(
-                    child: emoji.isEmpty
-                        ? Icon(
-                            Icons.mood_bad_outlined,
-                            size: 18,
-                            color: scheme.onSurfaceVariant,
-                          )
-                        : Text(emoji, style: const TextStyle(fontSize: 20)),
+                    width: 42,
+                    height: 42,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: value == emoji
+                          ? scheme.surfaceContainerHighest
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: value == emoji
+                            ? scheme.outlineVariant
+                            : scheme.outlineVariant.withValues(alpha: 0.45),
+                      ),
+                    ),
+                    child: ExcludeSemantics(
+                      child: emoji.isEmpty
+                          ? Icon(
+                              Icons.mood_bad_outlined,
+                              size: 18,
+                              color: scheme.onSurfaceVariant,
+                            )
+                          : Text(emoji, style: const TextStyle(fontSize: 20)),
+                    ),
                   ),
                 ),
               ),
@@ -578,18 +621,20 @@ class _DateTimeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: '目标日期',
-          prefixIcon: Icon(Icons.event_outlined),
-        ),
-        child: Text(
-          isAllDay
-              ? '${DateFormat('yyyy年M月d日', 'zh_CN').format(targetDate)} · 全天'
-              : DateFormat('yyyy年M月d日  HH:mm', 'zh_CN').format(targetDate),
+    return GlassPressable(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: InputDecorator(
+          decoration: const InputDecoration(
+            labelText: '目标日期',
+            prefixIcon: Icon(Icons.event_outlined),
+          ),
+          child: Text(
+            isAllDay
+                ? '${DateFormat('yyyy年M月d日', 'zh_CN').format(targetDate)} · 全天'
+                : DateFormat('yyyy年M月d日  HH:mm', 'zh_CN').format(targetDate),
+          ),
         ),
       ),
     );
@@ -645,41 +690,51 @@ class _DirectionOption extends StatelessWidget {
       button: true,
       selected: selected,
       label: '计时方式：$label',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
-        child: AnimatedContainer(
-          duration: motionDuration(context, const Duration(milliseconds: 180)),
-          constraints: const BoxConstraints(minHeight: 50),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: selected
-                ? scheme.surfaceContainerHighest
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: selected
-                  ? scheme.outlineVariant
-                  : scheme.outlineVariant.withValues(alpha: 0.55),
+      child: GlassPressable(
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(15),
+          child: AnimatedContainer(
+            duration: motionDuration(
+              context,
+              const Duration(milliseconds: 180),
             ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
+            constraints: const BoxConstraints(minHeight: 50),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: selected
+                  ? scheme.surfaceContainerHighest
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: selected
+                    ? scheme.outlineVariant
+                    : scheme.outlineVariant.withValues(alpha: 0.55),
               ),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                style: TextStyle(
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
                   color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 ),
-              ),
-            ],
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: selected
+                        ? scheme.onSurface
+                        : scheme.onSurfaceVariant,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -705,24 +760,32 @@ class _FormCategoryChip extends StatelessWidget {
       button: true,
       selected: selected,
       label: '分类：$label',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: AnimatedContainer(
-          duration: motionDuration(context, const Duration(milliseconds: 180)),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected
-                ? scheme.surfaceContainerHighest
-                : Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: scheme.outlineVariant),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+      child: GlassPressable(
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(999),
+          child: AnimatedContainer(
+            duration: motionDuration(
+              context,
+              const Duration(milliseconds: 180),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: selected
+                  ? scheme.surfaceContainerHighest
+                  : Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: scheme.outlineVariant),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
             ),
           ),
         ),
@@ -784,4 +847,3 @@ class _FormChoiceSheet<T> extends StatelessWidget {
     ),
   );
 }
-

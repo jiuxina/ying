@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/event_sort_mode.dart';
 import 'glass_ui.dart';
@@ -71,42 +72,62 @@ class EventFilterBar extends StatelessWidget {
         AnimatedSize(
           duration: motionDuration(context, const Duration(milliseconds: 220)),
           curve: Curves.easeOutCubic,
-          child: searchExpanded
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: TextField(
-                    controller: controller,
-                    autofocus: true,
-                    onChanged: onSearchChanged,
-                    decoration: InputDecoration(
-                      hintText: '搜索标题或备注',
-                      prefixIcon: const Icon(Icons.search_rounded),
-                      suffixIcon: controller.text.isEmpty
-                          ? null
-                          : IconButton(
-                              tooltip: '清空搜索',
-                              onPressed: onClear,
-                              icon: const Icon(Icons.close_rounded),
-                            ),
+          child: AnimatedSwitcher(
+            duration: motionDuration(context, AppMotion.state),
+            switchInCurve: AppMotion.enter,
+            switchOutCurve: AppMotion.exit,
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.04),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            ),
+            child: searchExpanded
+                ? Padding(
+                    key: const ValueKey('search-field'),
+                    padding: const EdgeInsets.only(top: 10),
+                    child: TextField(
+                      controller: controller,
+                      autofocus: true,
+                      onChanged: onSearchChanged,
+                      decoration: InputDecoration(
+                        hintText: '搜索标题或备注',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: controller.text.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: '清空搜索',
+                                onPressed: onClear,
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                      ),
                     ),
-                  ),
-                )
-              : const SizedBox.shrink(),
+                  )
+                : const SizedBox.shrink(key: ValueKey('search-collapsed')),
+          ),
         ),
-        if (hasFilters) ...[
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: onClear,
-              icon: const Icon(Icons.filter_alt_off_rounded, size: 17),
-              label: const Text('清除筛选'),
-              style: TextButton.styleFrom(
-                foregroundColor: scheme.onSurfaceVariant,
+        GlassAnimatedPresence(
+          visible: hasFilters,
+          child: Padding(
+            key: const ValueKey('clear-filters'),
+            padding: const EdgeInsets.only(top: 8),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: onClear,
+                icon: const Icon(Icons.filter_alt_off_rounded, size: 17),
+                label: const Text('清除筛选'),
+                style: TextButton.styleFrom(
+                  foregroundColor: scheme.onSurfaceVariant,
+                ),
               ),
             ),
           ),
-        ],
+        ),
       ],
     );
   }
@@ -118,10 +139,9 @@ class EventFilterBar extends StatelessWidget {
   };
 
   Future<void> _showSortSheet(BuildContext context) async {
-    final value = await showModalBottomSheet<EventSortMode>(
+    final value = await showGlassBottomSheet<EventSortMode>(
       context: context,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => _ChoiceSheet<EventSortMode>(
         title: '排序方式',
         value: sortMode,
@@ -132,14 +152,16 @@ class EventFilterBar extends StatelessWidget {
         ],
       ),
     );
-    if (value != null) onSortChanged(value);
+    if (value != null) {
+      HapticFeedback.selectionClick();
+      onSortChanged(value);
+    }
   }
 
   Future<void> _showFilterSheet(BuildContext context) async {
-    final value = await showModalBottomSheet<(bool, String?)>(
+    final value = await showGlassBottomSheet<(bool, String?)>(
       context: context,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => _FilterSheet(
         incompleteOnly: incompleteOnly,
         selectedCategory: selectedCategory,
@@ -147,6 +169,7 @@ class EventFilterBar extends StatelessWidget {
       ),
     );
     if (value == null) return;
+    HapticFeedback.selectionClick();
     onIncompleteChanged(value.$1);
     onCategoryChanged(value.$2);
   }
@@ -175,41 +198,48 @@ class _FilterButton extends StatelessWidget {
       label: tooltip,
       child: Tooltip(
         message: tooltip,
-        child: Material(
-          color: selected
-              ? scheme.surfaceContainerHighest.withValues(alpha: 0.6)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(15),
-          child: InkWell(
-            onTap: onTap,
+        child: GlassPressable(
+          child: Material(
+            color: selected
+                ? scheme.surfaceContainerHighest.withValues(alpha: 0.6)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(15),
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Icon(
-                    icon,
-                    size: 20,
-                    color: selected
-                        ? scheme.onSurface
-                        : scheme.onSurfaceVariant,
-                  ),
-                  if (showDot)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: scheme.primary,
-                          shape: BoxShape.circle,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(15),
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 20,
+                      color: selected
+                          ? scheme.onSurface
+                          : scheme.onSurfaceVariant,
+                    ),
+                    if (showDot)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: AnimatedScale(
+                          scale: showDot ? 1 : 0,
+                          duration: motionDuration(context, AppMotion.state),
+                          curve: AppMotion.enter,
+                          child: Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: scheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -236,26 +266,32 @@ class _CategoryChip extends StatelessWidget {
       button: true,
       selected: selected,
       label: '分类：$label',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: AnimatedContainer(
-          duration: motionDuration(context, const Duration(milliseconds: 180)),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(
-            color: selected
-                ? scheme.surfaceContainerHighest
-                : Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: scheme.outlineVariant,
+      child: GlassPressable(
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(999),
+          child: AnimatedContainer(
+            duration: motionDuration(
+              context,
+              const Duration(milliseconds: 180),
             ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: selected
+                  ? scheme.surfaceContainerHighest
+                  : Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: scheme.outlineVariant),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
             ),
           ),
         ),
@@ -395,8 +431,10 @@ class _FilterSheetState extends State<_FilterSheet> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: () =>
-                    Navigator.pop(context, (incompleteOnly, category)),
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.pop(context, (incompleteOnly, category));
+                },
                 child: const Text('应用筛选'),
               ),
             ),

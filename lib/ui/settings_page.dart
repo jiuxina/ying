@@ -296,10 +296,7 @@ Future<void> _pickBackgroundPhoto(BuildContext context, WidgetRef ref) async {
   }
 }
 
-Future<void> _recropBackgroundPhoto(
-  BuildContext context,
-  WidgetRef ref,
-) async {
+Future<void> _recropBackgroundPhoto(BuildContext context, WidgetRef ref) async {
   final controller = ref.read(appControllerProvider.notifier);
   final settings = ref.read(appControllerProvider).settings;
   try {
@@ -327,16 +324,13 @@ Future<void> _recropBackgroundPhoto(
   }
 }
 
-Future<void> _openBackgroundEditor(
-  BuildContext context,
-  WidgetRef ref,
-) async {
+Future<void> _openBackgroundEditor(BuildContext context, WidgetRef ref) async {
   final settings = ref.read(appControllerProvider).settings;
   if (settings.widgetBackgroundPath.isEmpty) return;
-  await showModalBottomSheet<void>(
+  await showGlassBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    showDragHandle: true,
     builder: (sheetContext) => _PhotoBackgroundEditorSheet(
       path: settings.widgetBackgroundPath,
       brightness: settings.widgetBackgroundBrightness,

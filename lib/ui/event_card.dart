@@ -32,6 +32,7 @@ class _EventCardState extends State<EventCard> {
   static const _completeThreshold = 86.0;
   double dragOffset = 0;
   bool hapticTriggered = false;
+  int _flashEpoch = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +50,7 @@ class _EventCardState extends State<EventCard> {
               ? '恢复'
               : '完成'}',
       onTap: widget.onOpen,
-      onIncrease: widget.onToggle,
+      onIncrease: _toggle,
       onLongPress: _showCardMenu,
       child: Stack(
         alignment: Alignment.center,
@@ -87,11 +88,35 @@ class _EventCardState extends State<EventCard> {
                     ? Duration.zero
                     : const Duration(milliseconds: 200),
                 opacity: event.isCompleted ? 0.52 : 1,
-                child: GlassSurface(
-                  radius: 24,
-                  onTap: dragOffset == 0 ? widget.onOpen : _closeActions,
-                  padding: const EdgeInsets.fromLTRB(20, 18, 10, 18),
-                  child: _CardContent(event: event, onToggle: widget.onToggle),
+                child: Stack(
+                  children: [
+                    GlassSurface(
+                      radius: 24,
+                      onTap: dragOffset == 0 ? widget.onOpen : _closeActions,
+                      padding: const EdgeInsets.fromLTRB(20, 18, 10, 18),
+                      child: _CardContent(event: event, onToggle: _toggle),
+                    ),
+                    if (_flashEpoch > 0)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: TweenAnimationBuilder<double>(
+                            key: ValueKey(_flashEpoch),
+                            tween: Tween(begin: 1, end: 0),
+                            duration: reduceMotion
+                                ? Duration.zero
+                                : const Duration(milliseconds: 360),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, value, _) => DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary
+                                    .withValues(alpha: 0.10 * value),
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -116,7 +141,7 @@ class _EventCardState extends State<EventCard> {
   void _onDragEnd(DragEndDetails details) {
     if (dragOffset >= _completeThreshold) {
       HapticFeedback.selectionClick();
-      widget.onToggle();
+      _toggle();
       setState(() => dragOffset = 0);
       return;
     }
@@ -128,16 +153,20 @@ class _EventCardState extends State<EventCard> {
 
   void _closeActions() => setState(() => dragOffset = 0);
 
+  void _toggle() {
+    setState(() => _flashEpoch++);
+    widget.onToggle();
+  }
+
   Future<void> _showCardMenu() async {
     if (dragOffset != 0) {
       _closeActions();
       return;
     }
     HapticFeedback.mediumImpact();
-    final action = await showModalBottomSheet<_CardAction>(
+    final action = await showGlassBottomSheet<_CardAction>(
       context: context,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => _CardActionSheet(event: widget.event),
     );
     if (!mounted || action == null) return;
@@ -237,7 +266,10 @@ class _CardActionRow extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: onTap,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onTap();
+            },
             borderRadius: BorderRadius.circular(16),
             child: Container(
               constraints: const BoxConstraints(minHeight: 48),
@@ -488,10 +520,7 @@ class _CardContent extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        DateFormat(
-                          'M月d日 E',
-                          'zh_CN',
-                        ).format(event.targetDate),
+                        DateFormat('M月d日 E', 'zh_CN').format(event.targetDate),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -514,18 +543,33 @@ class _CardContent extends StatelessWidget {
               const SizedBox(height: 7),
               Row(
                 children: [
-                  if (event.isPinned)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: Icon(
-                        Icons.push_pin_outlined,
-                        size: 14,
-                        color: scheme.onSurfaceVariant,
+                  AnimatedSwitcher(
+                    duration: motionDuration(context, AppMotion.state),
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 0.7, end: 1).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: AppMotion.enter,
+                          ),
+                        ),
+                        child: child,
                       ),
                     ),
-                  Flexible(
-                    child: _CategoryTag(label: event.category),
+                    child: event.isPinned
+                        ? Padding(
+                            key: const ValueKey('pinned'),
+                            padding: const EdgeInsets.only(right: 6),
+                            child: Icon(
+                              Icons.push_pin_outlined,
+                              size: 14,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          )
+                        : const SizedBox.shrink(key: ValueKey('unpinned')),
                   ),
+                  Flexible(child: _CategoryTag(label: event.category)),
                   if (event.repeatsYearly) ...[
                     const SizedBox(width: 6),
                     Text(
@@ -541,36 +585,52 @@ class _CardContent extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        IconButton(
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            onToggle();
-          },
-          tooltip: event.repeatsYearly && !event.isCompleted
-              ? '进入下一年'
-              : event.isCompleted
-              ? '恢复事件'
-              : '标记完成',
-          visualDensity: VisualDensity.compact,
-          icon: event.isCompleted
-              ? Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: scheme.onSurface,
-                    shape: BoxShape.circle,
+        GlassPressable(
+          child: IconButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              onToggle();
+            },
+            tooltip: event.repeatsYearly && !event.isCompleted
+                ? '进入下一年'
+                : event.isCompleted
+                ? '恢复事件'
+                : '标记完成',
+            visualDensity: VisualDensity.compact,
+            icon: AnimatedSwitcher(
+              duration: motionDuration(context, AppMotion.state),
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.72, end: 1).animate(
+                    CurvedAnimation(parent: animation, curve: AppMotion.enter),
                   ),
-                  child: Icon(
-                    Icons.check_rounded,
-                    size: 16,
-                    color: scheme.surface,
-                  ),
-                )
-              : Icon(
-                  Icons.circle_outlined,
-                  size: 26,
-                  color: scheme.onSurfaceVariant,
+                  child: child,
                 ),
+              ),
+              child: event.isCompleted
+                  ? Container(
+                      key: const ValueKey('complete'),
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: scheme.onSurface,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.check_rounded,
+                        size: 16,
+                        color: scheme.surface,
+                      ),
+                    )
+                  : Icon(
+                      Icons.circle_outlined,
+                      key: const ValueKey('incomplete'),
+                      size: 26,
+                      color: scheme.onSurfaceVariant,
+                    ),
+            ),
+          ),
         ),
       ],
     );

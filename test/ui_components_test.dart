@@ -560,10 +560,7 @@ void main() {
 
       final sheetMaterial = tester.widget<Material>(
         find
-            .ancestor(
-              of: find.text('显隐'),
-              matching: find.byType(Material),
-            )
+            .ancestor(of: find.text('显隐'), matching: find.byType(Material))
             .first,
       );
       expect(sheetMaterial.color, isNotNull);
@@ -598,7 +595,10 @@ void main() {
         saved.last.widgetElementStyles['title']?.size,
         isNot(WidgetElementSize.normal),
       );
-      expect(saved.last.widgetElementStyles['title']?.sizeScale, greaterThan(1.0));
+      expect(
+        saved.last.widgetElementStyles['title']?.sizeScale,
+        greaterThan(1.0),
+      );
       expect(saved.last.widgetElementStyles['title']?.weight, greaterThan(0));
     });
 
@@ -621,10 +621,7 @@ void main() {
 
       final sheetMaterial = tester.widget<Material>(
         find
-            .ancestor(
-              of: find.text('显隐'),
-              matching: find.byType(Material),
-            )
+            .ancestor(of: find.text('显隐'), matching: find.byType(Material))
             .first,
       );
       expect(sheetMaterial.color, isNotNull);
@@ -702,6 +699,7 @@ void main() {
         buildSettingsPage(controller, category: SettingsCategory.widget),
       );
       await flushPlatform(tester);
+      await tester.pumpAndSettle();
 
       await tester.tap(find.bySemanticsLabel('小部件样式：贴纸'));
       await tester.pumpAndSettle();
@@ -805,10 +803,7 @@ void main() {
       );
       await flushPlatform(tester);
 
-      await tester.scrollUntilVisible(
-        find.bySemanticsLabel('文字字体：测试字体'),
-        300,
-      );
+      await tester.scrollUntilVisible(find.bySemanticsLabel('文字字体：测试字体'), 300);
       await tester.ensureVisible(find.bySemanticsLabel('文字字体：测试字体'));
       await tester.pump(const Duration(milliseconds: 400));
       await tester.tap(find.bySemanticsLabel('文字字体：测试字体'));
@@ -820,18 +815,12 @@ void main() {
       expect(controller.state.settings.widgetTextFontPath, '/tmp/test.ttf');
       expect(saved.last.widgetTextFontFamily, 'catalog:test-font');
 
-      await tester.scrollUntilVisible(
-        find.bySemanticsLabel('数字字体：测试字体'),
-        300,
-      );
+      await tester.scrollUntilVisible(find.bySemanticsLabel('数字字体：测试字体'), 300);
       await tester.ensureVisible(find.bySemanticsLabel('数字字体：测试字体'));
       await tester.pump(const Duration(milliseconds: 400));
       await tester.tap(find.bySemanticsLabel('数字字体：测试字体'));
       await tester.pump(const Duration(milliseconds: 400));
-      expect(
-        controller.state.settings.widgetFontFamily,
-        'catalog:test-font',
-      );
+      expect(controller.state.settings.widgetFontFamily, 'catalog:test-font');
       expect(controller.state.settings.widgetDigitFontPath, '/tmp/test.ttf');
       expect(saved.last.widgetFontFamily, 'catalog:test-font');
     });

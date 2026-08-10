@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../models/countdown_event.dart';
@@ -19,6 +20,8 @@ class CalendarPage extends ConsumerStatefulWidget {
 
 class _CalendarPageState extends ConsumerState<CalendarPage> {
   CalendarMode _mode = CalendarMode.month;
+  int _modeNavigationDirection = 1;
+  int _monthNavigationDirection = 1;
   late DateTime _focusedMonth;
   DateTime? _selectedDate;
 
@@ -40,19 +43,13 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       color: Theme.of(context).colorScheme.onSurfaceVariant,
       fontWeight: FontWeight.w500,
     );
-    final subtitleHeight =
-        (TextPainter(
-          text: TextSpan(text: subtitleText, style: subtitleStyle),
-          maxLines: 1,
-          textDirection: Directionality.of(context),
-        )..layout()).height;
+    final subtitleHeight = (TextPainter(
+      text: TextSpan(text: subtitleText, style: subtitleStyle),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+    )..layout()).height;
     return ListView(
-      padding: EdgeInsets.fromLTRB(
-        wide ? 34 : 20,
-        28,
-        20,
-        wide ? 24 : 132,
-      ),
+      padding: EdgeInsets.fromLTRB(wide ? 34 : 20, 28, 20, wide ? 24 : 132),
       children: [
         Text(
           '日历',
@@ -67,7 +64,12 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              Positioned.fill(
+              AnimatedPositioned(
+                duration: motionDuration(context, AppMotion.state),
+                curve: AppMotion.crossFade,
+                left: 0,
+                top: 0,
+                bottom: 0,
                 right: _showTodayButton ? 72 : 0,
                 child: Text(
                   subtitleText,
@@ -76,35 +78,80 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                   style: subtitleStyle,
                 ),
               ),
-              if (_showTodayButton)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 8, right: 8),
-                    child: TextButton(
-                      key: const ValueKey('calendar-today'),
-                      onPressed: _jumpToToday,
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(0, 24),
-                        padding: EdgeInsets.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              Positioned(
+                top: 0,
+                right: 0,
+                child: AnimatedSwitcher(
+                  duration: motionDuration(context, AppMotion.state),
+                  switchInCurve: AppMotion.enter,
+                  switchOutCurve: AppMotion.exit,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.85, end: 1).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: AppMotion.enter,
+                        ),
                       ),
-                      child: const Text('今天'),
+                      child: child,
                     ),
                   ),
+                  child: _showTodayButton
+                      ? Padding(
+                          key: const ValueKey('today-button'),
+                          padding: const EdgeInsets.only(left: 8, right: 8),
+                          child: TextButton(
+                            key: const ValueKey('calendar-today'),
+                            onPressed: _jumpToToday,
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(0, 24),
+                              padding: EdgeInsets.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text('今天'),
+                          ),
+                        )
+                      : const SizedBox.shrink(
+                          key: ValueKey('today-button-hidden'),
+                        ),
                 ),
+              ),
             ],
           ),
         ),
         const SizedBox(height: 18),
         _ModeSelector(value: _mode, onChanged: _changeMode),
         const SizedBox(height: 16),
-        switch (_mode) {
-          CalendarMode.month => _buildMonthView(context, events, now),
-          CalendarMode.year => _buildYearView(context, events, now),
-          CalendarMode.list => _buildListView(context, events, now),
-        },
+        AnimatedSwitcher(
+          duration: motionDuration(context, AppMotion.switchDuration),
+          switchInCurve: AppMotion.enter,
+          switchOutCurve: AppMotion.exit,
+          transitionBuilder: (child, animation) {
+            final slide =
+                Tween<Offset>(
+                  begin: Offset(-0.03 * _modeNavigationDirection, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: AppMotion.crossFade,
+                  ),
+                );
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(position: slide, child: child),
+            );
+          },
+          child: KeyedSubtree(
+            key: ValueKey(_mode),
+            child: switch (_mode) {
+              CalendarMode.month => _buildMonthView(context, events, now),
+              CalendarMode.year => _buildYearView(context, events, now),
+              CalendarMode.list => _buildListView(context, events, now),
+            },
+          ),
+        ),
       ],
     );
   }
@@ -129,14 +176,30 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
 
   void _changeMode(CalendarMode mode) {
     setState(() {
+      _modeNavigationDirection = mode.index - _mode.index;
       _mode = mode;
       if (mode == CalendarMode.year) _selectedDate = null;
     });
+    HapticFeedback.selectionClick();
   }
 
   DateTime _shiftMonth(int delta) {
     final total = _focusedMonth.year * 12 + (_focusedMonth.month - 1) + delta;
     return DateTime(total ~/ 12, total % 12 + 1);
+  }
+
+  void _goToMonth(int delta) {
+    setState(() {
+      _monthNavigationDirection = delta;
+      _focusedMonth = _shiftMonth(delta);
+    });
+  }
+
+  void _goToYear(int delta) {
+    setState(() {
+      _monthNavigationDirection = delta;
+      _focusedMonth = DateTime(_focusedMonth.year + delta, _focusedMonth.month);
+    });
   }
 
   Widget _buildMonthView(
@@ -153,6 +216,55 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     ).day;
     final leading = firstDay.weekday - 1;
     final cellCount = ((leading + daysInMonth + 6) ~/ 7) * 7;
+    final grid = GlassSurface(
+      key: const ValueKey('calendar-month-grid'),
+      radius: 20,
+      padding: const EdgeInsets.fromLTRB(6, 12, 6, 12),
+      child: Column(
+        children: [
+          const _WeekdayHeader(),
+          const SizedBox(height: 8),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: cellCount,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              mainAxisSpacing: 4,
+              crossAxisSpacing: 4,
+              childAspectRatio: 0.92,
+            ),
+            itemBuilder: (context, index) {
+              final dayNumber = index - leading + 1;
+              if (dayNumber < 1 || dayNumber > daysInMonth) {
+                return const SizedBox.shrink();
+              }
+              final date = DateTime(
+                _focusedMonth.year,
+                _focusedMonth.month,
+                dayNumber,
+              );
+              final dayEvents = occurrences
+                  .where((occurrence) => _sameDay(occurrence.date, date))
+                  .toList();
+              return _DayCell(
+                date: date,
+                occurrences: dayEvents,
+                selected:
+                    _selectedDate != null && _sameDay(_selectedDate!, date),
+                isToday: _sameDay(date, now),
+                onTap: () => setState(() => _selectedDate = date),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+    final dayCard = _DayEventsCard(
+      occurrences: occurrences,
+      selectedDate: _selectedDate,
+      onOpen: _openEvent,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -161,7 +273,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             GlassIconButton(
               icon: Icons.chevron_left_rounded,
               tooltip: '上个月',
-              onPressed: () => setState(() => _focusedMonth = _shiftMonth(-1)),
+              onPressed: () => _goToMonth(-1),
             ),
             Expanded(
               child: Center(
@@ -176,62 +288,56 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             GlassIconButton(
               icon: Icons.chevron_right_rounded,
               tooltip: '下个月',
-              onPressed: () => setState(() => _focusedMonth = _shiftMonth(1)),
+              onPressed: () => _goToMonth(1),
             ),
           ],
         ),
         const SizedBox(height: 10),
-        GlassSurface(
-          key: const ValueKey('calendar-month-grid'),
-          radius: 20,
-          padding: const EdgeInsets.fromLTRB(6, 12, 6, 12),
-          child: Column(
-            children: [
-              const _WeekdayHeader(),
-              const SizedBox(height: 8),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: cellCount,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 7,
-                  mainAxisSpacing: 4,
-                  crossAxisSpacing: 4,
-                  childAspectRatio: 0.92,
-                ),
-                itemBuilder: (context, index) {
-                  final dayNumber = index - leading + 1;
-                  if (dayNumber < 1 || dayNumber > daysInMonth) {
-                    return const SizedBox.shrink();
-                  }
-                  final date = DateTime(
-                    _focusedMonth.year,
-                    _focusedMonth.month,
-                    dayNumber,
-                  );
-                  final dayEvents = occurrences
-                      .where((occurrence) => _sameDay(occurrence.date, date))
-                      .toList();
-                  return _DayCell(
-                    date: date,
-                    occurrences: dayEvents,
-                    selected:
-                        _selectedDate != null && _sameDay(_selectedDate!, date),
-                    isToday: _sameDay(date, now),
-                    onTap: () => setState(() => _selectedDate = date),
-                  );
-                },
-              ),
-            ],
+        if (reduceMotionOf(context))
+          grid
+        else
+          _calendarSwitcher(
+            key: ValueKey(
+              'calendar-month-grid-${_focusedMonth.year}-${_focusedMonth.month}',
+            ),
+            duration: AppMotion.switchDuration,
+            begin: Offset(-0.03 * _monthNavigationDirection, 0),
+            child: grid,
           ),
-        ),
         const SizedBox(height: 16),
-        _DayEventsCard(
-          occurrences: occurrences,
-          selectedDate: _selectedDate,
-          onOpen: _openEvent,
-        ),
+        if (reduceMotionOf(context))
+          dayCard
+        else
+          _calendarSwitcher(
+            key: ValueKey(_selectedDate),
+            duration: AppMotion.state,
+            begin: const Offset(0, 0.03),
+            child: dayCard,
+          ),
       ],
+    );
+  }
+
+  Widget _calendarSwitcher({
+    required Key key,
+    required Duration duration,
+    required Offset begin,
+    required Widget child,
+  }) {
+    return AnimatedSwitcher(
+      duration: motionDuration(context, duration),
+      switchInCurve: AppMotion.enter,
+      switchOutCurve: AppMotion.exit,
+      transitionBuilder: (child, animation) {
+        final slide = Tween<Offset>(begin: begin, end: Offset.zero).animate(
+          CurvedAnimation(parent: animation, curve: AppMotion.crossFade),
+        );
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(position: slide, child: child),
+        );
+      },
+      child: KeyedSubtree(key: key, child: child),
     );
   }
 
@@ -251,9 +357,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             GlassIconButton(
               icon: Icons.chevron_left_rounded,
               tooltip: '上一年',
-              onPressed: () => setState(
-                () => _focusedMonth = DateTime(year - 1, _focusedMonth.month),
-              ),
+              onPressed: () => _goToYear(-1),
             ),
             Expanded(
               child: Center(
@@ -268,36 +372,56 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             GlassIconButton(
               icon: Icons.chevron_right_rounded,
               tooltip: '下一年',
-              onPressed: () => setState(
-                () => _focusedMonth = DateTime(year + 1, _focusedMonth.month),
-              ),
+              onPressed: () => _goToYear(1),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: 12,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: wide ? 3 : 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: wide ? 1.15 : 0.82,
-          ),
-          itemBuilder: (context, index) {
-            final month = index + 1;
-            return _MiniMonthCard(
-              year: year,
-              month: month,
-              occurrences: byMonth[month]!,
-              onTap: () => setState(() {
-                _focusedMonth = DateTime(year, month);
-                _mode = CalendarMode.month;
-                _selectedDate = null;
-              }),
+        AnimatedSwitcher(
+          duration: motionDuration(context, AppMotion.switchDuration),
+          switchInCurve: AppMotion.enter,
+          switchOutCurve: AppMotion.exit,
+          transitionBuilder: (child, animation) {
+            final slide =
+                Tween<Offset>(
+                  begin: Offset(-0.03 * _monthNavigationDirection, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: AppMotion.crossFade,
+                  ),
+                );
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(position: slide, child: child),
             );
           },
+          child: GridView.builder(
+            key: ValueKey('calendar-year-grid-$year'),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 12,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: wide ? 3 : 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: wide ? 1.15 : 0.82,
+            ),
+            itemBuilder: (context, index) {
+              final month = index + 1;
+              return _MiniMonthCard(
+                year: year,
+                month: month,
+                occurrences: byMonth[month]!,
+                onTap: () => setState(() {
+                  _focusedMonth = DateTime(year, month);
+                  _mode = CalendarMode.month;
+                  _selectedDate = null;
+                }),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -438,39 +562,45 @@ class _ModeButton extends StatelessWidget {
         label: '日历模式：$label',
         child: Material(
           color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(14),
-            child: AnimatedContainer(
-              duration: motionDuration(
-                context,
-                const Duration(milliseconds: 180),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: selected
-                    ? scheme.surfaceContainerHighest
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: ExcludeSemantics(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      icon,
-                      size: 17,
-                      color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      label,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+          child: GlassPressable(
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(14),
+              child: AnimatedContainer(
+                duration: motionDuration(
+                  context,
+                  const Duration(milliseconds: 180),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? scheme.surfaceContainerHighest
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: ExcludeSemantics(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        icon,
+                        size: 17,
+                        color: selected
+                            ? scheme.onSurface
+                            : scheme.onSurfaceVariant,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 6),
+                      Text(
+                        label,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: selected
+                              ? scheme.onSurface
+                              : scheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -530,72 +660,82 @@ class _DayCell extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
           borderRadius: BorderRadius.circular(12),
-          child: Container(
-            key: ValueKey(
-              'calendar-day-${date.year}-${date.month}-${date.day}',
-            ),
-            decoration: BoxDecoration(
-              color: selected ? scheme.surfaceContainerHighest : null,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: selected ? scheme.outlineVariant : Colors.transparent,
+          child: AnimatedScale(
+            scale: selected ? 1.06 : 1,
+            duration: motionDuration(context, AppMotion.state),
+            curve: AppMotion.enter,
+            child: AnimatedContainer(
+              key: ValueKey(
+                'calendar-day-${date.year}-${date.month}-${date.day}',
               ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '${date.day}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: selected || isToday
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                  ),
+              duration: motionDuration(context, AppMotion.state),
+              curve: AppMotion.crossFade,
+              decoration: BoxDecoration(
+                color: selected ? scheme.surfaceContainerHighest : null,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: selected ? scheme.outlineVariant : Colors.transparent,
                 ),
-                const SizedBox(height: 3),
-                if (occurrences.isEmpty && !isToday)
-                  const SizedBox(height: 8)
-                else
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (isToday && occurrences.isEmpty)
-                        Container(
-                          width: 6,
-                          height: 6,
-                          margin: const EdgeInsets.symmetric(horizontal: 1),
-                          decoration: BoxDecoration(
-                            color: scheme.primary,
-                            shape: BoxShape.circle,
-                          ),
-                        )
-                      else
-                        for (final occurrence in occurrences.take(3))
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '${date.day}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: selected || isToday
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  if (occurrences.isEmpty && !isToday)
+                    const SizedBox(height: 8)
+                  else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (isToday && occurrences.isEmpty)
                           Container(
                             width: 6,
                             height: 6,
                             margin: const EdgeInsets.symmetric(horizontal: 1),
                             decoration: BoxDecoration(
-                              color: occurrence.event.isCompleted
-                                  ? scheme.outlineVariant
-                                  : scheme.primary,
+                              color: scheme.primary,
                               shape: BoxShape.circle,
                             ),
-                          ),
-                      if (occurrences.length > 3)
-                        Text(
-                          '+${occurrences.length - 3}',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: scheme.onSurfaceVariant,
-                                fontSize: 9,
+                          )
+                        else
+                          for (final occurrence in occurrences.take(3))
+                            Container(
+                              width: 6,
+                              height: 6,
+                              margin: const EdgeInsets.symmetric(horizontal: 1),
+                              decoration: BoxDecoration(
+                                color: occurrence.event.isCompleted
+                                    ? scheme.outlineVariant
+                                    : scheme.primary,
+                                shape: BoxShape.circle,
                               ),
-                        ),
-                    ],
-                  ),
-              ],
+                            ),
+                        if (occurrences.length > 3)
+                          Text(
+                            '+${occurrences.length - 3}',
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                  fontSize: 9,
+                                ),
+                          ),
+                      ],
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -675,49 +815,51 @@ class _EventRow extends StatelessWidget {
       child: Opacity(
         key: ValueKey('calendar-event-${event.id}'),
         opacity: event.isCompleted ? 0.5 : 1,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(14),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 9),
-              child: Row(
-                children: [
-                  if (event.icon.isNotEmpty) ...[
-                    Text(event.icon, style: const TextStyle(fontSize: 17)),
-                    const SizedBox(width: 9),
-                  ],
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          event.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          event.isCompleted
-                              ? '已完成'
-                              : '${event.statusLabel} ${event.displayDays} 天',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: scheme.onSurfaceVariant),
-                        ),
-                      ],
+        child: GlassPressable(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                child: Row(
+                  children: [
+                    if (event.icon.isNotEmpty) ...[
+                      Text(event.icon, style: const TextStyle(fontSize: 17)),
+                      const SizedBox(width: 9),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            event.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            event.isCompleted
+                                ? '已完成'
+                                : '${event.statusLabel} ${event.displayDays} 天',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: scheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: scheme.onSurfaceVariant,
-                    size: 20,
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: scheme.onSurfaceVariant,
+                      size: 20,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -754,6 +896,7 @@ class _MiniMonthCard extends StatelessWidget {
         radius: 16,
         padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
         onTap: onTap,
+        haptic: GlassHaptic.selectionClick,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
