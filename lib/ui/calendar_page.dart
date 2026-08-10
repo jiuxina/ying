@@ -154,7 +154,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     final leading = firstDay.weekday - 1;
     final cellCount = ((leading + daysInMonth + 6) ~/ 7) * 7;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
@@ -182,6 +182,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         ),
         const SizedBox(height: 10),
         GlassSurface(
+          key: const ValueKey('calendar-month-grid'),
           radius: 20,
           padding: const EdgeInsets.fromLTRB(6, 12, 6, 12),
           child: Column(
@@ -622,6 +623,7 @@ class _DayEventsCard extends StatelessWidget {
         .where((occurrence) => _sameDay(occurrence.date, date))
         .toList();
     return GlassSurface(
+      key: const ValueKey('calendar-day-events'),
       radius: 20,
       padding: const EdgeInsets.all(16),
       child: Column(

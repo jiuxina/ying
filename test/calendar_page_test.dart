@@ -285,6 +285,30 @@ void main() {
       expect(after, before);
     });
 
+    testWidgets('无事件日期卡片与月历卡片等宽', (tester) async {
+      tester.view.physicalSize = const Size(420, 2200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final now = DateTime.now();
+      final target = currentMonthDay(now);
+      final controller = await readyController([]);
+      await tester.pumpWidget(buildCalendar(controller));
+      await tester.pump();
+
+      await tester.tap(
+        find.byKey(
+          ValueKey('calendar-day-${target.year}-${target.month}-${target.day}'),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('这一天没有事件'), findsOneWidget);
+      final monthCard = find.byKey(const ValueKey('calendar-month-grid'));
+      final dayCard = find.byKey(const ValueKey('calendar-day-events'));
+      expect(tester.getTopLeft(dayCard).dx, tester.getTopLeft(monthCard).dx);
+      expect(tester.getSize(dayCard).width, tester.getSize(monthCard).width);
+    });
+
     testWidgets('年视图仅在非当前年份显示今天按钮', (tester) async {
       phoneViewport(tester);
       final now = DateTime.now();
