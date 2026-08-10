@@ -228,7 +228,7 @@ debug APK 已安装到 MuMu 模拟器并启动，日历 Tab、右上角设置入
 
 - [x] 数据协议升级 v9：新增 `widget_text_font_family`、`widget_digit_font_path`、`widget_text_font_path`，旧配置缺省回退默认值（2026-08-10）
 - [x] 数字 / 文字字体独立选择：设置页新增「字体」分区，内置预设与在线候选免费，本地导入为赞助功能（2026-08-10）
-- [x] 在线字体库：`fonts/fonts.json` 托管在公开发布仓库 `jiuxina/ying-321` 的 main 分支，候选包含 DSEG7、Orbitron、霞鹜文楷 Lite 与得意黑，支持 sha256 校验与一键下载应用（2026-08-10）
+- [x] 在线字体库：`fonts/fonts.json` 托管在公开发布仓库 `jiuxina/ying-321` 的 master 分支，候选包含 DSEG7、Orbitron、霞鹜文楷 Lite 与得意黑，支持 sha256 校验与一键下载应用（2026-08-10）
 - [x] 本地字体导入：系统文件选择器导入 TTF / OTF，选择用途后注册并应用（2026-08-10）
 - [x] 应用内预览：`FontLoader` 按文件哈希注册自定义字体，数字与文字分区同步展示（2026-08-10）
 - [x] Android 位图渲染：RemoteViews 不支持运行时 Typeface，自定义数字 / 文字改用 `Canvas` 位图渲染，缺失文件回退系统字体（2026-08-10）
@@ -240,7 +240,7 @@ debug APK 已安装到 MuMu 模拟器并启动，日历 Tab、右上角设置入
 
 - 自定义数字字体只作用于纯数字天数；「约 X 周」「🕯️」等非纯数字文本回退系统字体。
 - 精确秒 Chronometer 继续使用系统字体，避免每秒重新生成位图。
-- 字体文件保存在应用文档目录 `fonts/`，清单与文件均通过公开仓库 `jiuxina/ying-321` 的 GitHub raw 发布；本地模拟器验证可用 `FONT_MANIFEST_URL` 覆盖。
+- 字体文件保存在应用文档目录 `fonts/`，清单与文件均通过公开仓库 `jiuxina/ying-321` 的 GitHub raw（master 分支）发布；本地模拟器验证可用 `FONT_MANIFEST_URL` 覆盖。
 - 候选字体均为 OFL 等开源许可，仓库内附许可证文本。
 
 ## 全局注意事项

@@ -11,7 +11,7 @@ import 'package:ying/services/font_library_service.dart';
 void main() {
   final sampleCatalogJson = <String, Object?>{
     'version': 1,
-    'baseUrl': 'https://raw.githubusercontent.com/jiuxina/ying-321/main/fonts/files',
+    'baseUrl': 'https://raw.githubusercontent.com/jiuxina/ying-321/master/fonts/files',
     'fonts': [
       {
         'id': 'dseg7',
@@ -35,7 +35,7 @@ void main() {
     final uri = fontFileUri(catalog, catalog.fonts.single);
     expect(
       uri.toString(),
-      'https://raw.githubusercontent.com/jiuxina/ying-321/main/fonts/files/'
+      'https://raw.githubusercontent.com/jiuxina/ying-321/master/fonts/files/'
           'DSEG7-Classic-Bold.ttf',
     );
   });
