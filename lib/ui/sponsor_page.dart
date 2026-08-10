@@ -283,6 +283,6 @@ const _sponsorBenefits = <(IconData, String, String)>[
   (Icons.wallpaper_rounded, '壁纸取色', '小部件跟随壁纸配色'),
   (Icons.format_quote_outlined, '每日一句', '小部件每日轮播一句话'),
   (Icons.visibility_off_outlined, '神秘模式', '隐藏数字与日期'),
-  (Icons.text_fields_rounded, '数字字体', '切换数字字体'),
+  (Icons.folder_open_outlined, '本地字体导入', '导入 TTF/OTF 应用到小部件'),
   (Icons.border_color_outlined, '文字描边', '文字描边效果'),
 ];

@@ -35,6 +35,9 @@ class StorageService {
   static const _widgetUrgentHighlightKey = 'widget_urgent_highlight';
   static const _widgetListModeKey = 'widget_list_mode';
   static const _widgetFontFamilyKey = 'widget_font_family';
+  static const _widgetTextFontFamilyKey = 'widget_text_font_family';
+  static const _widgetDigitFontPathKey = 'widget_digit_font_path';
+  static const _widgetTextFontPathKey = 'widget_text_font_path';
   static const _widgetTextOutlineKey = 'widget_text_outline';
   static const _widgetWallpaperColorKey = 'widget_wallpaper_color';
   static const _widgetWallpaperDarkColorKey = 'widget_wallpaper_dark_color';
@@ -100,6 +103,13 @@ class StorageService {
       ),
       'widgetListMode': preferences.getBool(_widgetListModeKey),
       'widgetFontFamily': preferences.getString(_widgetFontFamilyKey),
+      'widgetTextFontFamily': preferences.getString(
+        _widgetTextFontFamilyKey,
+      ),
+      'widgetDigitFontPath': preferences.getString(
+        _widgetDigitFontPathKey,
+      ),
+      'widgetTextFontPath': preferences.getString(_widgetTextFontPathKey),
       'widgetTextOutline': preferences.getBool(_widgetTextOutlineKey),
       'widgetWallpaperColor': preferences.getInt(_widgetWallpaperColorKey),
       'widgetWallpaperDarkColor': preferences.getInt(
@@ -161,6 +171,18 @@ class StorageService {
       ),
       preferences.setBool(_widgetListModeKey, settings.widgetListMode),
       preferences.setString(_widgetFontFamilyKey, settings.widgetFontFamily),
+      preferences.setString(
+        _widgetTextFontFamilyKey,
+        settings.widgetTextFontFamily,
+      ),
+      preferences.setString(
+        _widgetDigitFontPathKey,
+        settings.widgetDigitFontPath,
+      ),
+      preferences.setString(
+        _widgetTextFontPathKey,
+        settings.widgetTextFontPath,
+      ),
       preferences.setBool(_widgetTextOutlineKey, settings.widgetTextOutline),
       preferences.setInt(_widgetWallpaperColorKey, settings.widgetWallpaperColor),
       preferences.setInt(

@@ -14,6 +14,7 @@ dependencies:
   flutter_local_notifications: 19.5.0
   flutter_riverpod: ^2.6.1
   flutter_timezone: ^4.1.1
+  file_picker: ^10.3.10
   home_widget: 0.8.0
   http: ^1.6.0
   image: ^4.8.0

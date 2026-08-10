@@ -44,6 +44,9 @@ class AppSettings {
     this.widgetUrgentHighlight = false,
     this.widgetListMode = false,
     this.widgetFontFamily = 'system',
+    this.widgetTextFontFamily = 'system',
+    this.widgetDigitFontPath = '',
+    this.widgetTextFontPath = '',
     this.widgetTextOutline = false,
     this.widgetWallpaperColor = -1,
     this.widgetWallpaperDarkColor = -1,
@@ -73,6 +76,9 @@ class AppSettings {
   final bool widgetUrgentHighlight;
   final bool widgetListMode;
   final String widgetFontFamily;
+  final String widgetTextFontFamily;
+  final String widgetDigitFontPath;
+  final String widgetTextFontPath;
   final bool widgetTextOutline;
   final int widgetWallpaperColor;
   final int widgetWallpaperDarkColor;
@@ -102,6 +108,9 @@ class AppSettings {
     bool? widgetUrgentHighlight,
     bool? widgetListMode,
     String? widgetFontFamily,
+    String? widgetTextFontFamily,
+    String? widgetDigitFontPath,
+    String? widgetTextFontPath,
     bool? widgetTextOutline,
     int? widgetWallpaperColor,
     int? widgetWallpaperDarkColor,
@@ -133,6 +142,9 @@ class AppSettings {
           widgetUrgentHighlight ?? this.widgetUrgentHighlight,
       widgetListMode: widgetListMode ?? this.widgetListMode,
       widgetFontFamily: widgetFontFamily ?? this.widgetFontFamily,
+      widgetTextFontFamily: widgetTextFontFamily ?? this.widgetTextFontFamily,
+      widgetDigitFontPath: widgetDigitFontPath ?? this.widgetDigitFontPath,
+      widgetTextFontPath: widgetTextFontPath ?? this.widgetTextFontPath,
       widgetTextOutline: widgetTextOutline ?? this.widgetTextOutline,
       widgetWallpaperColor: widgetWallpaperColor ?? this.widgetWallpaperColor,
       widgetWallpaperDarkColor:
@@ -166,6 +178,9 @@ class AppSettings {
     'widgetUrgentHighlight': widgetUrgentHighlight,
     'widgetListMode': widgetListMode,
     'widgetFontFamily': widgetFontFamily,
+    'widgetTextFontFamily': widgetTextFontFamily,
+    'widgetDigitFontPath': widgetDigitFontPath,
+    'widgetTextFontPath': widgetTextFontPath,
     'widgetTextOutline': widgetTextOutline,
     'widgetWallpaperColor': widgetWallpaperColor,
     'widgetWallpaperDarkColor': widgetWallpaperDarkColor,
@@ -206,12 +221,14 @@ class AppSettings {
       widgetUrgentHighlight: (map['widgetUrgentHighlight'] as bool?) ?? false,
       widgetListMode: (map['widgetListMode'] as bool?) ?? false,
       widgetFontFamily: (map['widgetFontFamily'] as String?) ?? 'system',
+      widgetTextFontFamily:
+          (map['widgetTextFontFamily'] as String?) ?? 'system',
+      widgetDigitFontPath: (map['widgetDigitFontPath'] as String?) ?? '',
+      widgetTextFontPath: (map['widgetTextFontPath'] as String?) ?? '',
       widgetTextOutline: (map['widgetTextOutline'] as bool?) ?? false,
       widgetWallpaperColor: (map['widgetWallpaperColor'] as int?) ?? -1,
-      widgetWallpaperDarkColor:
-          (map['widgetWallpaperDarkColor'] as int?) ?? -1,
-      widgetWallpaperTextColor:
-          (map['widgetWallpaperTextColor'] as int?) ?? -1,
+      widgetWallpaperDarkColor: (map['widgetWallpaperDarkColor'] as int?) ?? -1,
+      widgetWallpaperTextColor: (map['widgetWallpaperTextColor'] as int?) ?? -1,
       widgetElementStyles: decodeWidgetElementStyles(
         map['widgetElementStyles'],
       ),

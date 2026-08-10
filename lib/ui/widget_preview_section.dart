@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -8,8 +10,11 @@ import '../models/widget_element_style.dart';
 import '../models/widget_holiday.dart';
 import '../models/widget_render_spec.dart';
 import '../services/background_image_provider.dart';
+import '../services/font_library_service.dart';
+import '../services/font_preview_loader.dart';
 import '../services/widget_service.dart';
 import '../utils/widget_content_utils.dart';
+import '../models/widget_font.dart';
 import 'glass_ui.dart';
 
 part 'widget_preview_painters.dart';
@@ -31,11 +36,52 @@ class WidgetPreviewSection extends StatefulWidget {
 class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
   late Future<WidgetStatus> statusFuture;
   bool refreshing = false;
+  Map<String, String> _fontFamilies = const {};
 
   @override
   void initState() {
     super.initState();
     statusFuture = WidgetService.status();
+    fontLibraryRevision.addListener(_onFontLibraryChanged);
+    unawaited(_reloadFontFamilies());
+  }
+
+  @override
+  void dispose() {
+    fontLibraryRevision.removeListener(_onFontLibraryChanged);
+    super.dispose();
+  }
+
+  void _onFontLibraryChanged() {
+    unawaited(_reloadFontFamilies());
+  }
+
+  Future<void> _reloadFontFamilies() async {
+    List<WidgetFontAsset> assets;
+    try {
+      assets = await FontLibraryService.loadRegistry();
+    } catch (_) {
+      assets = const [];
+    }
+    final settings = widget.settings;
+    final families = <String, String>{};
+    for (final selection in [
+      settings.widgetFontFamily,
+      settings.widgetTextFontFamily,
+    ]) {
+      final asset = FontLibraryService.findAssetBySelection(
+        assets,
+        selection,
+      );
+      if (asset == null) continue;
+      try {
+        await FontPreviewLoader.ensureLoaded(asset);
+        families[selection] = widgetFontFamilyForAsset(asset);
+      } catch (_) {
+        // 字体加载失败时预览继续使用系统字体。
+      }
+    }
+    if (mounted) setState(() => _fontFamilies = families);
   }
 
   void _reloadStatus() {
@@ -95,6 +141,7 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
                       compact: true,
                       texts: renderSpec.texts,
                       render: renderSpec.compact,
+                      fontFamilies: _fontFamilies,
                     )
                   : _WidgetPreview(
                       event: event,
@@ -103,6 +150,7 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
                       compact: true,
                       texts: renderSpec.texts,
                       render: renderSpec.compact,
+                      fontFamilies: _fontFamilies,
                     );
               final mediumPreview = widget.settings.widgetListMode
                   ? _WidgetListPreview(
@@ -112,6 +160,7 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
                       compact: false,
                       texts: renderSpec.texts,
                       render: renderSpec.full,
+                      fontFamilies: _fontFamilies,
                     )
                   : _WidgetPreview(
                       event: event,
@@ -120,6 +169,7 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
                       compact: false,
                       texts: renderSpec.texts,
                       render: renderSpec.full,
+                      fontFamilies: _fontFamilies,
                     );
               return vertical
                   ? Column(
@@ -263,6 +313,7 @@ class _WidgetPreview extends StatelessWidget {
     required this.compact,
     required this.texts,
     required this.render,
+    required this.fontFamilies,
   });
 
   final CountdownEvent? event;
@@ -271,6 +322,7 @@ class _WidgetPreview extends StatelessWidget {
   final bool compact;
   final WidgetRenderTexts texts;
   final WidgetRenderBranch render;
+  final Map<String, String> fontFamilies;
 
   @override
   Widget build(BuildContext context) {
@@ -321,6 +373,7 @@ class _WidgetPreview extends StatelessWidget {
       holiday: holiday,
       shadow: shadow,
       scale: scale,
+      fontFamilies: fontFamilies,
     );
     final verticalAlignment = switch (settings.widgetVerticalAlign) {
       WidgetVerticalAlign.top => Alignment.topLeft,
@@ -416,6 +469,7 @@ class _PreviewBody extends StatelessWidget {
     required this.holiday,
     required this.shadow,
     required this.scale,
+    required this.fontFamilies,
   });
 
   final CountdownEvent? event;
@@ -427,6 +481,7 @@ class _PreviewBody extends StatelessWidget {
   final WidgetHoliday holiday;
   final List<Shadow>? shadow;
   final double scale;
+  final Map<String, String> fontFamilies;
 
   WidgetElementRender _element(String id) => render.element(id);
 
@@ -464,6 +519,11 @@ class _PreviewBody extends StatelessWidget {
     final prevElement = _element('prevButton');
     final nextElement = _element('nextButton');
     final daysAlign = daysElement.align;
+    final digitFamily = fontFamilies[settings.widgetFontFamily] ??
+        (settings.widgetStyle == WidgetStyle.pixelHealth
+            ? 'monospace'
+            : widgetFontName(settings.widgetFontFamily));
+    final textFamily = fontFamilies[settings.widgetTextFontFamily] ?? '';
 
     if (current == null) {
       final headerRow = Row(
@@ -475,6 +535,7 @@ class _PreviewBody extends StatelessWidget {
                 style: TextStyle(
                   color: Color(categoryElement.color),
                   shadows: shadow,
+                  fontFamily: textFamily,
                 ),
               ),
             )
@@ -511,6 +572,7 @@ class _PreviewBody extends StatelessWidget {
                 fontSize: (compact ? 15 : 18) * scale * titleElement.size,
                 fontWeight: FontWeight.w700,
                 shadows: shadow,
+                fontFamily: textFamily,
               ),
             ),
           if (daysElement.visible || unitElement.visible) ...[
@@ -529,6 +591,7 @@ class _PreviewBody extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                       height: 0.95,
                       shadows: shadow,
+                      fontFamily: digitFamily,
                     ),
                   ),
                 if (unitElement.visible) ...[
@@ -541,6 +604,7 @@ class _PreviewBody extends StatelessWidget {
                         color: Color(unitElement.color),
                         fontSize: 14 * scale * unitElement.size,
                         shadows: shadow,
+                        fontFamily: textFamily,
                       ),
                     ),
                   ),
@@ -580,9 +644,6 @@ class _PreviewBody extends StatelessWidget {
         : urgentActive
         ? Color(widgetUrgentArgb(urgentLevel))
         : null;
-    final fontFamily = settings.widgetStyle == WidgetStyle.pixelHealth
-        ? 'monospace'
-        : widgetFontName(settings.widgetFontFamily);
     final italic = settings.widgetFontFamily == 'hand' &&
         settings.widgetStyle != WidgetStyle.pixelHealth;
     final dateInfoText = settings.widgetShowLunarWeek
@@ -644,6 +705,7 @@ class _PreviewBody extends StatelessWidget {
                     style: TextStyle(
                       color: Color(categoryElement.color),
                       shadows: shadow,
+                      fontFamily: textFamily,
                     ),
                   ),
                 )
@@ -690,6 +752,7 @@ class _PreviewBody extends StatelessWidget {
                     fontSize: (compact ? 15 : 18) * scale * titleElement.size,
                     fontWeight: FontWeight.w700,
                     shadows: shadow,
+                    fontFamily: textFamily,
                   ),
                 ),
               ),
@@ -726,7 +789,7 @@ class _PreviewBody extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                   height: 0.95,
                   shadows: glowShadows,
-                  fontFamily: fontFamily,
+                  fontFamily: digitFamily,
                   fontStyle: italic ? FontStyle.italic : null,
                 ),
               ),
@@ -746,6 +809,7 @@ class _PreviewBody extends StatelessWidget {
                     ),
                     fontSize: 14 * scale * unitElement.size,
                     shadows: glowShadows,
+                    fontFamily: textFamily,
                   ),
                 ),
               ),
@@ -761,7 +825,7 @@ class _PreviewBody extends StatelessWidget {
               style: TextStyle(
                 color: Color(preciseElement.color),
                 fontSize: 14 * scale * preciseElement.size,
-                fontFamily: fontFamily,
+                fontFamily: textFamily,
                 shadows: shadow,
               ),
             ),
@@ -778,6 +842,7 @@ class _PreviewBody extends StatelessWidget {
                 color: Color(dateInfoElement.color),
                 fontSize: 12 * scale * dateInfoElement.size,
                 shadows: shadow,
+                fontFamily: textFamily,
               ),
             ),
           ),
@@ -794,6 +859,7 @@ class _PreviewBody extends StatelessWidget {
                 fontSize: 14 * scale * noteElement.size,
                 fontStyle: quote.isNotEmpty ? FontStyle.italic : null,
                 shadows: shadow,
+                fontFamily: textFamily,
               ),
             ),
           ),
@@ -816,6 +882,7 @@ class _WidgetListPreview extends StatelessWidget {
     required this.compact,
     required this.texts,
     required this.render,
+    required this.fontFamilies,
   });
 
   final List<CountdownEvent> events;
@@ -824,6 +891,7 @@ class _WidgetListPreview extends StatelessWidget {
   final bool compact;
   final WidgetRenderTexts texts;
   final WidgetRenderBranch render;
+  final Map<String, String> fontFamilies;
 
   @override
   Widget build(BuildContext context) {
@@ -839,6 +907,7 @@ class _WidgetListPreview extends StatelessWidget {
         : events.take(compact ? 2 : 4).toList();
     final listHeaderVisible = listHeader.visible;
     final emptyVisible = empty.visible && rows.isEmpty;
+    final textFamily = fontFamilies[settings.widgetTextFontFamily] ?? '';
     return Semantics(
       label: compact ? '小号事件列表预览' : '中号事件列表预览',
       child: Container(
@@ -899,6 +968,7 @@ class _WidgetListPreview extends StatelessWidget {
                               color: Color(listHeader.color),
                               fontSize: 13 * scale * listHeader.size,
                               fontWeight: FontWeight.w700,
+                              fontFamily: textFamily,
                             ),
                           ),
                         ),
@@ -917,6 +987,7 @@ class _WidgetListPreview extends StatelessWidget {
                                       color: Color(empty.color),
                                       fontSize: 15 * scale * empty.size,
                                       fontWeight: FontWeight.w700,
+                                      fontFamily: textFamily,
                                     ),
                                   )
                                 : const SizedBox.shrink(),
@@ -938,6 +1009,7 @@ class _WidgetListPreview extends StatelessWidget {
                                     event: rows[index],
                                     settings: settings,
                                     render: render,
+                                    fontFamilies: fontFamilies,
                                   ),
                                 ),
                               ],
@@ -959,11 +1031,13 @@ class _ListRow extends StatelessWidget {
     required this.event,
     required this.settings,
     required this.render,
+    required this.fontFamilies,
   });
 
   final CountdownEvent event;
   final AppSettings settings;
   final WidgetRenderBranch render;
+  final Map<String, String> fontFamilies;
 
   @override
   Widget build(BuildContext context) {
@@ -981,7 +1055,9 @@ class _ListRow extends StatelessWidget {
     final Color? displayMainColor = urgentActive
         ? Color(widgetUrgentArgb(urgentLevel))
         : null;
-    final fontFamily = widgetFontName(settings.widgetFontFamily);
+    final digitFamily = fontFamilies[settings.widgetFontFamily] ??
+        widgetFontName(settings.widgetFontFamily);
+    final textFamily = fontFamilies[settings.widgetTextFontFamily] ?? '';
     final scale = settings.widgetFontScale;
     final icon = render.element('icon');
     final rowTitle = render.element('rowTitle');
@@ -1033,6 +1109,7 @@ class _ListRow extends StatelessWidget {
                     color: Color(rowTitle.color),
                     fontSize: 14 * scale * rowTitle.size,
                     fontWeight: FontWeight.w700,
+                    fontFamily: textFamily,
                   ),
                 ),
               if (rowSubtitleVisible) ...[
@@ -1045,6 +1122,7 @@ class _ListRow extends StatelessWidget {
                   style: TextStyle(
                     color: Color(rowSubtitle.color),
                     fontSize: 11 * scale * rowSubtitle.size,
+                    fontFamily: textFamily,
                   ),
                 ),
               ],
@@ -1059,7 +1137,7 @@ class _ListRow extends StatelessWidget {
               color: color('rowDays', override: displayMainColor),
               fontSize: 18 * scale * rowDays.size,
               fontWeight: FontWeight.w800,
-              fontFamily: fontFamily,
+              fontFamily: digitFamily,
             ),
           ),
         if (rowUnitVisible && displayUnitText.isNotEmpty) ...[
@@ -1075,6 +1153,7 @@ class _ListRow extends StatelessWidget {
                     : null,
               ),
               fontSize: 11 * scale * rowUnit.size,
+              fontFamily: textFamily,
             ),
           ),
         ],

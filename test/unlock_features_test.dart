@@ -24,6 +24,9 @@ void main() {
       widgetMysteryMode: true,
       widgetQuoteMode: true,
       widgetFontFamily: 'mono',
+      widgetTextFontFamily: 'catalog:lxgw',
+      widgetDigitFontPath: '/tmp/digit.ttf',
+      widgetTextFontPath: '/tmp/text.ttf',
       widgetTextOutline: true,
       widgetWallpaperColor: 0xFF112233,
       widgetWallpaperDarkColor: 0xFF223344,
@@ -46,7 +49,10 @@ void main() {
     expect(sanitized.widgetStyle, WidgetStyle.card);
     expect(sanitized.widgetMysteryMode, isFalse);
     expect(sanitized.widgetQuoteMode, isFalse);
-    expect(sanitized.widgetFontFamily, 'system');
+    expect(sanitized.widgetFontFamily, 'mono');
+    expect(sanitized.widgetTextFontFamily, 'catalog:lxgw');
+    expect(sanitized.widgetDigitFontPath, '/tmp/digit.ttf');
+    expect(sanitized.widgetTextFontPath, '/tmp/text.ttf');
     expect(sanitized.widgetTextOutline, isFalse);
     expect(sanitized.widgetWallpaperColor, -1);
     expect(sanitized.widgetWallpaperDarkColor, -1);
@@ -76,6 +82,20 @@ void main() {
       WidgetAlign.center,
     );
     expect(sanitized.widgetVerticalAlign, WidgetVerticalAlign.bottom);
+  });
+
+  test('resets only local imported fonts when locked', () {
+    final locked = const AppSettings(
+      widgetFontFamily: 'local:imported-1',
+      widgetTextFontFamily: 'local:imported-2',
+      widgetDigitFontPath: '/tmp/local-digit.ttf',
+      widgetTextFontPath: '/tmp/local-text.ttf',
+    );
+    final sanitized = sanitizeSponsorSettings(locked);
+    expect(sanitized.widgetFontFamily, 'system');
+    expect(sanitized.widgetTextFontFamily, 'system');
+    expect(sanitized.widgetDigitFontPath, '');
+    expect(sanitized.widgetTextFontPath, '');
   });
 
   test('keeps free settings untouched when locked', () {

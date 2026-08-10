@@ -8,7 +8,7 @@ import 'widget_holiday.dart';
 import '../utils/widget_element_style_utils.dart';
 
 /// 渲染协议版本；每次变更元素解析规则或 JSON 结构时递增。
-const widgetRenderProtocolVersion = 8;
+const widgetRenderProtocolVersion = 9;
 
 /// 小部件元素清单，顺序即协议输出顺序。
 const widgetRenderElementIds = <String>[

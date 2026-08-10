@@ -1,4 +1,5 @@
 import 'app_settings.dart';
+import 'widget_font.dart';
 import 'widget_element_style.dart';
 
 /// 需要赞助解锁的小部件样式。
@@ -23,8 +24,17 @@ AppSettings sanitizeSponsorSettings(AppSettings settings) {
   if (result.widgetQuoteMode) {
     result = result.copyWith(widgetQuoteMode: false);
   }
-  if (result.widgetFontFamily != 'system') {
-    result = result.copyWith(widgetFontFamily: 'system');
+  if (isLocalFontSelection(result.widgetFontFamily)) {
+    result = result.copyWith(
+      widgetFontFamily: 'system',
+      widgetDigitFontPath: '',
+    );
+  }
+  if (isLocalFontSelection(result.widgetTextFontFamily)) {
+    result = result.copyWith(
+      widgetTextFontFamily: 'system',
+      widgetTextFontPath: '',
+    );
   }
   if (result.widgetTextOutline) {
     result = result.copyWith(widgetTextOutline: false);

@@ -556,6 +556,99 @@ class _SettingsActionTile extends StatelessWidget {
   }
 }
 
+class _FontSettingsSection extends StatelessWidget {
+  const _FontSettingsSection({
+    required this.settings,
+    required this.installed,
+    required this.onChanged,
+    required this.onOpenLibrary,
+  });
+
+  final AppSettings settings;
+  final List<WidgetFontAsset> installed;
+  final ValueChanged<AppSettings> onChanged;
+  final VoidCallback onOpenLibrary;
+
+  List<(String, String)> _digitOptions() => [
+    ...widgetFontOptions,
+    for (final asset in installed.where((value) => value.kind.coversDigits))
+      (asset.selection, asset.name),
+  ];
+
+  List<(String, String)> _textOptions() => [
+    ...widgetTextFontOptions,
+    for (final asset in installed.where((value) => value.kind.coversText))
+      (asset.selection, asset.name),
+  ];
+
+  WidgetFontAsset? _assetFor(String selection) =>
+      FontLibraryService.findAssetBySelection(installed, selection);
+
+  AppSettings _withSelection({
+    required bool digit,
+    required String selection,
+  }) {
+    final asset = _assetFor(selection);
+    return digit
+        ? settings.copyWith(
+            widgetFontFamily: selection,
+            widgetDigitFontPath: asset?.filePath ?? '',
+          )
+        : settings.copyWith(
+            widgetTextFontFamily: selection,
+            widgetTextFontPath: asset?.filePath ?? '',
+          );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final digitOptions = _digitOptions();
+    final textOptions = _textOptions();
+    final digitLabel = digitOptions
+        .firstWhere(
+          (option) => option.$1 == settings.widgetFontFamily,
+          orElse: () => digitOptions.first,
+        )
+        .$2;
+    final textLabel = textOptions
+        .firstWhere(
+          (option) => option.$1 == settings.widgetTextFontFamily,
+          orElse: () => textOptions.first,
+        )
+        .$2;
+    return Column(
+      children: [
+        _ChoiceSetting(
+          icon: Icons.pin_outlined,
+          title: '数字字体',
+          subtitle: '天数等数字区域',
+          options: digitOptions,
+          selected: (settings.widgetFontFamily, digitLabel),
+          onSelected: (option) =>
+              onChanged(_withSelection(digit: true, selection: option.$1)),
+        ),
+        const _InsetDivider(),
+        _ChoiceSetting(
+          icon: Icons.text_fields_rounded,
+          title: '文字字体',
+          subtitle: '标题、单位与备注等文字区域',
+          options: textOptions,
+          selected: (settings.widgetTextFontFamily, textLabel),
+          onSelected: (option) =>
+              onChanged(_withSelection(digit: false, selection: option.$1)),
+        ),
+        const _InsetDivider(),
+        _SettingsActionTile(
+          icon: Icons.font_download_outlined,
+          title: '字体库',
+          subtitle: '下载并应用 · 导入本地字体',
+          onTap: onOpenLibrary,
+        ),
+      ],
+    );
+  }
+}
+
 class _CategoryCard extends StatelessWidget {
   const _CategoryCard({required this.category, required this.onTap});
 

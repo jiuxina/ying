@@ -22,6 +22,9 @@ void main() {
       expect(legacy.widgetUrgentHighlight, isFalse);
       expect(legacy.widgetListMode, isFalse);
       expect(legacy.widgetFontFamily, 'system');
+      expect(legacy.widgetTextFontFamily, 'system');
+      expect(legacy.widgetDigitFontPath, '');
+      expect(legacy.widgetTextFontPath, '');
       expect(legacy.widgetTextOutline, isFalse);
       expect(legacy.widgetWallpaperColor, -1);
       expect(legacy.widgetWallpaperDarkColor, -1);
@@ -64,6 +67,9 @@ void main() {
         widgetUrgentHighlight: true,
         widgetListMode: true,
         widgetFontFamily: 'mono',
+        widgetTextFontFamily: 'catalog:lxgw',
+        widgetDigitFontPath: '/tmp/digit.ttf',
+        widgetTextFontPath: '/tmp/text.ttf',
         widgetTextOutline: true,
         widgetWallpaperColor: 0xFF102030,
         widgetWallpaperDarkColor: 0xFF0A0A0A,
@@ -95,6 +101,9 @@ void main() {
       expect(restored.widgetUrgentHighlight, isTrue);
       expect(restored.widgetListMode, isTrue);
       expect(restored.widgetFontFamily, 'mono');
+      expect(restored.widgetTextFontFamily, 'catalog:lxgw');
+      expect(restored.widgetDigitFontPath, '/tmp/digit.ttf');
+      expect(restored.widgetTextFontPath, '/tmp/text.ttf');
       expect(restored.widgetTextOutline, isTrue);
       expect(restored.widgetWallpaperColor, 0xFF102030);
       expect(restored.widgetWallpaperDarkColor, 0xFF0A0A0A);
@@ -212,7 +221,7 @@ void main() {
 
     test('preference values include protocol version and every key', () {
       final values = widgetPreferenceValues(const AppSettings());
-      expect(values['widget_protocol_version'], 8);
+      expect(values['widget_protocol_version'], 9);
       expect(values['widget_color'], 'ff0f766e');
       expect(
         values.keys,
@@ -234,6 +243,9 @@ void main() {
           'widget_urgent_highlight',
           'widget_list_mode',
           'widget_font_family',
+          'widget_text_font_family',
+          'widget_digit_font_path',
+          'widget_text_font_path',
           'widget_text_outline',
           'widget_wallpaper_color',
           'widget_wallpaper_dark_color',
@@ -267,6 +279,9 @@ void main() {
           widgetMysteryMode: true,
           widgetUrgentHighlight: true,
           widgetWallpaperColor: 0xFF001122,
+          widgetTextFontFamily: 'catalog:orbitron',
+          widgetDigitFontPath: '/tmp/digit.ttf',
+          widgetTextFontPath: '/tmp/text.ttf',
         ),
       );
       expect(values['widget_color'], 'ff112233');
@@ -278,6 +293,9 @@ void main() {
       expect(values['widget_mystery_mode'], isTrue);
       expect(values['widget_urgent_highlight'], isTrue);
       expect(values['widget_wallpaper_color'], 0xFF001122);
+      expect(values['widget_text_font_family'], 'catalog:orbitron');
+      expect(values['widget_digit_font_path'], '/tmp/digit.ttf');
+      expect(values['widget_text_font_path'], '/tmp/text.ttf');
     });
   });
 }

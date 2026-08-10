@@ -11,9 +11,11 @@ import 'package:ying/models/app_settings.dart';
 import 'package:ying/models/countdown_event.dart';
 import 'package:ying/models/event_sort_mode.dart';
 import 'package:ying/models/unlock_state.dart';
+import 'package:ying/models/widget_font.dart';
 import 'package:ying/models/widget_element_style.dart';
 import 'package:ying/services/storage_service.dart';
 import 'package:ying/state/app_controller.dart';
+import 'package:ying/state/font_library_controller.dart';
 import 'package:ying/state/unlock_controller.dart';
 import 'package:ying/ui/app_theme.dart';
 import 'package:ying/ui/event_card.dart';
@@ -21,6 +23,7 @@ import 'package:ying/ui/event_detail_page.dart';
 import 'package:ying/ui/event_filter_bar.dart';
 import 'package:ying/ui/event_form_sheet.dart';
 import 'package:ying/ui/glass_ui.dart';
+import 'package:ying/ui/font_library_page.dart';
 import 'package:ying/ui/home_page.dart';
 import 'package:ying/ui/settings_page.dart';
 import 'package:ying/ui/widget_element_presets.dart';
@@ -443,10 +446,15 @@ void main() {
     Widget buildSettingsPage(
       AppController controller, {
       SettingsCategory category = SettingsCategory.appearance,
+      List<WidgetFontAsset> installedFonts = const [],
     }) {
+      final fontLibrary = FontLibraryController()
+        ..installed = installedFonts
+        ..loading = false;
       return ProviderScope(
         overrides: [
           appControllerProvider.overrideWith((ref) => controller),
+          fontLibraryProvider.overrideWith((ref) => fontLibrary),
           unlockControllerProvider.overrideWith(
             (ref) => UnlockController(
               StorageService(),
@@ -754,6 +762,155 @@ void main() {
       expect(controller.state.settings.widgetFontFamily, 'mono');
       expect(saved.last.widgetFontFamily, 'mono');
       handle.dispose();
+    });
+
+    testWidgets('数字与文字字体可分开选择并持久化', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      final asset = WidgetFontAsset(
+        id: 'test-font',
+        name: '测试字体',
+        kind: WidgetFontKind.both,
+        source: WidgetFontSource.catalog,
+        filePath: '/tmp/test.ttf',
+        bytes: 1,
+        sha256: '0' * 64,
+      );
+      await tester.pumpWidget(
+        buildSettingsPage(
+          controller,
+          category: SettingsCategory.widget,
+          installedFonts: [asset],
+        ),
+      );
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(
+        find.bySemanticsLabel('文字字体：测试字体'),
+        300,
+      );
+      await tester.ensureVisible(find.bySemanticsLabel('文字字体：测试字体'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.bySemanticsLabel('文字字体：测试字体'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        controller.state.settings.widgetTextFontFamily,
+        'catalog:test-font',
+      );
+      expect(controller.state.settings.widgetTextFontPath, '/tmp/test.ttf');
+      expect(saved.last.widgetTextFontFamily, 'catalog:test-font');
+
+      await tester.scrollUntilVisible(
+        find.bySemanticsLabel('数字字体：测试字体'),
+        300,
+      );
+      await tester.ensureVisible(find.bySemanticsLabel('数字字体：测试字体'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.bySemanticsLabel('数字字体：测试字体'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        controller.state.settings.widgetFontFamily,
+        'catalog:test-font',
+      );
+      expect(controller.state.settings.widgetDigitFontPath, '/tmp/test.ttf');
+      expect(saved.last.widgetFontFamily, 'catalog:test-font');
+    });
+
+    testWidgets('字体库在线候选渲染且导入入口锁定', (tester) async {
+      phoneViewport(tester);
+      final controller = buildController(<AppSettings>[]);
+      final entry = WidgetFontCatalogEntry(
+        id: 'orbitron',
+        name: 'Orbitron',
+        kind: WidgetFontKind.digit,
+        file: 'orbitron.ttf',
+        bytes: 128,
+        sha256: '0' * 64,
+      );
+      final fontLibrary = FontLibraryController()..loading = false;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appControllerProvider.overrideWith((ref) => controller),
+            fontLibraryProvider.overrideWith((ref) => fontLibrary),
+            unlockControllerProvider.overrideWith(
+              (ref) => UnlockController(
+                StorageService(),
+                initialState: const UnlockState(),
+              ),
+            ),
+          ],
+          child: glassApp(
+            FontLibraryPage(
+              catalogFetcher: () async => WidgetFontCatalog(
+                version: 1,
+                baseUrl: 'https://example.com',
+                fonts: [entry],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Orbitron'), findsOneWidget);
+      expect(find.text('下载并应用'), findsOneWidget);
+      expect(find.text('赞助解锁后可用'), findsOneWidget);
+    });
+
+    testWidgets('字体库已安装字体可一键应用', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      final asset = WidgetFontAsset(
+        id: 'orbitron',
+        name: 'Orbitron',
+        kind: WidgetFontKind.digit,
+        source: WidgetFontSource.catalog,
+        filePath: '/tmp/orbitron.ttf',
+        bytes: 1,
+        sha256: '0' * 64,
+      );
+      final entry = WidgetFontCatalogEntry(
+        id: 'orbitron',
+        name: 'Orbitron',
+        kind: WidgetFontKind.digit,
+        file: 'orbitron.ttf',
+        bytes: 1,
+        sha256: '0' * 64,
+      );
+      final fontLibrary = FontLibraryController()
+        ..installed = [asset]
+        ..loading = false;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appControllerProvider.overrideWith((ref) => controller),
+            fontLibraryProvider.overrideWith((ref) => fontLibrary),
+            unlockControllerProvider.overrideWith(
+              (ref) => UnlockController(
+                StorageService(),
+                initialState: const UnlockState(unlocked: true),
+              ),
+            ),
+          ],
+          child: glassApp(
+            FontLibraryPage(
+              catalogFetcher: () async => WidgetFontCatalog(
+                version: 1,
+                baseUrl: 'https://example.com',
+                fonts: [entry],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('font-apply-orbitron')));
+      await tester.pumpAndSettle();
+      expect(controller.state.settings.widgetFontFamily, 'catalog:orbitron');
+      expect(saved.last.widgetFontFamily, 'catalog:orbitron');
+      expect(saved.last.widgetDigitFontPath, '/tmp/orbitron.ttf');
     });
 
     testWidgets('事件列表模式开关持久化', (tester) async {

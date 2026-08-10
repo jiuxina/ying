@@ -55,10 +55,10 @@ void main() {
       ],
       now: DateTime(2026, 8, 8),
     );
-    expect(values['widget_protocol_version'], 8);
+    expect(values['widget_protocol_version'], 9);
     final raw = values['widget_render_spec'] as String;
     final decoded = jsonDecode(raw) as Map<String, dynamic>;
-    expect(decoded['version'], 8);
+    expect(decoded['version'], 9);
     expect(decoded['eventOrder'], ['spec-evt']);
   });
 }

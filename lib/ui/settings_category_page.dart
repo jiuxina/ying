@@ -343,28 +343,21 @@ class SettingsCategoryPage extends ConsumerWidget {
                   settings.copyWith(widgetUnitText: option.$1),
                 ),
               ),
-              const _InsetDivider(),
-              _ChoiceSetting(
-                icon: Icons.pin_outlined,
-                title: '数字字体',
-                subtitle: '切换数字字体',
-                options: widgetFontOptions,
-                selected: (
-                  settings.widgetFontFamily,
-                  widgetFontOptions
-                      .firstWhere(
-                        (option) => option.$1 == settings.widgetFontFamily,
-                        orElse: () => widgetFontOptions.first,
-                      )
-                      .$2,
-                ),
-                locked: !unlocked,
-                onLockedTap: () => openSponsorPage(context),
-                onSelected: (option) => controller.updateSettings(
-                  settings.copyWith(widgetFontFamily: option.$1),
-                ),
-              ),
             ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _Section(
+          title: '字体',
+          subtitle: '数字与文字分开选择',
+          child: _FontSettingsSection(
+            settings: settings,
+            installed: ref.watch(fontLibraryProvider).installed,
+            onChanged: (next) => controller.updateSettings(next),
+            onOpenLibrary: () => Navigator.push(
+              context,
+              GlassPageRoute(builder: (context) => const FontLibraryPage()),
+            ),
           ),
         ),
         const SizedBox(height: 16),

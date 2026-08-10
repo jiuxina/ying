@@ -20,6 +20,11 @@ const widgetFontOptions = <(String, String)>[
   ('hand', '手写'),
 ];
 
+/// 文字字体内置预设；下载与导入字体由字体库动态加入。
+const widgetTextFontOptions = <(String, String)>[
+  ('system', '系统'),
+];
+
 /// 事件表单可选的 Emoji 图标，空字符串表示不显示。
 const eventIconOptions = <String>[
   '',
