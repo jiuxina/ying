@@ -32,8 +32,11 @@ class AppSettings {
     this.reduceTransparency = false,
     this.reduceMotion = false,
     this.autoCheckUpdate = true,
+    this.avatarPath = '',
     this.widgetStyle = WidgetStyle.card,
     this.widgetBackgroundPath = '',
+    this.widgetBackgroundBrightness = 1.0,
+    this.widgetBackgroundBlur = 0.0,
     this.widgetUnitText = '',
     this.widgetShowIcon = false,
     this.widgetShowProgress = false,
@@ -53,6 +56,7 @@ class AppSettings {
     this.widgetWallpaperTextColor = -1,
     this.widgetElementStyles = const {},
     this.widgetVerticalAlign = WidgetVerticalAlign.center,
+    this.widgetContentMargin = 16.0,
   });
 
   final ThemeMode themeMode;
@@ -64,8 +68,11 @@ class AppSettings {
   final bool reduceTransparency;
   final bool reduceMotion;
   final bool autoCheckUpdate;
+  final String avatarPath;
   final WidgetStyle widgetStyle;
   final String widgetBackgroundPath;
+  final double widgetBackgroundBrightness;
+  final double widgetBackgroundBlur;
   final String widgetUnitText;
   final bool widgetShowIcon;
   final bool widgetShowProgress;
@@ -85,6 +92,7 @@ class AppSettings {
   final int widgetWallpaperTextColor;
   final Map<String, WidgetElementStyle> widgetElementStyles;
   final WidgetVerticalAlign widgetVerticalAlign;
+  final double widgetContentMargin;
 
   AppSettings copyWith({
     ThemeMode? themeMode,
@@ -96,8 +104,11 @@ class AppSettings {
     bool? reduceTransparency,
     bool? reduceMotion,
     bool? autoCheckUpdate,
+    String? avatarPath,
     WidgetStyle? widgetStyle,
     String? widgetBackgroundPath,
+    double? widgetBackgroundBrightness,
+    double? widgetBackgroundBlur,
     String? widgetUnitText,
     bool? widgetShowIcon,
     bool? widgetShowProgress,
@@ -117,6 +128,7 @@ class AppSettings {
     int? widgetWallpaperTextColor,
     Map<String, WidgetElementStyle>? widgetElementStyles,
     WidgetVerticalAlign? widgetVerticalAlign,
+    double? widgetContentMargin,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -128,8 +140,12 @@ class AppSettings {
       reduceTransparency: reduceTransparency ?? this.reduceTransparency,
       reduceMotion: reduceMotion ?? this.reduceMotion,
       autoCheckUpdate: autoCheckUpdate ?? this.autoCheckUpdate,
+      avatarPath: avatarPath ?? this.avatarPath,
       widgetStyle: widgetStyle ?? this.widgetStyle,
       widgetBackgroundPath: widgetBackgroundPath ?? this.widgetBackgroundPath,
+      widgetBackgroundBrightness:
+          widgetBackgroundBrightness ?? this.widgetBackgroundBrightness,
+      widgetBackgroundBlur: widgetBackgroundBlur ?? this.widgetBackgroundBlur,
       widgetUnitText: widgetUnitText ?? this.widgetUnitText,
       widgetShowIcon: widgetShowIcon ?? this.widgetShowIcon,
       widgetShowProgress: widgetShowProgress ?? this.widgetShowProgress,
@@ -153,6 +169,7 @@ class AppSettings {
           widgetWallpaperTextColor ?? this.widgetWallpaperTextColor,
       widgetElementStyles: widgetElementStyles ?? this.widgetElementStyles,
       widgetVerticalAlign: widgetVerticalAlign ?? this.widgetVerticalAlign,
+      widgetContentMargin: widgetContentMargin ?? this.widgetContentMargin,
     );
   }
 
@@ -166,8 +183,11 @@ class AppSettings {
     'reduceTransparency': reduceTransparency,
     'reduceMotion': reduceMotion,
     'autoCheckUpdate': autoCheckUpdate,
+    'avatarPath': avatarPath,
     'widgetStyle': widgetStyle.name,
     'widgetBackgroundPath': widgetBackgroundPath,
+    'widgetBackgroundBrightness': widgetBackgroundBrightness,
+    'widgetBackgroundBlur': widgetBackgroundBlur,
     'widgetUnitText': widgetUnitText,
     'widgetShowIcon': widgetShowIcon,
     'widgetShowProgress': widgetShowProgress,
@@ -187,6 +207,7 @@ class AppSettings {
     'widgetWallpaperTextColor': widgetWallpaperTextColor,
     'widgetElementStyles': encodeWidgetElementStyles(widgetElementStyles),
     'widgetVerticalAlign': widgetVerticalAlign.name,
+    'widgetContentMargin': widgetContentMargin,
   };
 
   factory AppSettings.fromMap(Map<String, Object?> map) {
@@ -206,11 +227,15 @@ class AppSettings {
       reduceTransparency: (map['reduceTransparency'] as bool?) ?? false,
       reduceMotion: (map['reduceMotion'] as bool?) ?? false,
       autoCheckUpdate: (map['autoCheckUpdate'] as bool?) ?? true,
+      avatarPath: (map['avatarPath'] as String?) ?? '',
       widgetStyle: WidgetStyle.values.firstWhere(
         (style) => style.name == map['widgetStyle'],
         orElse: () => WidgetStyle.card,
       ),
       widgetBackgroundPath: (map['widgetBackgroundPath'] as String?) ?? '',
+      widgetBackgroundBrightness:
+          (map['widgetBackgroundBrightness'] as double?) ?? 1.0,
+      widgetBackgroundBlur: (map['widgetBackgroundBlur'] as double?) ?? 0.0,
       widgetUnitText: (map['widgetUnitText'] as String?) ?? '',
       widgetShowIcon: (map['widgetShowIcon'] as bool?) ?? false,
       widgetShowProgress: (map['widgetShowProgress'] as bool?) ?? false,
@@ -236,6 +261,7 @@ class AppSettings {
         (align) => align.name == map['widgetVerticalAlign'],
         orElse: () => WidgetVerticalAlign.center,
       ),
+      widgetContentMargin: (map['widgetContentMargin'] as double?) ?? 16.0,
     );
   }
 }

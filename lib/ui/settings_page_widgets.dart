@@ -476,6 +476,100 @@ class _ChoiceSetting extends StatelessWidget {
   }
 }
 
+class _SliderSetting extends StatelessWidget {
+  const _SliderSetting({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.valueLabel,
+    required this.onChanged,
+    this.divisions,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final double value;
+  final double min;
+  final double max;
+  final int? divisions;
+  final String valueLabel;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      label: title,
+      value: valueLabel,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            Icon(icon, color: scheme.onSurfaceVariant, size: 18),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 4,
+                      activeTrackColor: scheme.primary,
+                      inactiveTrackColor: scheme.outlineVariant.withValues(
+                        alpha: 0.5,
+                      ),
+                      thumbColor: scheme.primary,
+                      overlayColor: scheme.primary.withValues(alpha: 0.12),
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 9,
+                      ),
+                      overlayShape: const RoundSliderOverlayShape(
+                        overlayRadius: 20,
+                      ),
+                    ),
+                    child: Slider(
+                      key: ValueKey('slider-$title'),
+                      value: value.clamp(min, max),
+                      min: min,
+                      max: max,
+                      divisions: divisions,
+                      onChanged: onChanged,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              valueLabel,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _InsetDivider extends StatelessWidget {
   const _InsetDivider();
 
@@ -546,6 +640,79 @@ class _SettingsActionTile extends StatelessWidget {
                       size: 20,
                     ),
                   ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarSettingTile extends StatelessWidget {
+  const _AvatarSettingTile({required this.path, required this.onTap});
+
+  final String path;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final image = avatarImage(path);
+    return Semantics(
+      button: true,
+      label: '首页头像',
+      hint: path.isEmpty ? '选择自定义图片' : '点击更换头像',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    backgroundImage: image,
+                    child: image == null
+                        ? const Text(
+                            '萤',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '首页头像',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          path.isEmpty ? '点击设置自定义头像' : '点击更换头像',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: scheme.onSurfaceVariant,
+                    size: 20,
+                  ),
                 ],
               ),
             ),
@@ -773,12 +940,10 @@ String _elementStyleSummary(AppSettings settings, String elementId) {
   if (widgetButtonElementOptions.any((option) => option.$1 == elementId)) {
     return '当前：$visible';
   }
-  final size = widgetSizeOptions
-      .firstWhere(
-        (option) => option.$1 == style?.size,
-        orElse: () => widgetSizeOptions[1],
-      )
-      .$2;
+  final size = (style?.sizeScale ?? 1.0).toStringAsFixed(2);
+  final weight = style == null || style.weight == 0
+      ? '默认'
+      : '${style.weight}';
   final color = switch (style?.colorMode) {
     WidgetColorMode.custom => '自定义色',
     WidgetColorMode.secondary => '次要色',
@@ -789,7 +954,7 @@ String _elementStyleSummary(AppSettings settings, String elementId) {
     WidgetAlign.end => '右对齐',
     _ => '左对齐',
   };
-  final parts = ['颜色：$color', '字号：$size'];
+  final parts = ['颜色：$color', '字号：${size}x', '粗细：$weight'];
   if (widgetAlignableElementIds.contains(elementId)) {
     parts.add('对齐：$align');
   }
@@ -929,25 +1094,36 @@ class _ElementStyleSheet extends StatelessWidget {
               ),
               if (!isButton) ...[
                 const _InsetDivider(),
-                _ChoiceSetting(
+                _SliderSetting(
                   icon: Icons.text_fields_rounded,
                   title: '字号',
                   subtitle: '叠加在全局字号缩放之上',
-                  options: widgetSizeOptions
-                      .map((option) => (option.$1.name, option.$2))
-                      .toList(),
-                  selected: (
-                    current.size.name,
-                    widgetSizeOptions
-                        .firstWhere((option) => option.$1 == current.size)
-                        .$2,
-                  ),
-                  onSelected: (option) => onChanged(
+                  value: current.sizeScale,
+                  min: 0.5,
+                  max: 2.0,
+                  divisions: 30,
+                  valueLabel: '${(current.sizeScale * 100).round()}%',
+                  onChanged: (value) => onChanged(
                     current.copyWith(
-                      size: WidgetElementSize.values.firstWhere(
-                        (size) => size.name == option.$1,
-                      ),
+                      sizeScale: value,
+                      size: _nearestSizeOption(value),
                     ),
+                  ),
+                ),
+                const _InsetDivider(),
+                _SliderSetting(
+                  icon: Icons.format_bold_rounded,
+                  title: '粗细',
+                  subtitle: '0 表示跟随默认，100–900 为字重',
+                  value: current.weight.toDouble(),
+                  min: 0,
+                  max: 900,
+                  divisions: 9,
+                  valueLabel: current.weight == 0
+                      ? '默认'
+                      : '${current.weight}',
+                  onChanged: (value) => onChanged(
+                    current.copyWith(weight: value.round()),
                   ),
                 ),
                 const _InsetDivider(),
@@ -1078,6 +1254,250 @@ class _ElementColorSwatch extends StatelessWidget {
                       size: 20,
                     )
                   : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+WidgetElementSize _nearestSizeOption(double scale) {
+  if (scale < 0.9) return WidgetElementSize.small;
+  if (scale < 1.125) return WidgetElementSize.normal;
+  if (scale < 1.375) return WidgetElementSize.large;
+  return WidgetElementSize.xlarge;
+}
+
+class _PhotoBackgroundEditorSheet extends ConsumerStatefulWidget {
+  const _PhotoBackgroundEditorSheet({
+    required this.path,
+    required this.brightness,
+    required this.blur,
+  });
+
+  final String path;
+  final double brightness;
+  final double blur;
+
+  @override
+  ConsumerState<_PhotoBackgroundEditorSheet> createState() =>
+      _PhotoBackgroundEditorSheetState();
+}
+
+class _PhotoBackgroundEditorSheetState
+    extends ConsumerState<_PhotoBackgroundEditorSheet> {
+  late double _brightness;
+  late double _blur;
+  late String _path;
+  bool _busy = false;
+  bool _dirty = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _brightness = widget.brightness;
+    _blur = widget.blur;
+    _path = widget.path;
+  }
+
+  Future<void> _recrop() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final path = await recropWidgetBackground(
+        brightness: _brightness,
+        blur: _blur,
+      );
+      final controller = ref.read(appControllerProvider.notifier);
+      final current = ref.read(appControllerProvider).settings;
+      await controller.updateSettings(
+        current.copyWith(widgetBackgroundPath: path),
+      );
+      if (mounted) {
+        setState(() {
+          _path = path;
+          _dirty = false;
+        });
+      }
+    } on PhotoBackgroundException catch (error) {
+      if (mounted) _showMessage(context, error.message);
+    } catch (_) {
+      if (mounted) _showMessage(context, '重新裁切失败，请重试');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _save() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      var path = _path;
+      if (_dirty) {
+        path = await reprocessWidgetBackground(
+          brightness: _brightness,
+          blur: _blur,
+        );
+      }
+      final controller = ref.read(appControllerProvider.notifier);
+      final current = ref.read(appControllerProvider).settings;
+      await controller.updateSettings(
+        current.copyWith(
+          widgetBackgroundPath: path,
+          widgetBackgroundBrightness: _brightness,
+          widgetBackgroundBlur: _blur,
+        ),
+      );
+      if (mounted) Navigator.pop(context);
+    } on PhotoBackgroundException catch (error) {
+      if (mounted) _showMessage(context, error.message);
+    } catch (_) {
+      if (mounted) _showMessage(context, '保存背景失败，请重试');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  List<double> _brightnessMatrix(double value) => [
+    value, 0, 0, 0, 0,
+    0, value, 0, 0, 0,
+    0, 0, value, 0, 0,
+    0, 0, 0, 1, 0,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final image = widgetBackgroundImage(_path);
+    final rawImage = image == null
+        ? const SizedBox.expand()
+        : Image(
+            image: image,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+          );
+    final filteredImage = ColorFiltered(
+      colorFilter: ColorFilter.matrix(_brightnessMatrix(_brightness)),
+      child: _blur > 0
+          ? ImageFiltered(
+              imageFilter: ui.ImageFilter.blur(
+                sigmaX: _blur,
+                sigmaY: _blur,
+              ),
+              child: rawImage,
+            )
+          : rawImage,
+    );
+    final preview = Container(
+      height: 180,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [filteredImage],
+      ),
+    );
+
+    return Material(
+      color: scheme.surface,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      clipBehavior: Clip.antiAlias,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.photo_filter_rounded,
+                      size: 20,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '照片背景编辑',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: '关闭',
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: _busy ? null : () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                preview,
+                const SizedBox(height: 12),
+                _SliderSetting(
+                  icon: Icons.brightness_6_rounded,
+                  title: '亮度',
+                  value: _brightness,
+                  min: 0.5,
+                  max: 1.6,
+                  divisions: 11,
+                  valueLabel: '${(_brightness * 100).round()}%',
+                  onChanged: (value) {
+                    setState(() {
+                      _brightness = value;
+                      _dirty = true;
+                    });
+                  },
+                ),
+                const _InsetDivider(),
+                _SliderSetting(
+                  icon: Icons.blur_on_rounded,
+                  title: '高斯模糊',
+                  value: _blur,
+                  min: 0,
+                  max: 24,
+                  divisions: 24,
+                  valueLabel: _blur.round().toString(),
+                  onChanged: (value) {
+                    setState(() {
+                      _blur = value;
+                      _dirty = true;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _busy ? null : _recrop,
+                        icon: const Icon(Icons.crop_rounded, size: 18),
+                        label: const Text('重新裁切'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _busy ? null : _save,
+                        icon: _busy
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.check_rounded, size: 18),
+                        label: const Text('保存'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),

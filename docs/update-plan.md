@@ -247,6 +247,27 @@ debug APK 已安装到 MuMu 模拟器并启动，日历 Tab、右上角设置入
 - 字体文件保存在应用文档目录 `fonts/`，清单与文件均通过公开仓库 `jiuxina/ying-321` 的 GitHub raw（master 分支）发布；本地模拟器验证可用 `FONT_MANIFEST_URL` 覆盖。
 - 候选字体均为 OFL 等开源许可，仓库内附许可证文本。
 
+## 阶段 10：首页头像与个性化编辑增强
+
+把首页品牌文字升级为可自定义圆形头像，并把小部件元素字号 / 粗细、内容边距与相册背景编辑做成连续滑块和自由裁切流程。
+
+- [x] 首页头像：新增 `avatar_path` 与头像服务，Photo Picker 选图后圆形裁切缓存，默认显示品牌色圆底“萤”（2026-08-11）
+- [x] 元素字号 / 粗细：`WidgetElementStyle` 新增 `sizeScale`（0.5–2.0）与 `weight`（0 跟随默认，100–900），元素样式面板改为滑块（2026-08-11）
+- [x] 全局字号：小部件全局字号滑块扩展到 0.5–2.0（2026-08-11）
+- [x] 内容边距：新增 `widget_content_margin`，Android 单事件 / 列表 / 撤销布局统一 `setViewPadding`，范围 4–40dp 默认 16dp（2026-08-11）
+- [x] 相册背景编辑：新增源图 / 成品双缓存、自由矩形裁切、重新裁切、亮度（0.5–1.6）与高斯模糊（0–24）编辑弹窗；处理放在后台 isolate（2026-08-11）
+- [x] Android 字重渲染：RemoteViews 动态字重通过通用位图通道渲染，`precise` 与节日徽章用 fake bold 近似（2026-08-11）
+- [x] 渲染协议升级 v10：`WidgetElementRender` 增加 `weight`，`WidgetRenderSpec` 增加 `contentMargin`，旧数据缺省回退默认值（2026-08-11）
+
+验证：`flutter analyze`、`flutter test`、`gradlew :app:testDebugUnitTest`、debug APK 构建安装与模拟器 UI 层级验证均已通过（2026-08-11）。
+
+注意事项：
+
+- 新能力全部免费开放，不参与赞助降级。
+- 字号最终值 = base sp × 全局缩放 × 元素 `sizeScale`；字重 0 沿用标题 700、天数 800 等角色默认。
+- 相册背景源图固定为 `widget_background_source.png`，成品为 `widget_background.jpg`；旧版本只有成品、没有源图时，重新裁切会回退为重新选图。
+- iOS WidgetKit 本轮不消费 v10 spec，保持原有独立实现。
+
 ## 全局注意事项
 
 - RemoteViews 硬限制：不支持手势、复杂动画与自定义 View；滚动用 `RemoteViewsService`，动画用状态位或短时两帧切换。

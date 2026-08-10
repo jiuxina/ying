@@ -48,6 +48,8 @@ class WidgetElementStyle {
   const WidgetElementStyle({
     this.visible = WidgetElementVisible.follow,
     this.size = WidgetElementSize.normal,
+    this.sizeScale = 1.0,
+    this.weight = 0,
     this.colorMode = WidgetColorMode.primary,
     this.color = -1,
     this.align = WidgetAlign.start,
@@ -55,6 +57,8 @@ class WidgetElementStyle {
 
   final WidgetElementVisible visible;
   final WidgetElementSize size;
+  final double sizeScale;
+  final int weight;
   final WidgetColorMode colorMode;
   final int color;
   final WidgetAlign align;
@@ -62,6 +66,8 @@ class WidgetElementStyle {
   WidgetElementStyle copyWith({
     WidgetElementVisible? visible,
     WidgetElementSize? size,
+    double? sizeScale,
+    int? weight,
     WidgetColorMode? colorMode,
     int? color,
     WidgetAlign? align,
@@ -69,6 +75,8 @@ class WidgetElementStyle {
     return WidgetElementStyle(
       visible: visible ?? this.visible,
       size: size ?? this.size,
+      sizeScale: sizeScale ?? this.sizeScale,
+      weight: weight ?? this.weight,
       colorMode: colorMode ?? this.colorMode,
       color: color ?? this.color,
       align: align ?? this.align,
@@ -78,6 +86,8 @@ class WidgetElementStyle {
   Map<String, Object> toJson() => {
     'visible': visible.name,
     'size': size.name,
+    'sizeScale': sizeScale,
+    'weight': weight,
     'colorMode': colorMode.name,
     'color': color,
     'align': align.name,
@@ -95,6 +105,9 @@ class WidgetElementStyle {
         json['size'],
         WidgetElementSize.normal,
       ),
+      sizeScale: (json['sizeScale'] as num?)?.toDouble() ??
+          _legacySizeScale(json['size']),
+      weight: ((json['weight'] as num?)?.clamp(0, 900) ?? 0).toInt(),
       colorMode: _enumByName(
         WidgetColorMode.values,
         json['colorMode'],
@@ -108,6 +121,13 @@ class WidgetElementStyle {
       ),
     );
   }
+}
+
+double _legacySizeScale(Object? name) {
+  for (final value in WidgetElementSize.values) {
+    if (value.name == name) return value.multiplier;
+  }
+  return 1.0;
 }
 
 T _enumByName<T extends Enum>(List<T> values, Object? name, T fallback) {

@@ -22,6 +22,7 @@
         android:visibility="gone" />
 
     <LinearLayout
+        android:id="@+id/widget_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -475,6 +476,14 @@
             android:textColor="#D9FFFFFF"
             android:textSize="15sp"
             android:textStyle="bold"
+            android:visibility="gone" />
+        <ImageView
+            android:id="@+id/widget_empty_custom"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
             android:visibility="gone" />
     </LinearLayout>
 </FrameLayout>

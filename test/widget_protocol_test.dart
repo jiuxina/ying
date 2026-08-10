@@ -31,6 +31,10 @@ void main() {
       expect(legacy.widgetWallpaperTextColor, -1);
       expect(legacy.widgetElementStyles, isEmpty);
       expect(legacy.widgetVerticalAlign, WidgetVerticalAlign.center);
+      expect(legacy.avatarPath, '');
+      expect(legacy.widgetBackgroundBrightness, 1.0);
+      expect(legacy.widgetBackgroundBlur, 0.0);
+      expect(legacy.widgetContentMargin, 16.0);
     });
 
     test('unknown style falls back to card', () {
@@ -55,8 +59,11 @@ void main() {
 
     test('round-trips every new field', () {
       final settings = const AppSettings(
+        avatarPath: '/tmp/avatar.jpg',
         widgetStyle: WidgetStyle.glass,
         widgetBackgroundPath: '/tmp/background.jpg',
+        widgetBackgroundBrightness: 1.25,
+        widgetBackgroundBlur: 6.0,
         widgetUnitText: '只剩',
         widgetShowIcon: true,
         widgetShowProgress: true,
@@ -78,6 +85,8 @@ void main() {
           'title': WidgetElementStyle(
             visible: WidgetElementVisible.show,
             size: WidgetElementSize.large,
+            sizeScale: 1.6,
+            weight: 700,
             colorMode: WidgetColorMode.custom,
             color: 0xFFE91E63,
             align: WidgetAlign.center,
@@ -87,10 +96,14 @@ void main() {
           ),
         },
         widgetVerticalAlign: WidgetVerticalAlign.bottom,
+        widgetContentMargin: 24.0,
       );
       final restored = AppSettings.fromMap(settings.toMap());
+      expect(restored.avatarPath, '/tmp/avatar.jpg');
       expect(restored.widgetStyle, WidgetStyle.glass);
       expect(restored.widgetBackgroundPath, '/tmp/background.jpg');
+      expect(restored.widgetBackgroundBrightness, 1.25);
+      expect(restored.widgetBackgroundBlur, 6.0);
       expect(restored.widgetUnitText, '只剩');
       expect(restored.widgetShowIcon, isTrue);
       expect(restored.widgetShowProgress, isTrue);
@@ -112,6 +125,8 @@ void main() {
           WidgetElementVisible.show);
       expect(restored.widgetElementStyles['title']?.size,
           WidgetElementSize.large);
+      expect(restored.widgetElementStyles['title']?.sizeScale, 1.6);
+      expect(restored.widgetElementStyles['title']?.weight, 700);
       expect(restored.widgetElementStyles['title']?.colorMode,
           WidgetColorMode.custom);
       expect(restored.widgetElementStyles['title']?.color, 0xFFE91E63);
@@ -120,6 +135,7 @@ void main() {
       expect(restored.widgetElementStyles['prevButton']?.visible,
           WidgetElementVisible.hide);
       expect(restored.widgetVerticalAlign, WidgetVerticalAlign.bottom);
+      expect(restored.widgetContentMargin, 24.0);
     });
 
     test('malformed element styles fall back to empty map', () {
@@ -221,7 +237,7 @@ void main() {
 
     test('preference values include protocol version and every key', () {
       final values = widgetPreferenceValues(const AppSettings());
-      expect(values['widget_protocol_version'], 9);
+      expect(values['widget_protocol_version'], 10);
       expect(values['widget_color'], 'ff0f766e');
       expect(
         values.keys,
@@ -233,6 +249,7 @@ void main() {
           'widget_show_category',
           'widget_style',
           'widget_background_path',
+          'widget_content_margin',
           'widget_unit_text',
           'widget_show_icon',
           'widget_show_progress',

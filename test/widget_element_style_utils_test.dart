@@ -76,17 +76,20 @@ void main() {
       );
     });
 
-    test('size scale and alignment map to multipliers and TextAlign', () {
+    test('size scale, weight and alignment map to helpers', () {
       const settings = AppSettings(
         widgetElementStyles: {
           'title': WidgetElementStyle(
-            size: WidgetElementSize.xlarge,
+            sizeScale: 1.7,
+            weight: 600,
             align: WidgetAlign.end,
           ),
         },
       );
-      expect(widgetElementSizeScale(settings, 'title'), 1.5);
+      expect(widgetElementSizeScale(settings, 'title'), 1.7);
+      expect(widgetElementWeight(settings, 'title'), 600);
       expect(widgetElementSizeScale(settings, 'note'), 1.0);
+      expect(widgetElementWeight(settings, 'note'), 0);
       expect(widgetElementAlign(settings, 'title'), TextAlign.end);
       expect(widgetElementAlign(settings, 'note'), TextAlign.start);
     });

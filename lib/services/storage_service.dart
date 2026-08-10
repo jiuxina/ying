@@ -20,11 +20,15 @@ class StorageService {
   static const _reduceTransparencyKey = 'reduce_transparency';
   static const _reduceMotionKey = 'reduce_motion';
   static const _autoCheckUpdateKey = 'auto_check_update';
+  static const _avatarPathKey = 'avatar_path';
   static const _lastUpdateCheckAtKey = 'last_update_check_at';
   static const _skippedReleaseVersionKey = 'skipped_release_version';
   static const _notificationActionRevisionKey = 'notification_action_revision';
   static const _widgetStyleKey = 'widget_style';
   static const _widgetBackgroundPathKey = 'widget_background_path';
+  static const _widgetBackgroundBrightnessKey =
+      'widget_background_brightness';
+  static const _widgetBackgroundBlurKey = 'widget_background_blur';
   static const _widgetUnitTextKey = 'widget_unit_text';
   static const _widgetShowIconKey = 'widget_show_icon';
   static const _widgetShowProgressKey = 'widget_show_progress';
@@ -44,6 +48,7 @@ class StorageService {
   static const _widgetWallpaperTextColorKey = 'widget_wallpaper_text_color';
   static const _widgetElementStylesKey = 'widget_element_styles';
   static const _widgetVerticalAlignKey = 'widget_vertical_align';
+  static const _widgetContentMarginKey = 'widget_content_margin';
   static const _onboardingCompletedKey = 'onboarding_completed_v1';
 
   Future<bool> loadOnboardingCompleted() async {
@@ -85,8 +90,15 @@ class StorageService {
       'reduceTransparency': preferences.getBool(_reduceTransparencyKey),
       'reduceMotion': preferences.getBool(_reduceMotionKey),
       'autoCheckUpdate': preferences.getBool(_autoCheckUpdateKey),
+      'avatarPath': preferences.getString(_avatarPathKey),
       'widgetStyle': preferences.getString(_widgetStyleKey),
       'widgetBackgroundPath': preferences.getString(_widgetBackgroundPathKey),
+      'widgetBackgroundBrightness': preferences.getDouble(
+        _widgetBackgroundBrightnessKey,
+      ),
+      'widgetBackgroundBlur': preferences.getDouble(
+        _widgetBackgroundBlurKey,
+      ),
       'widgetUnitText': preferences.getString(_widgetUnitTextKey),
       'widgetShowIcon': preferences.getBool(_widgetShowIconKey),
       'widgetShowProgress': preferences.getBool(_widgetShowProgressKey),
@@ -120,6 +132,7 @@ class StorageService {
       ),
       'widgetElementStyles': preferences.getString(_widgetElementStylesKey),
       'widgetVerticalAlign': preferences.getString(_widgetVerticalAlignKey),
+      'widgetContentMargin': preferences.getDouble(_widgetContentMarginKey),
     });
   }
 
@@ -147,10 +160,19 @@ class StorageService {
       preferences.setBool(_reduceTransparencyKey, settings.reduceTransparency),
       preferences.setBool(_reduceMotionKey, settings.reduceMotion),
       preferences.setBool(_autoCheckUpdateKey, settings.autoCheckUpdate),
+      preferences.setString(_avatarPathKey, settings.avatarPath),
       preferences.setString(_widgetStyleKey, settings.widgetStyle.name),
       preferences.setString(
         _widgetBackgroundPathKey,
         settings.widgetBackgroundPath,
+      ),
+      preferences.setDouble(
+        _widgetBackgroundBrightnessKey,
+        settings.widgetBackgroundBrightness,
+      ),
+      preferences.setDouble(
+        _widgetBackgroundBlurKey,
+        settings.widgetBackgroundBlur,
       ),
       preferences.setString(_widgetUnitTextKey, settings.widgetUnitText),
       preferences.setBool(_widgetShowIconKey, settings.widgetShowIcon),
@@ -200,6 +222,10 @@ class StorageService {
       preferences.setString(
         _widgetVerticalAlignKey,
         settings.widgetVerticalAlign.name,
+      ),
+      preferences.setDouble(
+        _widgetContentMarginKey,
+        settings.widgetContentMargin,
       ),
     ]);
   }

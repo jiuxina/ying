@@ -407,10 +407,15 @@ class _MirrorBackdropPainter extends CustomPainter {
 }
 
 class _HolidayBadge extends StatelessWidget {
-  const _HolidayBadge({required this.holiday, required this.accent});
+  const _HolidayBadge({
+    required this.holiday,
+    required this.accent,
+    this.weight = 0,
+  });
 
   final WidgetHoliday holiday;
   final Color accent;
+  final int weight;
 
   @override
   Widget build(BuildContext context) {
@@ -427,7 +432,9 @@ class _HolidayBadge extends StatelessWidget {
           style: TextStyle(
             color: Colors.white,
             fontSize: 11,
-            fontWeight: FontWeight.w700,
+            fontWeight: weight <= 0
+                ? FontWeight.w700
+                : FontWeight.values[((weight ~/ 100) - 1).clamp(0, 8)],
             shadows: const [
               Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 1)),
             ],

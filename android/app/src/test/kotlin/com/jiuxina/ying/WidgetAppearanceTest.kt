@@ -278,6 +278,7 @@ class WidgetAppearanceTest {
         val manifest = File("src/main/AndroidManifest.xml").readText()
         assertTrue(manifest.contains("DaymarkDetailWidgetProvider"))
         assertTrue(manifest.contains("daymark_detail_widget_info"))
+        assertTrue(manifest.contains("UCropActivity"))
         val info = File("src/main/res/xml/daymark_detail_widget_info.xml").readText()
         assertTrue("detail widget should reuse single-event layout", "daymark_widget" in info)
         assertTrue("detail widget should be home-screen only", "home_screen" in info)
@@ -286,9 +287,11 @@ class WidgetAppearanceTest {
     @Test
     fun elementStylesParseJsonAndFallBack() {
         val styles = parseElementStyles(
-            """{"title":{"size":"large","colorMode":"custom","color":-65536,"align":"center"},"prevButton":{"visible":"hide"}}""",
+            """{"title":{"size":"large","sizeScale":1.6,"weight":700,"colorMode":"custom","color":-65536,"align":"center"},"prevButton":{"visible":"hide"}}""",
         )
         assertEquals(WidgetElementSize.large, styles.getValue("title").size)
+        assertEquals(1.6f, styles.getValue("title").sizeScale)
+        assertEquals(700, styles.getValue("title").weight)
         assertEquals(WidgetColorMode.custom, styles.getValue("title").colorMode)
         assertEquals(-65536, styles.getValue("title").color)
         assertEquals(WidgetAlign.center, styles.getValue("title").align)
@@ -311,7 +314,8 @@ class WidgetAppearanceTest {
         val raw = File("src/test/resources/widget_parity/empty_single.spec.json").readText()
         val spec = parseRenderSpec(raw)
         assertTrue(spec != null)
-        assertEquals(9, spec!!.version)
+        assertEquals(10, spec!!.version)
+        assertEquals(16f, spec.contentMargin)
         assertEquals("single", spec.compact?.mode)
         assertEquals("single", spec.full?.mode)
         assertEquals(false, spec.compact?.element("category")?.visible)
@@ -375,6 +379,7 @@ class WidgetAppearanceTest {
     fun customFontViewsAndProtocolKeysExist() {
         val single = File("src/main/res/layout/daymark_widget.xml").readText()
         val list = File("src/main/res/layout/daymark_widget_list.xml").readText()
+        val undo = File("src/main/res/layout/daymark_widget_undo.xml").readText()
         assertTrue(single.contains("widget_days_custom"))
         assertTrue(single.contains("widget_title_custom"))
         assertTrue(single.contains("widget_unit_custom"))
@@ -382,12 +387,18 @@ class WidgetAppearanceTest {
         assertTrue(list.contains("widget_list_header_custom"))
         assertTrue(list.contains("widget_row_1_title_custom"))
         assertTrue(list.contains("widget_row_1_days_custom"))
+        assertTrue(single.contains("widget_content"))
+        assertTrue(list.contains("widget_content"))
+        assertTrue(undo.contains("widget_content"))
+        assertTrue(list.contains("widget_empty_custom"))
         val source = File("src/main/kotlin/com/jiuxina/ying/DaymarkWidgetProvider.kt").readText()
         assertTrue(source.contains("widget_text_font_family"))
         assertTrue(source.contains("widget_digit_font_path"))
         assertTrue(source.contains("widget_text_font_path"))
         assertTrue(source.contains("setImageViewBitmap"))
         assertTrue(source.contains("customFontSelectionKind"))
+        assertTrue(source.contains("setViewPadding"))
+        assertTrue(source.contains("resolveTextTypeface"))
     }
 
     @Test
@@ -470,13 +481,15 @@ class WidgetAppearanceTest {
     fun elementSizeAndGravityHelpers() {
         assertEquals(
             0.8f,
-            elementSizeScale(WidgetElementStyle(size = WidgetElementSize.small)),
+            elementSizeScale(WidgetElementStyle(sizeScale = 0.8f)),
         )
         assertEquals(1.0f, elementSizeScale(null))
         assertEquals(
             1.25f,
-            elementSizeScale(WidgetElementStyle(size = WidgetElementSize.large)),
+            elementSizeScale(WidgetElementStyle(sizeScale = 1.25f)),
         )
+        assertEquals(700, elementWeight(WidgetElementStyle(weight = 700)))
+        assertEquals(0, elementWeight(null))
         assertEquals(Gravity.START, elementGravity(null))
         assertEquals(
             Gravity.CENTER_HORIZONTAL,

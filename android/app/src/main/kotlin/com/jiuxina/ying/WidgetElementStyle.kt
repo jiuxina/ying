@@ -71,6 +71,8 @@ internal enum class WidgetVerticalAlign {
 internal data class WidgetElementStyle(
     val visible: WidgetElementVisible = WidgetElementVisible.follow,
     val size: WidgetElementSize = WidgetElementSize.normal,
+    val sizeScale: Float = 1f,
+    val weight: Int = 0,
     val colorMode: WidgetColorMode = WidgetColorMode.primary,
     val color: Int = -1,
     val align: WidgetAlign = WidgetAlign.start,
@@ -92,9 +94,17 @@ internal fun parseElementStyles(raw: String?): Map<String, WidgetElementStyle> {
 }
 
 internal fun parseElementStyle(json: JSONObject): WidgetElementStyle {
+    val hasSizeScale = json.has("sizeScale")
+    val sizeScale = if (hasSizeScale) {
+        json.optDouble("sizeScale", 1.0).toFloat()
+    } else {
+        WidgetElementSize.fromName(json.optString("size")).multiplier
+    }
     return WidgetElementStyle(
         visible = WidgetElementVisible.fromName(json.optString("visible")),
         size = WidgetElementSize.fromName(json.optString("size")),
+        sizeScale = sizeScale,
+        weight = json.optInt("weight", 0).coerceIn(0, 900),
         colorMode = WidgetColorMode.fromName(json.optString("colorMode")),
         color = json.optInt("color", -1),
         align = WidgetAlign.fromName(json.optString("align")),
@@ -143,7 +153,10 @@ internal fun elementColor(
 }
 
 internal fun elementSizeScale(style: WidgetElementStyle?): Float =
-    style?.size?.multiplier ?: 1f
+    style?.sizeScale ?: 1f
+
+internal fun elementWeight(style: WidgetElementStyle?): Int =
+    style?.weight ?: 0
 
 internal fun elementGravity(style: WidgetElementStyle?): Int = when (style?.align) {
     WidgetAlign.center -> Gravity.CENTER_HORIZONTAL

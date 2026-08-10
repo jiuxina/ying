@@ -71,6 +71,14 @@
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
+            <ImageView
+                android:id="@+id/widget_holiday_badge_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
             <ImageButton
                 android:id="@+id/widget_previous"
                 android:layout_width="36dp"

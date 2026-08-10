@@ -202,6 +202,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                     R.id.widget_root,
                     launchIntent(context, null, LAUNCH_REQUEST_ROOT),
                 )
+                applyContentMargin(context, views, widgetData, null)
                 appWidgetManager.updateAppWidget(widgetId, views)
             }
             return
@@ -277,6 +278,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                     textTypeface,
                 )
             }
+            applyContentMargin(context, views, widgetData, renderSpec)
             appWidgetManager.updateAppWidget(widgetId, views)
         }
     }
@@ -465,6 +467,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                     views,
                     oldText,
                     digitTypeface,
+                    0,
                     branch.element("days").color,
                     oldSize,
                     maxDaysWidth,
@@ -784,6 +787,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             (size.width * 0.9f).toInt().coerceAtLeast(80),
             branch.element("listHeader").visible,
             renderAlignGravity(branch.element("listHeader").align),
+            branch.element("listHeader").weight,
         )
         var visibleCount = 0
         val maxRows = if (compact) 2 else MAX_LIST_ROWS
@@ -953,6 +957,20 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 View.GONE
             },
         )
+        setCustomText(
+            context,
+            views,
+            R.id.widget_empty,
+            R.id.widget_empty_custom,
+            "添加一个倒数日",
+            textTypeface,
+            branch.element("empty").color,
+            15f * scale * branch.element("empty").size,
+            (size.width * 0.9f).toInt().coerceAtLeast(80),
+            branch.element("empty").visible && visibleCount == 0,
+            renderAlignGravity(branch.element("empty").align),
+            branch.element("empty").weight,
+        )
     }
 
     private fun applyRowCustomText(
@@ -1024,6 +1042,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             maxTitle,
             branch.element("rowTitle").visible,
             renderAlignGravity(branch.element("rowTitle").align),
+            branch.element("rowTitle").weight,
         )
         setCustomText(
             context,
@@ -1037,6 +1056,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             maxSubtitle,
             branch.element("rowSubtitle").visible && subtitle.isNotEmpty(),
             renderAlignGravity(branch.element("rowSubtitle").align),
+            branch.element("rowSubtitle").weight,
         )
         setCustomText(
             context,
@@ -1050,6 +1070,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             maxDays,
             branch.element("rowDays").visible,
             renderAlignGravity(branch.element("rowDays").align),
+            branch.element("rowDays").weight,
         )
         setCustomText(
             context,
@@ -1063,6 +1084,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             maxUnit,
             branch.element("rowUnit").visible && unitText.isNotEmpty(),
             renderAlignGravity(branch.element("rowUnit").align),
+            branch.element("rowUnit").weight,
         )
     }
 
@@ -1124,6 +1146,11 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
 
         val holidayVisible =
             branch.element("holidayBadge").visible && holiday.isNotEmpty()
+        views.setBoolean(
+            R.id.widget_holiday_badge,
+            "setFakeBoldText",
+            branch.element("holidayBadge").weight >= 600,
+        )
         if (holidayVisible) {
             views.setTextViewText(R.id.widget_holiday_badge, holidayLabel(holiday))
             views.setTextColor(
@@ -1339,6 +1366,19 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         } else {
             views.setViewVisibility(R.id.widget_scrim, View.GONE)
         }
+    }
+
+    private fun applyContentMargin(
+        context: Context,
+        views: RemoteViews,
+        data: SharedPreferences,
+        renderSpec: WidgetRenderSpec?,
+    ) {
+        val marginDp = renderSpec?.contentMargin
+            ?: data.getFloat("widget_content_margin", 16f)
+        val density = context.resources.displayMetrics.density
+        val margin = (marginDp * density).toInt().coerceAtLeast(0)
+        views.setViewPadding(R.id.widget_content, margin, margin, margin, margin)
     }
 
     private fun buildBackdrop(
@@ -1952,24 +1992,27 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         maxWidthPx: Int,
         visible: Boolean,
         align: Int,
+        weight: Int = 0,
     ) {
+        val effectiveTypeface = resolveTextTypeface(typeface, weight)
+        val renderBitmap = effectiveTypeface != null
         views.setTextViewText(textViewId, text)
         views.setTextColor(textViewId, color)
         views.setTextViewTextSize(textViewId, 2, sizeSp)
         views.setInt(textViewId, "setGravity", align)
         views.setViewVisibility(
             textViewId,
-            if (!visible || typeface == null) View.VISIBLE else View.GONE,
+            if (!visible || renderBitmap) View.GONE else View.VISIBLE,
         )
         views.setViewVisibility(
             imageViewId,
-            if (!visible || typeface == null) View.GONE else View.VISIBLE,
+            if (!visible || !renderBitmap) View.GONE else View.VISIBLE,
         )
-        if (typeface != null && visible) {
+        if (effectiveTypeface != null && visible) {
             val bitmap = renderCustomTextBitmap(
                 context,
                 text,
-                typeface,
+                effectiveTypeface,
                 color,
                 sizeSp,
                 maxWidthPx,
@@ -1980,24 +2023,39 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         }
     }
 
+    private fun resolveTextTypeface(
+        custom: Typeface?,
+        weight: Int,
+    ): Typeface? {
+        if (weight <= 0) return custom
+        val base = custom ?: Typeface.DEFAULT
+        return if (Build.VERSION.SDK_INT >= 28) {
+            Typeface.create(base, weight, false)
+        } else {
+            Typeface.create(base, if (weight >= 600) Typeface.BOLD else Typeface.NORMAL)
+        }
+    }
+
     private fun renderDaysCustom(
         context: Context,
         views: RemoteViews,
         text: String,
         typeface: Typeface?,
+        weight: Int,
         color: Int,
         sizeSp: Float,
         maxWidthPx: Int,
         imageViewId: Int,
     ) {
-        if (typeface == null || !isPureDigitText(text)) {
+        val effectiveTypeface = resolveTextTypeface(typeface, weight)
+        if (effectiveTypeface == null || !isPureDigitText(text)) {
             views.setViewVisibility(imageViewId, View.GONE)
             return
         }
         val bitmap = renderCustomTextBitmap(
             context,
             text,
-            typeface,
+            effectiveTypeface,
             color,
             sizeSp,
             maxWidthPx,
@@ -2061,6 +2119,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 views,
                 text,
                 digitTypeface,
+                0,
                 color,
                 size,
                 maxWidthPx,
@@ -2095,7 +2154,18 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         styles: Map<String, WidgetElementStyle>,
         holiday: String,
     ) {
-        if (textTypeface == null) return
+        val needsPass = textTypeface != null ||
+            listOf(
+                "title",
+                "category",
+                "unit",
+                "note",
+                "dateInfo",
+                "progress",
+                "precise",
+                "holidayBadge",
+            ).any { branch.element(it).weight > 0 }
+        if (!needsPass) return
         val scale = widgetFontScale(data)
         val days = event.daysFromToday()
         val countUp = event.isCountUp || days < 0
@@ -2176,6 +2246,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             maxTitle,
             branch.element("title").visible,
             renderAlignGravity(branch.element("title").align),
+            branch.element("title").weight,
         )
         setCustomText(
             context,
@@ -2189,6 +2260,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             maxCategory,
             branch.element("category").visible,
             renderAlignGravity(branch.element("category").align),
+            branch.element("category").weight,
         )
         setCustomText(
             context,
@@ -2202,6 +2274,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             maxUnit,
             unitVisible,
             renderAlignGravity(branch.element("unit").align),
+            branch.element("unit").weight,
         )
         setCustomText(
             context,
@@ -2215,6 +2288,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             maxNote,
             noteVisible,
             renderAlignGravity(branch.element("note").align),
+            branch.element("note").weight,
         )
         setCustomText(
             context,
@@ -2228,6 +2302,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             maxDateInfo,
             branch.element("dateInfo").visible,
             renderAlignGravity(branch.element("dateInfo").align),
+            branch.element("dateInfo").weight,
         )
         setCustomText(
             context,
@@ -2241,6 +2316,12 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             maxProgress,
             progressText.isNotEmpty(),
             renderAlignGravity(branch.element("progress").align),
+            branch.element("progress").weight,
+        )
+        views.setBoolean(
+            R.id.widget_precise,
+            "setFakeBoldText",
+            branch.element("precise").weight >= 600,
         )
     }
 
@@ -2256,7 +2337,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         maxWidthPx: Int,
         holiday: String,
     ) {
-        if (digitTypeface == null) return
+        if (digitTypeface == null && branch.element("days").weight <= 0) return
         val days = event.daysFromToday()
         val preset = data.getString("widget_unit_text", "")
         val mystery = sponsorUnlocked(data) &&
@@ -2283,11 +2364,19 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         } else {
             (if (compact) 32f else 44f) * scale * branch.element("days").size
         }
+        listOf(
+            R.id.widget_days,
+            R.id.widget_days_mono,
+            R.id.widget_days_pixel,
+            R.id.widget_days_hand,
+            R.id.widget_days_neon,
+        ).forEach { id -> views.setViewVisibility(id, View.GONE) }
         renderDaysCustom(
             context,
             views,
             text,
             digitTypeface,
+            branch.element("days").weight,
             color,
             size,
             maxWidthPx,

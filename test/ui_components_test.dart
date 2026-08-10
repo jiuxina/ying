@@ -569,24 +569,37 @@ void main() {
       expect(sheetMaterial.color, isNotNull);
       expect(sheetMaterial.color, isNot(Colors.transparent));
 
-      await tester.tap(find.widgetWithText(ChoiceChip, '大'));
+      await tester.drag(
+        find.byKey(const ValueKey('slider-字号')),
+        const Offset(70, 0),
+      );
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.widgetWithText(ChoiceChip, '自定义'));
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.bySemanticsLabel('自定义颜色').first);
       await tester.pump(const Duration(milliseconds: 300));
+      await tester.drag(
+        find.byKey(const ValueKey('slider-粗细')),
+        const Offset(60, 0),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.ensureVisible(find.widgetWithText(ChoiceChip, '中'));
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(find.widgetWithText(ChoiceChip, '中'));
       await tester.pump(const Duration(milliseconds: 300));
 
       final style = controller.state.settings.widgetElementStyles['title'];
-      expect(style?.size, WidgetElementSize.large);
+      expect(style?.sizeScale, greaterThan(1.0));
+      expect(style?.weight, greaterThan(0));
       expect(style?.colorMode, WidgetColorMode.custom);
       expect(style?.align, WidgetAlign.center);
       expect(style?.color, widgetElementColorPalette.first.toARGB32());
       expect(
         saved.last.widgetElementStyles['title']?.size,
-        WidgetElementSize.large,
+        isNot(WidgetElementSize.normal),
       );
+      expect(saved.last.widgetElementStyles['title']?.sizeScale, greaterThan(1.0));
+      expect(saved.last.widgetElementStyles['title']?.weight, greaterThan(0));
     });
 
     testWidgets('小部件按钮显隐面板保存三态', (tester) async {
@@ -665,13 +678,19 @@ void main() {
         isNull,
       );
 
-      await tester.tap(find.widgetWithText(ChoiceChip, '大'));
+      await tester.drag(
+        find.byKey(const ValueKey('slider-字号')),
+        const Offset(70, 0),
+      );
       await tester.pump(const Duration(milliseconds: 300));
       expect(
         controller.state.settings.widgetElementStyles['title']?.size,
-        WidgetElementSize.large,
+        isNot(WidgetElementSize.normal),
       );
-      expect(saved.last.widgetElementStyles['title']?.size, WidgetElementSize.large);
+      expect(
+        saved.last.widgetElementStyles['title']?.sizeScale,
+        greaterThan(1.0),
+      );
     });
 
     testWidgets('切换小部件样式预设并持久化', (tester) async {
@@ -1485,6 +1504,7 @@ void main() {
                 widgetElementStyles: {
                   'title': WidgetElementStyle(
                     size: WidgetElementSize.xlarge,
+                    sizeScale: 1.5,
                     colorMode: WidgetColorMode.custom,
                     color: 0xFFE91E63,
                     align: WidgetAlign.end,

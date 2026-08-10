@@ -18,6 +18,7 @@ dependencies:
   home_widget: 0.8.0
   http: ^1.6.0
   image: ^4.8.0
+  image_cropper: 11.0.0
   image_picker: ^1.2.1
   intl: ^0.20.2
   lunar: ^1.7.8

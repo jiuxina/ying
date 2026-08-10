@@ -221,6 +221,7 @@ Map<String, Object?> widgetPreferenceValues(
     'widget_show_category': resolved.widgetShowCategory,
     'widget_style': resolved.widgetStyle.name,
     'widget_background_path': resolved.widgetBackgroundPath,
+    'widget_content_margin': resolved.widgetContentMargin,
     'widget_unit_text': resolved.widgetUnitText,
     'widget_show_icon': resolved.widgetShowIcon,
     'widget_show_progress': resolved.widgetShowProgress,

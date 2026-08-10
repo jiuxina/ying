@@ -5,7 +5,7 @@ import android.view.Gravity
 import org.json.JSONObject
 
 internal const val WIDGET_RENDER_SPEC_KEY = "widget_render_spec"
-internal const val WIDGET_RENDER_PROTOCOL_VERSION = 8
+internal const val WIDGET_RENDER_PROTOCOL_VERSION = 10
 
 internal val widgetRenderElementIds = listOf(
     "category",
@@ -41,6 +41,7 @@ internal data class WidgetElementRender(
     val color: Int,
     val size: Float,
     val align: WidgetAlign,
+    val weight: Int = 0,
 )
 
 internal data class WidgetRenderBranch(
@@ -53,6 +54,7 @@ internal data class WidgetRenderBranch(
             color = 0xFFFFFFFF.toInt(),
             size = 1f,
             align = WidgetAlign.start,
+            weight = 0,
         )
 }
 
@@ -71,6 +73,7 @@ internal data class WidgetRenderSpec(
     val texts: WidgetRenderTexts,
     val compact: WidgetRenderBranch?,
     val full: WidgetRenderBranch?,
+    val contentMargin: Float = 16f,
 ) {
     fun branch(compact: Boolean): WidgetRenderBranch? =
         if (compact) this.compact else this.full
@@ -94,6 +97,7 @@ internal fun parseRenderSpec(raw: String?): WidgetRenderSpec? {
             texts = parseRenderTexts(json.optJSONObject("texts")),
             compact = parseRenderBranch(json.optJSONObject("compact")),
             full = parseRenderBranch(json.optJSONObject("full")),
+            contentMargin = json.optDouble("contentMargin", 16.0).toFloat(),
         )
     } catch (_: Exception) {
         null
@@ -121,6 +125,7 @@ private fun parseRenderBranch(json: JSONObject?): WidgetRenderBranch? {
                 color = value.optInt("color", 0xFFFFFFFF.toInt()),
                 size = value.optDouble("size", 1.0).toFloat(),
                 align = WidgetAlign.fromName(value.optString("align")),
+                weight = value.optInt("weight", 0).coerceIn(0, 900),
             )
         }
     }
@@ -184,6 +189,7 @@ internal fun fallbackRenderBranch(
             ),
             size = elementSizeScale(styles[id]),
             align = styles[id]?.align ?: WidgetAlign.start,
+            weight = elementWeight(styles[id]),
         )
     }
     return WidgetRenderBranch(mode = mode, elements = elements)

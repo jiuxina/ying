@@ -35,6 +35,8 @@ void main() {
         'title': WidgetElementStyle(
           visible: WidgetElementVisible.show,
           size: WidgetElementSize.large,
+          sizeScale: 1.6,
+          weight: 700,
           colorMode: WidgetColorMode.custom,
           color: 0xFFE91E63,
           align: WidgetAlign.center,
@@ -69,6 +71,8 @@ void main() {
       sanitized.widgetElementStyles['title']?.size,
       WidgetElementSize.large,
     );
+    expect(sanitized.widgetElementStyles['title']?.sizeScale, 1.6);
+    expect(sanitized.widgetElementStyles['title']?.weight, 700);
     expect(
       sanitized.widgetElementStyles['title']?.colorMode,
       WidgetColorMode.custom,

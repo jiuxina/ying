@@ -8,7 +8,7 @@ import 'widget_holiday.dart';
 import '../utils/widget_element_style_utils.dart';
 
 /// 渲染协议版本；每次变更元素解析规则或 JSON 结构时递增。
-const widgetRenderProtocolVersion = 9;
+const widgetRenderProtocolVersion = 10;
 
 /// 小部件元素清单，顺序即协议输出顺序。
 const widgetRenderElementIds = <String>[
@@ -50,18 +50,21 @@ class WidgetElementRender {
     required this.color,
     required this.size,
     required this.align,
+    this.weight = 0,
   });
 
   final bool visible;
   final int color;
   final double size;
   final WidgetAlign align;
+  final int weight;
 
   Map<String, Object?> toJson() => {
     'visible': visible,
     'color': color,
     'size': size,
     'align': align.name,
+    if (weight != 0) 'weight': weight,
   };
 
   factory WidgetElementRender.fromJson(Map<String, dynamic> json) {
@@ -73,6 +76,7 @@ class WidgetElementRender {
         (value) => value.name == json['align'],
         orElse: () => WidgetAlign.start,
       ),
+      weight: ((json['weight'] as num?)?.clamp(0, 900) ?? 0).toInt(),
     );
   }
 }
@@ -90,6 +94,7 @@ class WidgetRenderBranch {
         color: 0xFFFFFFFF,
         size: 1.0,
         align: WidgetAlign.start,
+        weight: 0,
       );
 
   Map<String, Object?> toJson() => {
@@ -158,6 +163,7 @@ class WidgetRenderSpec {
     required this.texts,
     required this.compact,
     required this.full,
+    this.contentMargin = 16.0,
   });
 
   final int version;
@@ -167,6 +173,7 @@ class WidgetRenderSpec {
   final WidgetRenderTexts texts;
   final WidgetRenderBranch compact;
   final WidgetRenderBranch full;
+  final double contentMargin;
 
   WidgetRenderBranch branch(bool compact) => compact ? this.compact : full;
 
@@ -178,6 +185,7 @@ class WidgetRenderSpec {
     'texts': texts.toJson(),
     'compact': compact.toJson(),
     'full': full.toJson(),
+    if (contentMargin != 16.0) 'contentMargin': contentMargin,
   };
 
   factory WidgetRenderSpec.fromJson(Map<String, dynamic> json) {
@@ -200,6 +208,7 @@ class WidgetRenderSpec {
       full: WidgetRenderBranch.fromJson(
         json['full'] as Map<String, dynamic>? ?? const {},
       ),
+      contentMargin: (json['contentMargin'] as num?)?.toDouble() ?? 16.0,
     );
   }
 }
@@ -236,6 +245,7 @@ WidgetRenderSpec resolveWidgetRenderSpec(
       days: '--',
       unit: '天',
     ),
+    contentMargin: settings.widgetContentMargin,
     compact: _resolveBranch(
       settings,
       visible,
@@ -345,6 +355,7 @@ WidgetElementRender _resolveElement(
     color: color,
     size: widgetElementSizeScale(settings, id),
     align: widgetElementStyleOf(settings, id)?.align ?? WidgetAlign.start,
+    weight: widgetElementWeight(settings, id),
   );
 }
 

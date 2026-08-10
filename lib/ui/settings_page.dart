@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +12,9 @@ import '../models/unlock_features.dart';
 import '../models/widget_font.dart';
 import '../state/app_controller.dart';
 import '../state/font_library_controller.dart';
+import '../services/avatar_service.dart';
+import '../services/avatar_image_provider.dart';
+import '../services/background_image_provider.dart';
 import '../services/photo_background_service.dart';
 import '../services/font_library_service.dart';
 import '../services/wallpaper_color_service.dart';
@@ -270,16 +274,100 @@ Future<void> _pickBackgroundPhoto(BuildContext context, WidgetRef ref) async {
   final controller = ref.read(appControllerProvider.notifier);
   final settings = ref.read(appControllerProvider).settings;
   try {
-    final path = await pickAndCacheWidgetBackground();
-    await controller.updateSettings(
-      settings.copyWith(widgetBackgroundPath: path),
+    final path = await pickAndCacheWidgetBackground(
+      brightness: settings.widgetBackgroundBrightness,
+      blur: settings.widgetBackgroundBlur,
     );
-    if (context.mounted) _showMessage(context, '照片背景已更新');
+    await controller.updateSettings(
+      settings.copyWith(
+        widgetBackgroundPath: path,
+        widgetBackgroundBrightness: settings.widgetBackgroundBrightness,
+        widgetBackgroundBlur: settings.widgetBackgroundBlur,
+      ),
+    );
+    if (context.mounted) {
+      _showMessage(context, '照片已选择，可继续调整亮度与模糊');
+      await _openBackgroundEditor(context, ref);
+    }
   } on PhotoBackgroundException catch (error) {
     if (context.mounted) _showMessage(context, error.message);
   } catch (_) {
     if (context.mounted) _showMessage(context, '选择照片失败，请重试');
   }
+}
+
+Future<void> _recropBackgroundPhoto(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  final controller = ref.read(appControllerProvider.notifier);
+  final settings = ref.read(appControllerProvider).settings;
+  try {
+    final path = await recropWidgetBackground(
+      brightness: settings.widgetBackgroundBrightness,
+      blur: settings.widgetBackgroundBlur,
+    );
+    await controller.updateSettings(
+      settings.copyWith(widgetBackgroundPath: path),
+    );
+    if (context.mounted) {
+      _showMessage(context, '照片已重新裁切');
+      await _openBackgroundEditor(context, ref);
+    }
+  } on PhotoBackgroundException catch (error) {
+    if (error.message.contains('缺少源图')) {
+      if (context.mounted) {
+        await _pickBackgroundPhoto(context, ref);
+      }
+      return;
+    }
+    if (context.mounted) _showMessage(context, error.message);
+  } catch (_) {
+    if (context.mounted) _showMessage(context, '重新裁切失败，请重试');
+  }
+}
+
+Future<void> _openBackgroundEditor(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  final settings = ref.read(appControllerProvider).settings;
+  if (settings.widgetBackgroundPath.isEmpty) return;
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) => _PhotoBackgroundEditorSheet(
+      path: settings.widgetBackgroundPath,
+      brightness: settings.widgetBackgroundBrightness,
+      blur: settings.widgetBackgroundBlur,
+    ),
+  );
+}
+
+Future<void> _pickAvatar(BuildContext context, WidgetRef ref) async {
+  final controller = ref.read(appControllerProvider.notifier);
+  try {
+    final path = await pickAndCacheAvatar();
+    await controller.updateSettings(
+      ref.read(appControllerProvider).settings.copyWith(avatarPath: path),
+    );
+    if (context.mounted) _showMessage(context, '头像已更新');
+  } on AvatarException catch (error) {
+    if (context.mounted) _showMessage(context, error.message);
+  } catch (_) {
+    if (context.mounted) _showMessage(context, '选择头像失败，请重试');
+  }
+}
+
+Future<void> _clearAvatar(BuildContext context, WidgetRef ref) async {
+  await deleteCachedAvatar();
+  await ref
+      .read(appControllerProvider.notifier)
+      .updateSettings(
+        ref.read(appControllerProvider).settings.copyWith(avatarPath: ''),
+      );
+  if (context.mounted) _showMessage(context, '已恢复默认头像');
 }
 
 Future<void> _clearWidgetBackground(BuildContext context, WidgetRef ref) async {
@@ -290,7 +378,11 @@ Future<void> _clearWidgetBackground(BuildContext context, WidgetRef ref) async {
         ref
             .read(appControllerProvider)
             .settings
-            .copyWith(widgetBackgroundPath: ''),
+            .copyWith(
+              widgetBackgroundPath: '',
+              widgetBackgroundBrightness: 1.0,
+              widgetBackgroundBlur: 0.0,
+            ),
       );
   if (context.mounted) _showMessage(context, '已清除照片背景');
 }

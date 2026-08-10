@@ -69,6 +69,20 @@ class SettingsCategoryPage extends ConsumerWidget {
           title: '外观',
           child: Column(
             children: [
+              _AvatarSettingTile(
+                path: settings.avatarPath,
+                onTap: () => unawaited(_pickAvatar(context, ref)),
+              ),
+              if (settings.avatarPath.isNotEmpty) ...[
+                const _InsetDivider(),
+                _SettingsActionTile(
+                  icon: Icons.delete_outline_rounded,
+                  title: '清除头像',
+                  subtitle: '恢复默认圆形头像',
+                  onTap: () => unawaited(_clearAvatar(context, ref)),
+                ),
+              ],
+              const _InsetDivider(),
               _ThemePicker(
                 value: settings.themeMode,
                 onChanged: (value) => controller.updateSettings(
@@ -144,44 +158,16 @@ class SettingsCategoryPage extends ConsumerWidget {
                     .toList(),
               ),
               const _InsetDivider(),
-              Semantics(
-                label: '小部件文字大小',
-                value: '${(settings.widgetFontScale * 100).round()}%',
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: 4,
-                    activeTrackColor: Theme.of(context).colorScheme.primary,
-                    inactiveTrackColor: Theme.of(
-                      context,
-                    ).colorScheme.outlineVariant.withValues(alpha: 0.5),
-                    thumbColor: Theme.of(context).colorScheme.primary,
-                    overlayColor: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.12),
-                    thumbShape: const RoundSliderThumbShape(
-                      enabledThumbRadius: 9,
-                    ),
-                    overlayShape: const RoundSliderOverlayShape(
-                      overlayRadius: 20,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.text_decrease_rounded, size: 19),
-                      Expanded(
-                        child: Slider(
-                          value: settings.widgetFontScale,
-                          min: 0.85,
-                          max: 1.3,
-                          divisions: 3,
-                          onChanged: (value) => controller.updateSettings(
-                            settings.copyWith(widgetFontScale: value),
-                          ),
-                        ),
-                      ),
-                      const Icon(Icons.text_increase_rounded, size: 23),
-                    ],
-                  ),
+              _SliderSetting(
+                icon: Icons.text_fields_rounded,
+                title: '全局字号',
+                value: settings.widgetFontScale,
+                min: 0.5,
+                max: 2.0,
+                divisions: 30,
+                valueLabel: '${(settings.widgetFontScale * 100).round()}%',
+                onChanged: (value) => controller.updateSettings(
+                  settings.copyWith(widgetFontScale: value),
                 ),
               ),
             ],
@@ -214,6 +200,22 @@ class SettingsCategoryPage extends ConsumerWidget {
                 onTap: () => unawaited(_pickBackgroundPhoto(context, ref)),
               ),
               if (settings.widgetBackgroundPath.isNotEmpty) ...[
+                const _InsetDivider(),
+                _SettingsActionTile(
+                  icon: Icons.crop_rounded,
+                  title: '重新裁切照片',
+                  subtitle: '重新自由裁切当前图片',
+                  onTap: () => unawaited(_recropBackgroundPhoto(context, ref)),
+                ),
+                const _InsetDivider(),
+                _SettingsActionTile(
+                  icon: Icons.tune_rounded,
+                  title: '亮度与模糊',
+                  subtitle:
+                      '亮度 ${(settings.widgetBackgroundBrightness * 100).round()}%'
+                      ' · 模糊 ${settings.widgetBackgroundBlur.round()}',
+                  onTap: () => unawaited(_openBackgroundEditor(context, ref)),
+                ),
                 const _InsetDivider(),
                 _SettingsActionTile(
                   icon: Icons.hide_image_outlined,
@@ -363,30 +365,48 @@ class SettingsCategoryPage extends ConsumerWidget {
         const SizedBox(height: 16),
         _Section(
           title: '整体布局',
-          subtitle: '单事件小部件垂直位置',
-          child: _ChoiceSetting(
-            icon: Icons.vertical_align_center_rounded,
-            title: '内容垂直对齐',
-            subtitle: '顶部、居中或底部',
-            options: widgetVerticalAlignOptions
-                .map((option) => (option.$1.name, option.$2))
-                .toList(),
-            selected: (
-              settings.widgetVerticalAlign.name,
-              widgetVerticalAlignOptions
-                  .firstWhere(
-                    (option) =>
-                        option.$1 == settings.widgetVerticalAlign,
-                  )
-                  .$2,
-            ),
-            onSelected: (option) => controller.updateSettings(
-              settings.copyWith(
-                widgetVerticalAlign: WidgetVerticalAlign.values.firstWhere(
-                  (align) => align.name == option.$1,
+          subtitle: '内容距边框的距离与垂直位置',
+          child: Column(
+            children: [
+              _SliderSetting(
+                icon: Icons.space_bar_rounded,
+                title: '内容边距',
+                value: settings.widgetContentMargin,
+                min: 4,
+                max: 40,
+                divisions: 18,
+                valueLabel:
+                    '${settings.widgetContentMargin.round()} dp',
+                onChanged: (value) => controller.updateSettings(
+                  settings.copyWith(widgetContentMargin: value),
                 ),
               ),
-            ),
+              const _InsetDivider(),
+              _ChoiceSetting(
+                icon: Icons.vertical_align_center_rounded,
+                title: '内容垂直对齐',
+                subtitle: '顶部、居中或底部',
+                options: widgetVerticalAlignOptions
+                    .map((option) => (option.$1.name, option.$2))
+                    .toList(),
+                selected: (
+                  settings.widgetVerticalAlign.name,
+                  widgetVerticalAlignOptions
+                      .firstWhere(
+                        (option) =>
+                            option.$1 == settings.widgetVerticalAlign,
+                      )
+                      .$2,
+                ),
+                onSelected: (option) => controller.updateSettings(
+                  settings.copyWith(
+                    widgetVerticalAlign: WidgetVerticalAlign.values.firstWhere(
+                      (align) => align.name == option.$1,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 16),

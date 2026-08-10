@@ -435,7 +435,7 @@ class _WidgetPreview extends StatelessWidget {
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.all(15),
+              padding: EdgeInsets.all(settings.widgetContentMargin),
               child: style == WidgetStyle.mirror
                   ? Transform.rotate(
                       angle: -0.045,
@@ -534,6 +534,10 @@ class _PreviewBody extends StatelessWidget {
                 texts.category,
                 style: TextStyle(
                   color: Color(categoryElement.color),
+                  fontWeight: _previewFontWeight(
+                    categoryElement.weight,
+                    FontWeight.w400,
+                  ),
                   shadows: shadow,
                   fontFamily: textFamily,
                 ),
@@ -570,7 +574,10 @@ class _PreviewBody extends StatelessWidget {
               style: TextStyle(
                 color: Color(titleElement.color),
                 fontSize: (compact ? 15 : 18) * scale * titleElement.size,
-                fontWeight: FontWeight.w700,
+                fontWeight: _previewFontWeight(
+                  titleElement.weight,
+                  FontWeight.w700,
+                ),
                 shadows: shadow,
                 fontFamily: textFamily,
               ),
@@ -588,7 +595,10 @@ class _PreviewBody extends StatelessWidget {
                       color: Color(daysElement.color),
                       fontSize:
                           (compact ? 32 : 44) * scale * daysElement.size,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: _previewFontWeight(
+                        daysElement.weight,
+                        FontWeight.w800,
+                      ),
                       height: 0.95,
                       shadows: shadow,
                       fontFamily: digitFamily,
@@ -600,11 +610,15 @@ class _PreviewBody extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
                       texts.unit,
-                      style: TextStyle(
-                        color: Color(unitElement.color),
-                        fontSize: 14 * scale * unitElement.size,
-                        shadows: shadow,
-                        fontFamily: textFamily,
+                    style: TextStyle(
+                      color: Color(unitElement.color),
+                      fontSize: 14 * scale * unitElement.size,
+                      fontWeight: _previewFontWeight(
+                        unitElement.weight,
+                        FontWeight.w400,
+                      ),
+                      shadows: shadow,
+                      fontFamily: textFamily,
                       ),
                     ),
                   ),
@@ -704,6 +718,10 @@ class _PreviewBody extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Color(categoryElement.color),
+                      fontWeight: _previewFontWeight(
+                        categoryElement.weight,
+                        FontWeight.w400,
+                      ),
                       shadows: shadow,
                       fontFamily: textFamily,
                     ),
@@ -713,7 +731,11 @@ class _PreviewBody extends StatelessWidget {
                 const Spacer(),
               if (holidayVisible) ...[
                 const SizedBox(width: 8),
-                _HolidayBadge(holiday: holiday, accent: accent),
+                _HolidayBadge(
+                  holiday: holiday,
+                  accent: accent,
+                  weight: holidayElement.weight,
+                ),
               ],
               _iconButton(
                 Icons.chevron_left_rounded,
@@ -750,7 +772,10 @@ class _PreviewBody extends StatelessWidget {
                   style: TextStyle(
                     color: Color(titleElement.color),
                     fontSize: (compact ? 15 : 18) * scale * titleElement.size,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: _previewFontWeight(
+                      titleElement.weight,
+                      FontWeight.w700,
+                    ),
                     shadows: shadow,
                     fontFamily: textFamily,
                   ),
@@ -786,7 +811,10 @@ class _PreviewBody extends StatelessWidget {
                 style: TextStyle(
                   color: _color('days', override: displayMainColor),
                   fontSize: mainFontSize,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: _previewFontWeight(
+                    daysElement.weight,
+                    FontWeight.w800,
+                  ),
                   height: 0.95,
                   shadows: glowShadows,
                   fontFamily: digitFamily,
@@ -808,6 +836,10 @@ class _PreviewBody extends StatelessWidget {
                           : null,
                     ),
                     fontSize: 14 * scale * unitElement.size,
+                    fontWeight: _previewFontWeight(
+                      unitElement.weight,
+                      FontWeight.w400,
+                    ),
                     shadows: glowShadows,
                     fontFamily: textFamily,
                   ),
@@ -825,6 +857,10 @@ class _PreviewBody extends StatelessWidget {
               style: TextStyle(
                 color: Color(preciseElement.color),
                 fontSize: 14 * scale * preciseElement.size,
+                fontWeight: _previewFontWeight(
+                  preciseElement.weight,
+                  FontWeight.w400,
+                ),
                 fontFamily: textFamily,
                 shadows: shadow,
               ),
@@ -841,6 +877,10 @@ class _PreviewBody extends StatelessWidget {
               style: TextStyle(
                 color: Color(dateInfoElement.color),
                 fontSize: 12 * scale * dateInfoElement.size,
+                fontWeight: _previewFontWeight(
+                  dateInfoElement.weight,
+                  FontWeight.w400,
+                ),
                 shadows: shadow,
                 fontFamily: textFamily,
               ),
@@ -857,6 +897,10 @@ class _PreviewBody extends StatelessWidget {
               style: TextStyle(
                 color: Color(noteElement.color),
                 fontSize: 14 * scale * noteElement.size,
+                fontWeight: _previewFontWeight(
+                  noteElement.weight,
+                  FontWeight.w400,
+                ),
                 fontStyle: quote.isNotEmpty ? FontStyle.italic : null,
                 shadows: shadow,
                 fontFamily: textFamily,
@@ -866,6 +910,12 @@ class _PreviewBody extends StatelessWidget {
       ],
     );
   }
+}
+
+FontWeight _previewFontWeight(int weight, FontWeight fallback) {
+  if (weight <= 0) return fallback;
+  final index = ((weight / 100).round() - 1).clamp(0, 8);
+  return FontWeight.values[index];
 }
 
 TextAlign _renderTextAlign(WidgetAlign value) => switch (value) {
@@ -952,7 +1002,7 @@ class _WidgetListPreview extends StatelessWidget {
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: EdgeInsets.all(settings.widgetContentMargin),
               child: Column(
                 children: [
                   if (listHeaderVisible) ...[
@@ -967,7 +1017,10 @@ class _WidgetListPreview extends StatelessWidget {
                             style: TextStyle(
                               color: Color(listHeader.color),
                               fontSize: 13 * scale * listHeader.size,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: _previewFontWeight(
+                                listHeader.weight,
+                                FontWeight.w700,
+                              ),
                               fontFamily: textFamily,
                             ),
                           ),
@@ -986,7 +1039,10 @@ class _WidgetListPreview extends StatelessWidget {
                                     style: TextStyle(
                                       color: Color(empty.color),
                                       fontSize: 15 * scale * empty.size,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: _previewFontWeight(
+                                        empty.weight,
+                                        FontWeight.w700,
+                                      ),
                                       fontFamily: textFamily,
                                     ),
                                   )
@@ -1108,7 +1164,10 @@ class _ListRow extends StatelessWidget {
                   style: TextStyle(
                     color: Color(rowTitle.color),
                     fontSize: 14 * scale * rowTitle.size,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: _previewFontWeight(
+                      rowTitle.weight,
+                      FontWeight.w700,
+                    ),
                     fontFamily: textFamily,
                   ),
                 ),
@@ -1122,6 +1181,10 @@ class _ListRow extends StatelessWidget {
                   style: TextStyle(
                     color: Color(rowSubtitle.color),
                     fontSize: 11 * scale * rowSubtitle.size,
+                    fontWeight: _previewFontWeight(
+                      rowSubtitle.weight,
+                      FontWeight.w400,
+                    ),
                     fontFamily: textFamily,
                   ),
                 ),
@@ -1136,7 +1199,10 @@ class _ListRow extends StatelessWidget {
             style: TextStyle(
               color: color('rowDays', override: displayMainColor),
               fontSize: 18 * scale * rowDays.size,
-              fontWeight: FontWeight.w800,
+              fontWeight: _previewFontWeight(
+                rowDays.weight,
+                FontWeight.w800,
+              ),
               fontFamily: digitFamily,
             ),
           ),
@@ -1153,6 +1219,10 @@ class _ListRow extends StatelessWidget {
                     : null,
               ),
               fontSize: 11 * scale * rowUnit.size,
+              fontWeight: _previewFontWeight(
+                rowUnit.weight,
+                FontWeight.w400,
+              ),
               fontFamily: textFamily,
             ),
           ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
+import '../services/avatar_image_provider.dart';
 import '../services/update_service.dart';
 import '../state/app_controller.dart';
 import '../utils/event_query.dart';
@@ -232,7 +233,11 @@ class _EventsPageState extends ConsumerState<_EventsPage> {
               ),
               child: Column(
                 children: [
-                  _HeroHeader(active: active, onAdd: widget.onAdd),
+                  _HeroHeader(
+                    active: active,
+                    avatarPath: widget.settings.avatarPath,
+                    onAdd: widget.onAdd,
+                  ),
                   const SizedBox(height: 18),
                   EventFilterBar(
                     controller: searchController,
@@ -644,9 +649,14 @@ class _UpdateBanner extends StatelessWidget {
 }
 
 class _HeroHeader extends StatelessWidget {
-  const _HeroHeader({required this.active, required this.onAdd});
+  const _HeroHeader({
+    required this.active,
+    required this.avatarPath,
+    required this.onAdd,
+  });
 
   final int active;
+  final String avatarPath;
   final VoidCallback onAdd;
 
   @override
@@ -655,6 +665,21 @@ class _HeroHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
+        CircleAvatar(
+          radius: 24,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          backgroundImage: avatarImage(avatarPath),
+          child: avatarImage(avatarPath) == null
+              ? const Text(
+                  '萤',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                )
+              : null,
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

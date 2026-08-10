@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ying/models/app_settings.dart';
 import 'package:ying/models/countdown_event.dart';
+import 'package:ying/models/widget_element_style.dart';
 import 'package:ying/models/widget_render_spec.dart';
 import 'package:ying/services/widget_service.dart';
 
@@ -55,10 +56,30 @@ void main() {
       ],
       now: DateTime(2026, 8, 8),
     );
-    expect(values['widget_protocol_version'], 9);
+    expect(values['widget_protocol_version'], 10);
     final raw = values['widget_render_spec'] as String;
     final decoded = jsonDecode(raw) as Map<String, dynamic>;
-    expect(decoded['version'], 9);
+    expect(decoded['version'], 10);
     expect(decoded['eventOrder'], ['spec-evt']);
+  });
+
+  test('explicit size scale, weight and content margin enter render spec', () {
+    final values = widgetPreferenceValues(
+      const AppSettings(
+        widgetContentMargin: 28,
+        widgetElementStyles: {
+          'title': WidgetElementStyle(sizeScale: 1.6, weight: 700),
+        },
+      ),
+      now: DateTime(2026, 8, 8),
+    );
+    final decoded = jsonDecode(
+      values['widget_render_spec'] as String,
+    ) as Map<String, dynamic>;
+    expect(decoded['contentMargin'], 28.0);
+    final title = (decoded['full'] as Map<String, dynamic>)['elements']
+        ['title'] as Map<String, dynamic>;
+    expect(title['size'], 1.6);
+    expect(title['weight'], 700);
   });
 }
