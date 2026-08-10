@@ -677,7 +677,7 @@ class _AvatarSettingTile extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    backgroundColor: Colors.transparent,
                     backgroundImage:
                         image ?? const AssetImage('app.png'),
                   ),

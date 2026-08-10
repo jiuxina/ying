@@ -259,6 +259,7 @@ debug APK 已安装到 MuMu 模拟器并启动，日历 Tab、右上角设置入
 - [x] Android 字重渲染：RemoteViews 动态字重通过通用位图通道渲染，`precise` 与节日徽章用 fake bold 近似（2026-08-11）
 - [x] 渲染协议升级 v10：`WidgetElementRender` 增加 `weight`，`WidgetRenderSpec` 增加 `contentMargin`，旧数据缺省回退默认值（2026-08-11）
 - [x] 首页顶栏：设置按钮从悬浮改为固定在页面顶栏，移除“萤”标题文案，待完成计数移到设置按钮下方，默认头像使用软件图标并略低于设置按钮（2026-08-11）
+- [x] 头像透明：头像缓存改用 PNG 保留透明通道，移除主题色圆形底色，透明图片直接透出页面背景（2026-08-11）
 
 验证：`flutter analyze`、`flutter test`、`gradlew :app:testDebugUnitTest`、debug APK 构建安装与模拟器 UI 层级验证均已通过（2026-08-11）。
 

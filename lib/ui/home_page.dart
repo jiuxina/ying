@@ -683,7 +683,7 @@ class _HomeTopBar extends StatelessWidget {
             label: '应用头像',
             child: CircleAvatar(
               radius: 24,
-              backgroundColor: Theme.of(context).colorScheme.primary,
+              backgroundColor: Colors.transparent,
               backgroundImage:
                   avatarImage(avatarPath) ?? const AssetImage('app.png'),
             ),
