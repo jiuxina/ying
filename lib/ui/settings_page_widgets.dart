@@ -779,11 +779,15 @@ class _ElementStyleSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final current = style ?? const WidgetElementStyle();
     final scheme = Theme.of(context).colorScheme;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        child: SingleChildScrollView(
-          child: Column(
+    return Material(
+      color: scheme.surface,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      clipBehavior: Clip.antiAlias,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: SingleChildScrollView(
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -926,7 +930,8 @@ class _ElementStyleSheet extends StatelessWidget {
                   label: const Text('重置此元素'),
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

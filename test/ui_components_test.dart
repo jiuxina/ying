@@ -550,6 +550,17 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
+      final sheetMaterial = tester.widget<Material>(
+        find
+            .ancestor(
+              of: find.text('显隐'),
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(sheetMaterial.color, isNotNull);
+      expect(sheetMaterial.color, isNot(Colors.transparent));
+
       await tester.tap(find.widgetWithText(ChoiceChip, '大'));
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.widgetWithText(ChoiceChip, '自定义'));
@@ -586,6 +597,17 @@ void main() {
       await tester.tap(find.text('添加事件'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
+
+      final sheetMaterial = tester.widget<Material>(
+        find
+            .ancestor(
+              of: find.text('显隐'),
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(sheetMaterial.color, isNotNull);
+      expect(sheetMaterial.color, isNot(Colors.transparent));
 
       await tester.tap(find.widgetWithText(ChoiceChip, '隐藏'));
       await tester.pump(const Duration(milliseconds: 300));
