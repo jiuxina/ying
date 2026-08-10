@@ -11,6 +11,7 @@ void main() {
     DateTime? createdAt,
     String note = '',
     String icon = '',
+    CountDirection direction = CountDirection.auto,
   }) {
     final base = DateTime.now();
     return CountdownEvent(
@@ -24,6 +25,7 @@ void main() {
       category: '学习',
       note: note,
       icon: icon,
+      direction: direction,
       createdAt: createdAt ?? DateTime(base.year, base.month, base.day),
     );
   }
@@ -65,13 +67,13 @@ void main() {
 
   group('精确时间与进度', () {
     test('时分秒文本支持超过 24 小时', () {
+      final now = DateTime(2026, 8, 8, 12);
       final future = event(
-        targetDate: DateTime(2026, 8, 9, 15, 30),
+        targetDate: now.add(const Duration(hours: 27, minutes: 30)),
+        createdAt: DateTime(2026, 1, 1),
+        direction: CountDirection.countdown,
       );
-      expect(
-        widgetPreciseTimeText(future, DateTime(2026, 8, 8, 12)),
-        '27:30:00',
-      );
+      expect(widgetPreciseTimeText(future, now), '27:30:00');
     });
 
     test('进度按创建日到目标日计算', () {

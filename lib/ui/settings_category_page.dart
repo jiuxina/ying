@@ -391,6 +391,9 @@ class SettingsCategoryPage extends ConsumerWidget {
       SettingsCategory.notifications => [
         ReminderDiagnosticsSection(events: appState.events),
       ],
+      SettingsCategory.permissions => [
+        const PermissionManageSection(),
+      ],
       SettingsCategory.data => [
         _Section(
           title: '数据管理',

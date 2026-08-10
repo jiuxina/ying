@@ -13,6 +13,7 @@ import '../services/photo_background_service.dart';
 import '../services/wallpaper_color_service.dart';
 import '../utils/widget_content_utils.dart';
 import 'glass_ui.dart';
+import 'permission_manage_section.dart';
 import 'reminder_diagnostics_section.dart';
 import 'unlock_gate.dart';
 import 'update_dialog.dart';
@@ -22,13 +23,21 @@ import 'widget_style_presets.dart';
 part 'settings_category_page.dart';
 part 'settings_page_widgets.dart';
 
-enum SettingsCategory { appearance, widget, notifications, data, updateAbout }
+enum SettingsCategory {
+  appearance,
+  widget,
+  notifications,
+  permissions,
+  data,
+  updateAbout,
+}
 
 extension SettingsCategoryInfo on SettingsCategory {
   String get label => switch (this) {
     SettingsCategory.appearance => '外观与显示',
     SettingsCategory.widget => '桌面小部件',
     SettingsCategory.notifications => '通知与提醒',
+    SettingsCategory.permissions => '权限管理',
     SettingsCategory.data => '数据管理',
     SettingsCategory.updateAbout => '更新与关于',
   };
@@ -37,6 +46,7 @@ extension SettingsCategoryInfo on SettingsCategory {
     SettingsCategory.appearance => Icons.palette_outlined,
     SettingsCategory.widget => Icons.widgets_outlined,
     SettingsCategory.notifications => Icons.notifications_outlined,
+    SettingsCategory.permissions => Icons.shield_outlined,
     SettingsCategory.data => Icons.folder_copy_outlined,
     SettingsCategory.updateAbout => Icons.info_outline_rounded,
   };
@@ -45,6 +55,7 @@ extension SettingsCategoryInfo on SettingsCategory {
     SettingsCategory.appearance => '主题与动画',
     SettingsCategory.widget => '样式与内容',
     SettingsCategory.notifications => '权限与提醒',
+    SettingsCategory.permissions => '通知、自启动与电池优化',
     SettingsCategory.data => '备份与清除',
     SettingsCategory.updateAbout => '版本与更新',
   };

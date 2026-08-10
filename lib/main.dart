@@ -8,6 +8,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app_navigator.dart';
 import 'services/notification_service.dart';
+import 'services/storage_service.dart';
 import 'services/widget_launch_actions.dart';
 import 'services/widget_service.dart';
 import 'state/app_controller.dart';
@@ -16,11 +17,17 @@ import 'ui/app_theme.dart';
 import 'ui/event_detail_page.dart';
 import 'ui/glass_ui.dart';
 import 'ui/home_page.dart';
+import 'ui/onboarding_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('zh_CN');
-  runApp(const ProviderScope(child: DaymarkApp()));
+  final onboardingCompleted = await StorageService().loadOnboardingCompleted();
+  runApp(
+    ProviderScope(
+      child: DaymarkApp(onboardingCompleted: onboardingCompleted),
+    ),
+  );
   unawaited(_initializePlatformServices());
 }
 
@@ -53,7 +60,9 @@ void _listenForWidgetLaunches() {
 }
 
 class DaymarkApp extends ConsumerStatefulWidget {
-  const DaymarkApp({super.key});
+  const DaymarkApp({super.key, required this.onboardingCompleted});
+
+  final bool onboardingCompleted;
 
   @override
   ConsumerState<DaymarkApp> createState() => _DaymarkAppState();
@@ -63,6 +72,13 @@ class _DaymarkAppState extends ConsumerState<DaymarkApp>
     with WidgetsBindingObserver {
   StreamSubscription<NotificationResponse>? _notificationSubscription;
   String? _openEventId;
+  late bool _onboardingCompleted = widget.onboardingCompleted;
+
+  Future<void> _finishOnboarding() async {
+    await StorageService().saveOnboardingCompleted();
+    if (!mounted) return;
+    setState(() => _onboardingCompleted = true);
+  }
 
   @override
   void initState() {
@@ -166,7 +182,9 @@ class _DaymarkAppState extends ConsumerState<DaymarkApp>
         reduceMotion: settings.reduceMotion,
         child: child ?? const SizedBox.shrink(),
       ),
-      home: const HomePage(),
+      home: _onboardingCompleted
+          ? const HomePage()
+          : OnboardingPage(onFinished: _finishOnboarding),
     );
   }
 }

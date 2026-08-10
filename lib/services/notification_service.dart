@@ -146,6 +146,12 @@ class NotificationService {
     return requestPermission();
   }
 
+  /// 查询当前通知权限状态；返回 null 表示当前平台无法确定。
+  Future<bool?> notificationsEnabled() async {
+    await initialize();
+    return _notificationsEnabled();
+  }
+
   static const _settingsChannel = MethodChannel('ying/settings');
 
   /// 打开系统通知设置页，用于通知权限被拒后的引导。

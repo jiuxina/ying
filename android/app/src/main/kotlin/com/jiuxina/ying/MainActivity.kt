@@ -7,7 +7,9 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
+import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -58,6 +60,29 @@ class MainActivity : FlutterActivity() {
         }
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
+            "ying/permissions",
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isIgnoringBatteryOptimizations" -> {
+                    result.success(isIgnoringBatteryOptimizations())
+                }
+                "requestIgnoreBatteryOptimizations" -> {
+                    result.success(requestIgnoreBatteryOptimizations())
+                }
+                "autoStartSupported" -> {
+                    result.success(autoStartActivityComponent() != null)
+                }
+                "openAutoStartSettings" -> {
+                    result.success(openAutoStartSettings())
+                }
+                "openAppDetailsSettings" -> {
+                    result.success(openAppDetailsSettings())
+                }
+                else -> result.notImplemented()
+            }
+        }
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
             "com.jiuxina.ying/device",
         ).setMethodCallHandler { call, result ->
             when (call.method) {
@@ -77,6 +102,87 @@ class MainActivity : FlutterActivity() {
             }
         }
     }
+
+    private fun isIgnoringBatteryOptimizations(): Boolean {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        return powerManager.isIgnoringBatteryOptimizations(packageName)
+    }
+
+    private fun requestIgnoreBatteryOptimizations(): Map<String, Any> {
+        if (isIgnoringBatteryOptimizations()) {
+            return mapOf("opened" to true, "fallback" to false)
+        }
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                .setData(Uri.parse("package:$packageName"))
+            if (resolveActivity(intent)) {
+                startActivity(intent)
+                return mapOf("opened" to true, "fallback" to false)
+            }
+        } catch (_: Exception) {
+            // 部分 ROM 不支持专用请求页，继续走应用详情兜底。
+        }
+        val fallback = openAppDetailsSettings()
+        return mapOf("opened" to fallback, "fallback" to fallback)
+    }
+
+    private fun autoStartCandidates(): List<Pair<String, String>> = listOf(
+        "com.miui.securitycenter" to "com.miui.permcenter.autostart.AutoStartManagementActivity",
+        "com.huawei.systemmanager" to "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity",
+        "com.huawei.systemmanager" to "com.huawei.systemmanager.optimize.process.ProtectActivity",
+        "com.coloros.safecenter" to "com.coloros.safecenter.permission.startup.StartupAppListActivity",
+        "com.coloros.safecenter" to "com.coloros.safecenter.startupapp.StartupAppListActivity",
+        "com.oppo.safe" to "com.oppo.safe.permission.startup.StartupAppListActivity",
+        "com.oneplus.security" to "com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity",
+        "com.vivo.permissionmanager" to "com.vivo.permissionmanager.activity.BgStartUpManagerActivity",
+        "com.iqoo.secure" to "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager",
+        "com.samsung.android.lool" to "com.samsung.android.sm.ui.battery.BatteryActivity",
+        "com.meizu.safe" to "com.meizu.safe.permission.SmartBGActivity",
+        "com.letv.android.letvsafe" to "com.letv.android.letvsafe.AutobootManageActivity",
+        "com.asus.mobilemanager" to "com.asus.mobilemanager.entry.FunctionActivity",
+    )
+
+    private fun autoStartActivityComponent(): Pair<String, String>? {
+        for ((pkg, cls) in autoStartCandidates()) {
+            val intent = Intent().setClassName(pkg, cls)
+            if (resolveActivity(intent)) return pkg to cls
+        }
+        return null
+    }
+
+    private fun openAutoStartSettings(): Map<String, Any> {
+        val component = autoStartActivityComponent()
+        if (component != null) {
+            try {
+                startActivity(
+                    Intent().setClassName(component.first, component.second),
+                )
+                return mapOf("opened" to true, "fallback" to false)
+            } catch (_: Exception) {
+                // 组件解析成功但启动失败时继续走应用详情兜底。
+            }
+        }
+        val fallback = openAppDetailsSettings()
+        return mapOf("opened" to fallback, "fallback" to fallback)
+    }
+
+    private fun openAppDetailsSettings(): Boolean {
+        return try {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                .setData(Uri.parse("package:$packageName"))
+            if (resolveActivity(intent)) {
+                startActivity(intent)
+                true
+            } else {
+                false
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun resolveActivity(intent: Intent): Boolean =
+        intent.resolveActivity(packageManager) != null
 }
 
 data class WallpaperPalette(

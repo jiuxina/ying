@@ -17,6 +17,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.net.Uri
+import android.os.Bundle
 import android.os.Build
 import android.os.SystemClock
 import android.view.View
@@ -38,6 +39,8 @@ private const val LAUNCH_REQUEST_ADD = 1
 private const val LAUNCH_REQUEST_OPEN = 2
 private const val ROW_LAUNCH_REQUEST_BASE = 0x10000000
 private const val MAX_LIST_ROWS = 4
+
+private data class WidgetBackdropSize(val width: Int, val height: Int)
 
 internal fun launchIntent(
     context: Context,
@@ -91,6 +94,21 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
     ) {
         updateWidgets(context, appWidgetManager, appWidgetIds, widgetData)
         MidnightRefreshScheduler.schedule(context)
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle?,
+    ) {
+        refreshAll(context)
+        super.onAppWidgetOptionsChanged(
+            context,
+            appWidgetManager,
+            appWidgetId,
+            newOptions,
+        )
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -153,6 +171,10 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         if (pendingUndo != null) {
             scheduleUndoExpiry(context, pendingUndo)
             appWidgetIds.forEach { widgetId ->
+                val size = backdropSize(
+                    context,
+                    appWidgetManager.getAppWidgetOptions(widgetId),
+                )
                 val views = RemoteViews(
                     context.packageName,
                     R.layout.daymark_widget_undo,
@@ -162,6 +184,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                     views,
                     widgetData,
                     effectiveWidgetStyle(widgetData),
+                    size.width,
+                    size.height,
                 )
                 views.setTextViewText(R.id.widget_title, pendingUndo.title)
                 views.setOnClickPendingIntent(
@@ -190,8 +214,9 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 if (listMode) R.layout.daymark_widget_list else R.layout.daymark_widget,
             )
             val options = appWidgetManager.getAppWidgetOptions(widgetId)
-            val compact = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250) < 220 ||
-                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 130) < 120
+            val compact = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250) < 260 ||
+                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 130) < 150
+            val size = backdropSize(context, options)
             val style = effectiveWidgetStyle(widgetData)
             val holiday = if (sponsorUnlocked(widgetData)) {
                 resolveHoliday(
@@ -203,7 +228,14 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 ""
             }
             if (listMode) {
-                updateListWidget(context, views, widgetData, style)
+                updateListWidget(
+                    context,
+                    views,
+                    widgetData,
+                    style,
+                    compact,
+                    size,
+                )
             } else {
                 updateSingleWidget(
                     context,
@@ -214,6 +246,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                     compact,
                     style,
                     holiday,
+                    size,
                 )
             }
             appWidgetManager.updateAppWidget(widgetId, views)
@@ -229,6 +262,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         compact: Boolean,
         style: WidgetStyle,
         holiday: String,
+        size: WidgetBackdropSize,
     ) {
         views.setOnClickPendingIntent(
             R.id.widget_root,
@@ -252,7 +286,19 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 ),
             )
         }
-        applyAppearance(context, views, widgetData, compact, style, holiday)
+        applyAppearance(
+            context,
+            views,
+            widgetData,
+            compact,
+            style,
+            holiday,
+            size.width,
+            size.height,
+        )
+        if (compact) {
+            views.setViewPadding(R.id.widget_content, 12, 12, 12, 12)
+        }
         if (style == WidgetStyle.mirror) {
             views.setFloat(R.id.widget_content, "setRotation", -2.5f)
         }
@@ -297,7 +343,10 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             views.setViewVisibility(R.id.widget_days_old, View.GONE)
         }
         views.setTextViewText(R.id.widget_title, event.title)
-        if (widgetData.getBoolean("widget_show_icon", false) && event.icon.isNotBlank()) {
+        if (!compact &&
+            widgetData.getBoolean("widget_show_icon", false) &&
+            event.icon.isNotBlank()
+        ) {
             views.setTextViewText(R.id.widget_icon, event.icon)
             views.setViewVisibility(R.id.widget_icon, View.VISIBLE)
         } else {
@@ -394,7 +443,10 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         } else {
             views.setViewVisibility(R.id.widget_note, View.GONE)
         }
-        views.setViewVisibility(R.id.widget_complete, View.VISIBLE)
+        views.setViewVisibility(
+            R.id.widget_complete,
+            if (compact) View.GONE else View.VISIBLE,
+        )
         views.setOnClickPendingIntent(
             R.id.widget_complete,
             backgroundIntent(context, "complete", event.id),
@@ -410,6 +462,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 envelopeCoverBitmap(
                     context,
                     accentColor(widgetData, holiday),
+                    size.width,
+                    size.height,
                 ),
             )
             views.setViewVisibility(
@@ -432,6 +486,32 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_next,
             navigationIntent(context, widgetId, index + 1, events.size),
         )
+    }
+
+    private fun backdropSize(
+        context: Context,
+        options: Bundle?,
+    ): WidgetBackdropSize {
+        val density = context.resources.displayMetrics.density
+        val minWidthDp = options?.getInt(
+            AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,
+            250,
+        ) ?: 250
+        val minHeightDp = options?.getInt(
+            AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,
+            130,
+        ) ?: 130
+        val maxWidthDp = options?.getInt(
+            AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,
+            minWidthDp,
+        ) ?: minWidthDp
+        val maxHeightDp = options?.getInt(
+            AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,
+            minHeightDp,
+        ) ?: minHeightDp
+        val width = (maxWidthDp * density).toInt().coerceIn(320, 1600)
+        val height = (maxHeightDp * density).toInt().coerceIn(240, 1600)
+        return WidgetBackdropSize(width, height)
     }
 
     private fun widgetFontScale(data: SharedPreferences): Float =
@@ -461,6 +541,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         views: RemoteViews,
         widgetData: SharedPreferences,
         style: WidgetStyle,
+        compact: Boolean,
+        size: WidgetBackdropSize,
     ) {
         views.setOnClickPendingIntent(
             R.id.widget_root,
@@ -470,7 +552,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_add,
             launchIntent(context, "ying://add", LAUNCH_REQUEST_ADD),
         )
-        applyBackdrop(context, views, widgetData, style)
+        applyBackdrop(context, views, widgetData, style, size.width, size.height)
         val events = parseEvents(widgetData.getString("widget_events", "[]") ?: "[]")
         val colors = resolveTextColors(widgetData, style)
         val showIcon = widgetData.getBoolean("widget_show_icon", false)
@@ -480,7 +562,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         val showCategory = widgetData.getBoolean("widget_show_category", true)
         val showPrecise = widgetData.getBoolean("widget_show_precise_time", false)
         var visibleCount = 0
-        repeat(MAX_LIST_ROWS) { rowIndex ->
+        val maxRows = if (compact) 2 else MAX_LIST_ROWS
+        repeat(maxRows) { rowIndex ->
             val ids = widgetRowIds(rowIndex + 1)
             val event = events.getOrNull(rowIndex)
             if (event == null) {
@@ -599,9 +682,11 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         compact: Boolean,
         style: WidgetStyle,
         holiday: String,
+        width: Int,
+        height: Int,
     ) {
         val colors = resolveTextColors(data, style)
-        applyBackdrop(context, views, data, style)
+        applyBackdrop(context, views, data, style, width, height)
 
         val holidayVisible = holiday.isNotEmpty() && !compact
         if (holidayVisible) {
@@ -631,7 +716,11 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         views.setInt(R.id.widget_complete, "setColorFilter", colors.secondary)
 
         val scale = widgetFontScale(data)
-        views.setTextViewTextSize(R.id.widget_title, 2, 18f * scale)
+        views.setTextViewTextSize(
+            R.id.widget_title,
+            2,
+            (if (compact) 15f else 18f) * scale,
+        )
         views.setTextViewTextSize(R.id.widget_note, 2, 14f * scale)
     }
 
@@ -663,7 +752,15 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         views: RemoteViews,
         data: SharedPreferences,
         style: WidgetStyle,
+        width: Int,
+        height: Int,
     ) {
+        views.setInt(
+            R.id.widget_root,
+            "setBackgroundResource",
+            R.drawable.daymark_widget_clip,
+        )
+        views.setBoolean(R.id.widget_root, "setClipToOutline", true)
         val colors = resolveTextColors(data, style)
         val baseColor = baseColor(data)
         val accent = accentColor(data, "")
@@ -674,6 +771,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             accent,
             colors.primary,
             data.getString("widget_background_path", ""),
+            width,
+            height,
         )
         if (backdrop == null) {
             views.setViewVisibility(R.id.widget_backdrop, View.GONE)
@@ -683,7 +782,11 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         }
         val scrimVisible = style == WidgetStyle.sticker || style == WidgetStyle.photo
         if (scrimVisible) {
-            views.setImageViewBitmap(R.id.widget_scrim, scrimBitmap(320, 240))
+            val density = context.resources.displayMetrics.density
+            views.setImageViewBitmap(
+                R.id.widget_scrim,
+                scrimBitmap(width, height, 10f * density),
+            )
             views.setViewVisibility(R.id.widget_scrim, View.VISIBLE)
         } else {
             views.setViewVisibility(R.id.widget_scrim, View.GONE)
@@ -697,9 +800,9 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         accent: Int,
         textColor: Int,
         photoPath: String?,
+        width: Int,
+        height: Int,
     ): Bitmap? {
-        val width = 320
-        val height = 240
         val density = context.resources.displayMetrics.density
         return when (style) {
             WidgetStyle.card -> roundedRectBitmap(
@@ -710,7 +813,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             )
             WidgetStyle.sticker -> null
             WidgetStyle.photo -> {
-                loadPhotoBitmap(photoPath, 10f * density)
+                loadPhotoBitmap(photoPath, 10f * density, width, height)
                     ?: photoPlaceholderBitmap(width, height, accent, 10f * density)
             }
             WidgetStyle.glass -> roundedRectBitmap(
@@ -1018,12 +1121,27 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         return bitmap
     }
 
-    private fun envelopeCoverBitmap(context: Context, accent: Int): Bitmap {
+    private fun envelopeCoverBitmap(
+        context: Context,
+        accent: Int,
+        width: Int,
+        height: Int,
+    ): Bitmap {
         val density = context.resources.displayMetrics.density
-        val width = (320 * density).toInt()
-        val height = (240 * density).toInt()
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
+        val clip = Path().apply {
+            addRoundRect(
+                0f,
+                0f,
+                width.toFloat(),
+                height.toFloat(),
+                10f * density,
+                10f * density,
+                Path.Direction.CW,
+            )
+        }
+        canvas.clipPath(clip)
         val background = Paint().apply {
             shader = android.graphics.LinearGradient(
                 0f,
@@ -1124,9 +1242,21 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         return bitmap
     }
 
-    private fun scrimBitmap(width: Int, height: Int): Bitmap {
+    private fun scrimBitmap(width: Int, height: Int, radius: Float): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
+        val clip = Path().apply {
+            addRoundRect(
+                0f,
+                0f,
+                width.toFloat(),
+                height.toFloat(),
+                radius,
+                radius,
+                Path.Direction.CW,
+            )
+        }
+        canvas.clipPath(clip)
         val paint = Paint().apply {
             shader = android.graphics.LinearGradient(
                 0f,
@@ -1142,43 +1272,53 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         return bitmap
     }
 
-    private fun loadPhotoBitmap(path: String?, radius: Float): Bitmap? {
-        if (path.isNullOrBlank()) return null
+    private fun loadPhotoBitmap(
+        path: String?,
+        radius: Float,
+        width: Int,
+        height: Int,
+    ): Bitmap? {
+        if (path.isNullOrBlank() || width <= 0 || height <= 0) return null
         val file = File(path)
         if (!file.exists()) return null
         return try {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(path, bounds)
             var sampleSize = 1
-            val maxDimension = 480
-            while (maxOf(bounds.outWidth, bounds.outHeight) / (sampleSize * 2) >= maxDimension) {
+            val targetLongEdge = max(width, height)
+            while (maxOf(bounds.outWidth, bounds.outHeight) / (sampleSize * 2) >=
+                targetLongEdge * 2
+            ) {
                 sampleSize *= 2
             }
             val options = BitmapFactory.Options().apply {
                 inSampleSize = sampleSize
-                inPreferredConfig = Bitmap.Config.RGB_565
+                inPreferredConfig = Bitmap.Config.ARGB_8888
             }
             val source = BitmapFactory.decodeFile(path, options) ?: return null
-            val output = Bitmap.createBitmap(320, 240, Bitmap.Config.ARGB_8888)
+            val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(output)
             val clip = Path().apply {
                 addRoundRect(
                     0f,
                     0f,
-                    320f,
-                    240f,
+                    width.toFloat(),
+                    height.toFloat(),
                     radius,
                     radius,
                     Path.Direction.CW,
                 )
             }
             canvas.clipPath(clip)
-            val scale = maxOf(320f / source.width, 240f / source.height)
+            val scale = maxOf(
+                width.toFloat() / source.width,
+                height.toFloat() / source.height,
+            )
             val matrix = Matrix().apply {
                 setScale(scale, scale)
                 postTranslate(
-                    (320f - source.width * scale) / 2f,
-                    (240f - source.height * scale) / 2f,
+                    (width.toFloat() - source.width * scale) / 2f,
+                    (height.toFloat() - source.height * scale) / 2f,
                 )
             }
             val paint = Paint(
@@ -1201,9 +1341,9 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
     ) {
         val scale = widgetFontScale(data)
         val size = if (text.length > 3) {
-            26f * scale
+            (if (compact) 22f else 26f) * scale
         } else {
-            (if (compact) 38f else 44f) * scale
+            (if (compact) 32f else 44f) * scale
         }
         listOf(
             R.id.widget_days,

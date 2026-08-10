@@ -38,6 +38,17 @@ class StorageService {
   static const _widgetWallpaperColorKey = 'widget_wallpaper_color';
   static const _widgetWallpaperDarkColorKey = 'widget_wallpaper_dark_color';
   static const _widgetWallpaperTextColorKey = 'widget_wallpaper_text_color';
+  static const _onboardingCompletedKey = 'onboarding_completed_v1';
+
+  Future<bool> loadOnboardingCompleted() async {
+    final preferences = await SharedPreferences.getInstance();
+    return preferences.getBool(_onboardingCompletedKey) ?? false;
+  }
+
+  Future<void> saveOnboardingCompleted() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(_onboardingCompletedKey, true);
+  }
 
   Future<List<CountdownEvent>> loadEvents() async {
     final preferences = await SharedPreferences.getInstance();
