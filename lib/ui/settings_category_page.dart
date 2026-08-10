@@ -369,6 +369,93 @@ class SettingsCategoryPage extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         _Section(
+          title: '整体布局',
+          subtitle: '单事件小部件垂直位置',
+          child: _ChoiceSetting(
+            icon: Icons.vertical_align_center_rounded,
+            title: '内容垂直对齐',
+            subtitle: '顶部、居中或底部',
+            options: widgetVerticalAlignOptions
+                .map((option) => (option.$1.name, option.$2))
+                .toList(),
+            selected: (
+              settings.widgetVerticalAlign.name,
+              widgetVerticalAlignOptions
+                  .firstWhere(
+                    (option) =>
+                        option.$1 == settings.widgetVerticalAlign,
+                  )
+                  .$2,
+            ),
+            onSelected: (option) => controller.updateSettings(
+              settings.copyWith(
+                widgetVerticalAlign: WidgetVerticalAlign.values.firstWhere(
+                  (align) => align.name == option.$1,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _Section(
+          title: '文字样式',
+          subtitle: '逐元素颜色、字号与对齐',
+          child: Column(
+            children: [
+              for (final (index, option)
+                  in widgetTextElementOptions.indexed) ...[
+                if (index > 0) const _InsetDivider(),
+                _SettingsActionTile(
+                  icon: option.$3,
+                  title: option.$2,
+                  subtitle: _elementStyleSummary(settings, option.$1),
+                  onTap: () => unawaited(
+                    _openElementStyleSheet(
+                      context,
+                      ref,
+                      option.$1,
+                      option.$2,
+                      option.$3,
+                      unlocked,
+                      isButton: false,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _Section(
+          title: '按钮显隐',
+          subtitle: '切换、添加与完成按钮',
+          child: Column(
+            children: [
+              for (final (index, option)
+                  in widgetButtonElementOptions.indexed) ...[
+                if (index > 0) const _InsetDivider(),
+                _SettingsActionTile(
+                  icon: option.$3,
+                  title: option.$2,
+                  subtitle: _elementStyleSummary(settings, option.$1),
+                  onTap: () => unawaited(
+                    _openElementStyleSheet(
+                      context,
+                      ref,
+                      option.$1,
+                      option.$2,
+                      option.$3,
+                      unlocked,
+                      isButton: true,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _Section(
           title: '小部件列表',
           subtitle: '滚动浏览全部事件',
           child: Column(

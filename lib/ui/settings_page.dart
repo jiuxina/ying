@@ -12,11 +12,13 @@ import '../state/app_controller.dart';
 import '../services/photo_background_service.dart';
 import '../services/wallpaper_color_service.dart';
 import '../utils/widget_content_utils.dart';
+import '../models/widget_element_style.dart';
 import 'glass_ui.dart';
 import 'permission_manage_section.dart';
 import 'reminder_diagnostics_section.dart';
 import 'unlock_gate.dart';
 import 'update_dialog.dart';
+import 'widget_element_presets.dart';
 import 'widget_preview_section.dart';
 import 'widget_style_presets.dart';
 

@@ -11,6 +11,7 @@ import 'package:ying/models/app_settings.dart';
 import 'package:ying/models/countdown_event.dart';
 import 'package:ying/models/event_sort_mode.dart';
 import 'package:ying/models/unlock_state.dart';
+import 'package:ying/models/widget_element_style.dart';
 import 'package:ying/services/storage_service.dart';
 import 'package:ying/state/app_controller.dart';
 import 'package:ying/state/unlock_controller.dart';
@@ -22,6 +23,7 @@ import 'package:ying/ui/event_form_sheet.dart';
 import 'package:ying/ui/glass_ui.dart';
 import 'package:ying/ui/home_page.dart';
 import 'package:ying/ui/settings_page.dart';
+import 'package:ying/ui/widget_element_presets.dart';
 import 'package:ying/ui/widget_preview_section.dart';
 
 void main() {
@@ -442,19 +444,17 @@ void main() {
       AppController controller, {
       SettingsCategory category = SettingsCategory.appearance,
     }) {
-      return glassApp(
-        ProviderScope(
-          overrides: [
-            appControllerProvider.overrideWith((ref) => controller),
-            unlockControllerProvider.overrideWith(
-              (ref) => UnlockController(
-                StorageService(),
-                initialState: const UnlockState(unlocked: true),
-              ),
+      return ProviderScope(
+        overrides: [
+          appControllerProvider.overrideWith((ref) => controller),
+          unlockControllerProvider.overrideWith(
+            (ref) => UnlockController(
+              StorageService(),
+              initialState: const UnlockState(unlocked: true),
             ),
-          ],
-          child: SettingsCategoryPage(category: category),
-        ),
+          ),
+        ],
+        child: glassApp(SettingsCategoryPage(category: category)),
       );
     }
 
@@ -508,6 +508,140 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(controller.state.settings.widgetShowIcon, isTrue);
       expect(saved.last.widgetShowIcon, isTrue);
+    });
+
+    testWidgets('小部件元素自定义分区与整体垂直对齐持久化', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.widget),
+      );
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.text('内容垂直对齐'), 400);
+      await tester.ensureVisible(find.text('内容垂直对齐'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('整体布局'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ChoiceChip, '底部'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        controller.state.settings.widgetVerticalAlign,
+        WidgetVerticalAlign.bottom,
+      );
+      expect(saved.last.widgetVerticalAlign, WidgetVerticalAlign.bottom);
+    });
+
+    testWidgets('小部件元素样式面板持久化字号颜色对齐', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.widget),
+      );
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.text('标题样式'), 400);
+      await tester.ensureVisible(find.text('标题样式'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('文字样式'), findsOneWidget);
+      await tester.tap(find.text('标题样式'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.tap(find.widgetWithText(ChoiceChip, '大'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.widgetWithText(ChoiceChip, '自定义'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.bySemanticsLabel('自定义颜色').first);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.widgetWithText(ChoiceChip, '中'));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final style = controller.state.settings.widgetElementStyles['title'];
+      expect(style?.size, WidgetElementSize.large);
+      expect(style?.colorMode, WidgetColorMode.custom);
+      expect(style?.align, WidgetAlign.center);
+      expect(style?.color, widgetElementColorPalette.first.toARGB32());
+      expect(
+        saved.last.widgetElementStyles['title']?.size,
+        WidgetElementSize.large,
+      );
+    });
+
+    testWidgets('小部件按钮显隐面板保存三态', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.widget),
+      );
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.text('添加事件'), 400);
+      await tester.ensureVisible(find.text('添加事件'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('按钮显隐'), findsOneWidget);
+      await tester.tap(find.text('添加事件'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.tap(find.widgetWithText(ChoiceChip, '隐藏'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        controller.state.settings.widgetElementStyles['addButton']?.visible,
+        WidgetElementVisible.hide,
+      );
+      expect(
+        saved.last.widgetElementStyles['addButton']?.visible,
+        WidgetElementVisible.hide,
+      );
+    });
+
+    testWidgets('未解锁时元素显隐锁定但字号可用', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appControllerProvider.overrideWith((ref) => controller),
+            unlockControllerProvider.overrideWith(
+              (ref) => UnlockController(
+                StorageService(),
+                initialState: const UnlockState(),
+              ),
+            ),
+          ],
+          child: glassApp(
+            const SettingsCategoryPage(category: SettingsCategory.widget),
+          ),
+        ),
+      );
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.text('标题样式'), 400);
+      await tester.ensureVisible(find.text('标题样式'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('标题样式'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.tap(find.widgetWithText(ChoiceChip, '显示'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        controller.state.settings.widgetElementStyles['title']?.visible,
+        isNull,
+      );
+
+      await tester.tap(find.widgetWithText(ChoiceChip, '大'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        controller.state.settings.widgetElementStyles['title']?.size,
+        WidgetElementSize.large,
+      );
+      expect(saved.last.widgetElementStyles['title']?.size, WidgetElementSize.large);
     });
 
     testWidgets('切换小部件样式预设并持久化', (tester) async {
@@ -1090,6 +1224,53 @@ void main() {
       );
       await tester.pump();
       expect(find.text('神秘信封'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('逐元素样式同步渲染到预览', (tester) async {
+      final base = DateTime.now();
+      final today = DateTime(base.year, base.month, base.day);
+      final event = CountdownEvent(
+        id: 'styled-preview',
+        title: '考试',
+        targetDate: today.add(const Duration(days: 5)),
+        category: '学习',
+        note: '加油',
+        createdAt: today.subtract(const Duration(days: 2)),
+      );
+      await tester.pumpWidget(
+        glassApp(
+          Scaffold(
+            body: WidgetPreviewSection(
+              events: [event],
+              settings: const AppSettings(
+                widgetElementStyles: {
+                  'title': WidgetElementStyle(
+                    size: WidgetElementSize.xlarge,
+                    colorMode: WidgetColorMode.custom,
+                    color: 0xFFE91E63,
+                    align: WidgetAlign.end,
+                  ),
+                  'category': WidgetElementStyle(
+                    visible: WidgetElementVisible.hide,
+                  ),
+                  'days': WidgetElementStyle(
+                    visible: WidgetElementVisible.hide,
+                  ),
+                },
+                widgetVerticalAlign: WidgetVerticalAlign.bottom,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final titleText = tester.widgetList<Text>(find.text('考试')).first;
+      expect(titleText.style?.color, const Color(0xFFE91E63));
+      expect(titleText.style?.fontSize, 18 * 1.5);
+      expect(titleText.textAlign, TextAlign.end);
+      expect(find.text('学习'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });

@@ -669,3 +669,321 @@ class _SponsorCard extends ConsumerWidget {
     );
   }
 }
+
+String _elementStyleSummary(AppSettings settings, String elementId) {
+  final style = settings.widgetElementStyles[elementId];
+  final visible = switch (style?.visible) {
+    WidgetElementVisible.show => '显示',
+    WidgetElementVisible.hide => '隐藏',
+    _ => '跟随默认',
+  };
+  if (widgetButtonElementOptions.any((option) => option.$1 == elementId)) {
+    return '当前：$visible';
+  }
+  final size = widgetSizeOptions
+      .firstWhere(
+        (option) => option.$1 == style?.size,
+        orElse: () => widgetSizeOptions[1],
+      )
+      .$2;
+  final color = switch (style?.colorMode) {
+    WidgetColorMode.custom => '自定义色',
+    WidgetColorMode.secondary => '次要色',
+    _ => '主色',
+  };
+  final align = switch (style?.align) {
+    WidgetAlign.center => '居中',
+    WidgetAlign.end => '右对齐',
+    _ => '左对齐',
+  };
+  final parts = ['颜色：$color', '字号：$size'];
+  if (widgetAlignableElementIds.contains(elementId)) {
+    parts.add('对齐：$align');
+  }
+  parts.add('显隐：$visible');
+  return parts.join(' · ');
+}
+
+Future<void> _openElementStyleSheet(
+  BuildContext context,
+  WidgetRef ref,
+  String elementId,
+  String label,
+  IconData icon,
+  bool unlocked, {
+  required bool isButton,
+}) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) => Consumer(
+      builder: (context, ref, _) {
+        final current = ref.watch(appControllerProvider).settings;
+        final style = current.widgetElementStyles[elementId];
+        final controller = ref.read(appControllerProvider.notifier);
+        void update(WidgetElementStyle? next) {
+          final styles = {...current.widgetElementStyles};
+          if (next == null) {
+            styles.remove(elementId);
+          } else {
+            styles[elementId] = next;
+          }
+          unawaited(
+            controller.updateSettings(
+              current.copyWith(widgetElementStyles: styles),
+            ),
+          );
+        }
+
+        return _ElementStyleSheet(
+          elementId: elementId,
+          label: label,
+          icon: icon,
+          style: style,
+          unlocked: unlocked,
+          isButton: isButton,
+          onChanged: update,
+          onReset: () {
+            update(null);
+            Navigator.pop(sheetContext);
+          },
+        );
+      },
+    ),
+  );
+}
+
+class _ElementStyleSheet extends StatelessWidget {
+  const _ElementStyleSheet({
+    required this.elementId,
+    required this.label,
+    required this.icon,
+    required this.style,
+    required this.unlocked,
+    required this.isButton,
+    required this.onChanged,
+    required this.onReset,
+  });
+
+  final String elementId;
+  final String label;
+  final IconData icon;
+  final WidgetElementStyle? style;
+  final bool unlocked;
+  final bool isButton;
+  final ValueChanged<WidgetElementStyle?> onChanged;
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = style ?? const WidgetElementStyle();
+    final scheme = Theme.of(context).colorScheme;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 20, color: scheme.onSurfaceVariant),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: '关闭',
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _ChoiceSetting(
+                icon: Icons.visibility_outlined,
+                title: '显隐',
+                subtitle: '跟随默认，或强制显示 / 隐藏',
+                options: widgetVisibleOptions
+                    .map((option) => (option.$1.name, option.$2))
+                    .toList(),
+                selected: (
+                  current.visible.name,
+                  widgetVisibleOptions
+                      .firstWhere((option) => option.$1 == current.visible)
+                      .$2,
+                ),
+                locked: !unlocked,
+                onLockedTap: () => openSponsorPage(context),
+                onSelected: (option) => onChanged(
+                  current.copyWith(
+                    visible: WidgetElementVisible.values.firstWhere(
+                      (visible) => visible.name == option.$1,
+                    ),
+                  ),
+                ),
+              ),
+              if (!isButton) ...[
+                const _InsetDivider(),
+                _ChoiceSetting(
+                  icon: Icons.text_fields_rounded,
+                  title: '字号',
+                  subtitle: '叠加在全局字号缩放之上',
+                  options: widgetSizeOptions
+                      .map((option) => (option.$1.name, option.$2))
+                      .toList(),
+                  selected: (
+                    current.size.name,
+                    widgetSizeOptions
+                        .firstWhere((option) => option.$1 == current.size)
+                        .$2,
+                  ),
+                  onSelected: (option) => onChanged(
+                    current.copyWith(
+                      size: WidgetElementSize.values.firstWhere(
+                        (size) => size.name == option.$1,
+                      ),
+                    ),
+                  ),
+                ),
+                const _InsetDivider(),
+                _ChoiceSetting(
+                  icon: Icons.palette_outlined,
+                  title: '颜色',
+                  subtitle: '跟随主色、次要色或自定义',
+                  options: widgetColorModeOptions
+                      .map((option) => (option.$1.name, option.$2))
+                      .toList(),
+                  selected: (
+                    current.colorMode.name,
+                    widgetColorModeOptions
+                        .firstWhere((option) => option.$1 == current.colorMode)
+                        .$2,
+                  ),
+                  onSelected: (option) => onChanged(
+                    current.copyWith(
+                      colorMode: WidgetColorMode.values.firstWhere(
+                        (mode) => mode.name == option.$1,
+                      ),
+                    ),
+                  ),
+                ),
+                if (current.colorMode == WidgetColorMode.custom) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 13,
+                    runSpacing: 13,
+                    children: [
+                      for (final color in widgetElementColorPalette)
+                        _ElementColorSwatch(
+                          color: color,
+                          selected: current.color == color.toARGB32(),
+                          onTap: () => onChanged(
+                            current.copyWith(color: color.toARGB32()),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+                if (widgetAlignableElementIds.contains(elementId)) ...[
+                  const _InsetDivider(),
+                  _ChoiceSetting(
+                    icon: Icons.format_align_left_rounded,
+                    title: '对齐',
+                    subtitle: '独立成行文字的水平位置',
+                    options: widgetAlignOptions
+                        .map((option) => (option.$1.name, option.$2))
+                        .toList(),
+                    selected: (
+                      current.align.name,
+                      widgetAlignOptions
+                          .firstWhere((option) => option.$1 == current.align)
+                          .$2,
+                    ),
+                    onSelected: (option) => onChanged(
+                      current.copyWith(
+                        align: WidgetAlign.values.firstWhere(
+                          (align) => align.name == option.$1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onReset,
+                  icon: const Icon(Icons.restart_alt_rounded, size: 18),
+                  label: const Text('重置此元素'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ElementColorSwatch extends StatelessWidget {
+  const _ElementColorSwatch({
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '自定义颜色',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: AnimatedContainer(
+            duration: motionDuration(
+              context,
+              const Duration(milliseconds: 180),
+            ),
+            width: 48,
+            height: 48,
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: selected ? color : Colors.transparent,
+                width: 2.5,
+              ),
+            ),
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              child: selected
+                  ? const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    )
+                  : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
