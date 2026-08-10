@@ -590,11 +590,11 @@ void main() {
       );
       await flushPlatform(tester);
 
-      await tester.scrollUntilVisible(find.text('标记完成'), 400);
-      await tester.ensureVisible(find.text('标记完成'));
+      await tester.scrollUntilVisible(find.text('上一个事件'), 400);
+      await tester.ensureVisible(find.text('上一个事件'));
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.text('按钮显隐'), findsOneWidget);
-      await tester.tap(find.text('标记完成'));
+      await tester.tap(find.text('上一个事件'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
@@ -612,11 +612,11 @@ void main() {
       await tester.tap(find.widgetWithText(ChoiceChip, '隐藏'));
       await tester.pump(const Duration(milliseconds: 300));
       expect(
-        controller.state.settings.widgetElementStyles['completeButton']?.visible,
+        controller.state.settings.widgetElementStyles['prevButton']?.visible,
         WidgetElementVisible.hide,
       );
       expect(
-        saved.last.widgetElementStyles['completeButton']?.visible,
+        saved.last.widgetElementStyles['prevButton']?.visible,
         WidgetElementVisible.hide,
       );
     });

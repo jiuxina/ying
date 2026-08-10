@@ -359,7 +359,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             )
             views.setViewVisibility(R.id.widget_icon, View.GONE)
             views.setViewVisibility(R.id.widget_note, View.GONE)
-            views.setViewVisibility(R.id.widget_complete, View.GONE)
             views.setViewVisibility(R.id.widget_precise, View.GONE)
             views.setViewVisibility(R.id.widget_date_info, View.GONE)
             views.setViewVisibility(R.id.widget_progress_ring, View.GONE)
@@ -519,14 +518,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         } else {
             views.setViewVisibility(R.id.widget_note, View.GONE)
         }
-        views.setViewVisibility(
-            R.id.widget_complete,
-            if (branch.element("completeButton").visible) View.VISIBLE else View.GONE,
-        )
-        views.setOnClickPendingIntent(
-            R.id.widget_complete,
-            backgroundIntent(context, "complete", event.id),
-        )
         views.setOnClickPendingIntent(
             R.id.widget_date_row,
             backgroundIntent(context, "copy", event.id),
@@ -777,18 +768,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 views.setViewVisibility(ids.subtitle, View.GONE)
             }
             views.setOnClickPendingIntent(
-                ids.complete,
-                backgroundIntent(context, "complete", event.id),
-            )
-            views.setViewVisibility(
-                ids.complete,
-                if (branch.element("completeButton").visible) {
-                    View.VISIBLE
-                } else {
-                    View.GONE
-                },
-            )
-            views.setOnClickPendingIntent(
                 ids.root,
                 launchIntent(
                     context,
@@ -949,12 +928,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             "setColorFilter",
             branch.element("nextButton").color,
         )
-        views.setInt(
-            R.id.widget_complete,
-            "setColorFilter",
-            branch.element("completeButton").color,
-        )
-
         val scale = widgetFontScale(data)
         views.setTextViewTextSize(
             R.id.widget_title,
@@ -1822,7 +1795,6 @@ private data class WidgetRowIds(
     val subtitle: Int,
     val days: Int,
     val unit: Int,
-    val complete: Int,
 )
 
 private fun widgetRowIds(row: Int): WidgetRowIds = when (row) {
@@ -1833,7 +1805,6 @@ private fun widgetRowIds(row: Int): WidgetRowIds = when (row) {
         R.id.widget_row_1_subtitle,
         R.id.widget_row_1_days,
         R.id.widget_row_1_unit,
-        R.id.widget_row_1_complete,
     )
     2 -> WidgetRowIds(
         R.id.widget_row_2_root,
@@ -1842,7 +1813,6 @@ private fun widgetRowIds(row: Int): WidgetRowIds = when (row) {
         R.id.widget_row_2_subtitle,
         R.id.widget_row_2_days,
         R.id.widget_row_2_unit,
-        R.id.widget_row_2_complete,
     )
     3 -> WidgetRowIds(
         R.id.widget_row_3_root,
@@ -1851,7 +1821,6 @@ private fun widgetRowIds(row: Int): WidgetRowIds = when (row) {
         R.id.widget_row_3_subtitle,
         R.id.widget_row_3_days,
         R.id.widget_row_3_unit,
-        R.id.widget_row_3_complete,
     )
     else -> WidgetRowIds(
         R.id.widget_row_4_root,
@@ -1860,7 +1829,6 @@ private fun widgetRowIds(row: Int): WidgetRowIds = when (row) {
         R.id.widget_row_4_subtitle,
         R.id.widget_row_4_days,
         R.id.widget_row_4_unit,
-        R.id.widget_row_4_complete,
     )
 }
 

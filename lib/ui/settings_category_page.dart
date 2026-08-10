@@ -428,7 +428,7 @@ class SettingsCategoryPage extends ConsumerWidget {
         const SizedBox(height: 16),
         _Section(
           title: '按钮显隐',
-          subtitle: '上一个、下一个与完成按钮',
+          subtitle: '上一个、下一个按钮',
           child: Column(
             children: [
               for (final (index, option)

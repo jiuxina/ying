@@ -248,14 +248,6 @@
                 android:text="天"
                 android:textColor="#D9FFFFFF"
                 android:textSize="14sp" />
-            <ImageButton
-                android:id="@+id/widget_complete"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@android:color/transparent"
-                android:contentDescription="标记完成"
-                android:src="@android:drawable/checkbox_off_background"
-                android:tint="#FFFFFFFF" />
         </LinearLayout>
 
         <Chronometer

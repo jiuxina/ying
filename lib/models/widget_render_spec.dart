@@ -30,7 +30,6 @@ const widgetRenderElementIds = <String>[
   'empty',
   'prevButton',
   'nextButton',
-  'completeButton',
 ];
 
 /// 默认使用主色的元素；其余元素默认使用次要色。
@@ -389,8 +388,6 @@ bool _policyVisible(
     case 'prevButton':
     case 'nextButton':
       return !compact;
-    case 'completeButton':
-      return mode == WidgetRenderMode.single ? !compact : true;
     default:
       return true;
   }

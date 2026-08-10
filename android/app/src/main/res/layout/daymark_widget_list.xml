@@ -120,15 +120,6 @@
                 android:shadowRadius="2"
                 android:textColor="#D9FFFFFF"
                 android:textSize="11sp" />
-            <ImageButton
-                android:id="@+id/widget_row_1_complete"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:layout_marginStart="4dp"
-                android:background="@android:color/transparent"
-                android:contentDescription="标记完成"
-                android:src="@android:drawable/checkbox_off_background"
-                android:tint="#FFFFFFFF" />
         </LinearLayout>
 
         <LinearLayout
@@ -202,15 +193,6 @@
                 android:shadowRadius="2"
                 android:textColor="#D9FFFFFF"
                 android:textSize="11sp" />
-            <ImageButton
-                android:id="@+id/widget_row_2_complete"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:layout_marginStart="4dp"
-                android:background="@android:color/transparent"
-                android:contentDescription="标记完成"
-                android:src="@android:drawable/checkbox_off_background"
-                android:tint="#FFFFFFFF" />
         </LinearLayout>
 
         <LinearLayout
@@ -284,15 +266,6 @@
                 android:shadowRadius="2"
                 android:textColor="#D9FFFFFF"
                 android:textSize="11sp" />
-            <ImageButton
-                android:id="@+id/widget_row_3_complete"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:layout_marginStart="4dp"
-                android:background="@android:color/transparent"
-                android:contentDescription="标记完成"
-                android:src="@android:drawable/checkbox_off_background"
-                android:tint="#FFFFFFFF" />
         </LinearLayout>
 
         <LinearLayout
@@ -366,15 +339,6 @@
                 android:shadowRadius="2"
                 android:textColor="#D9FFFFFF"
                 android:textSize="11sp" />
-            <ImageButton
-                android:id="@+id/widget_row_4_complete"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:layout_marginStart="4dp"
-                android:background="@android:color/transparent"
-                android:contentDescription="标记完成"
-                android:src="@android:drawable/checkbox_off_background"
-                android:tint="#FFFFFFFF" />
         </LinearLayout>
 
         <TextView

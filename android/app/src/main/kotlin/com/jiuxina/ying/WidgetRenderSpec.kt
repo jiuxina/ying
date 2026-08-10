@@ -26,7 +26,6 @@ internal val widgetRenderElementIds = listOf(
     "empty",
     "prevButton",
     "nextButton",
-    "completeButton",
 )
 
 internal val widgetPrimaryRenderElementIds = setOf(
@@ -174,7 +173,6 @@ internal fun fallbackRenderBranch(
             "prevButton",
             "nextButton",
             -> !compact
-            "completeButton" -> if (mode == "single") !compact else true
             else -> true
         }
         elements[id] = WidgetElementRender(

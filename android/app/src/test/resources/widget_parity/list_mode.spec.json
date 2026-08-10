@@ -123,12 +123,6 @@
         "color": 3187671039,
         "size": 1.0,
         "align": "start"
-      },
-      "completeButton": {
-        "visible": true,
-        "color": 3187671039,
-        "size": 1.0,
-        "align": "start"
       }
     }
   },
@@ -238,12 +232,6 @@
         "align": "start"
       },
       "nextButton": {
-        "visible": true,
-        "color": 3187671039,
-        "size": 1.0,
-        "align": "start"
-      },
-      "completeButton": {
         "visible": true,
         "color": 3187671039,
         "size": 1.0,

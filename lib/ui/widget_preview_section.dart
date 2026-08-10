@@ -463,7 +463,6 @@ class _PreviewBody extends StatelessWidget {
     final progressElement = _element('progress');
     final prevElement = _element('prevButton');
     final nextElement = _element('nextButton');
-    final completeElement = _element('completeButton');
     final daysAlign = daysElement.align;
 
     if (current == null) {
@@ -618,7 +617,6 @@ class _PreviewBody extends StatelessWidget {
             (settings.widgetShowNote && current.note.isNotEmpty));
     final prevVisible = prevElement.visible;
     final nextVisible = nextElement.visible;
-    final completeVisible = completeElement.visible;
     final mainFontSize = mainText.length > 3
         ? (compact ? 22 : 26) * scale * daysElement.size
         : (compact ? 32 : 44) * scale * daysElement.size;
@@ -750,14 +748,6 @@ class _PreviewBody extends StatelessWidget {
                     shadows: glowShadows,
                   ),
                 ),
-              ),
-            ],
-            if (completeVisible) ...[
-              const SizedBox(width: 6),
-              Icon(
-                Icons.check_circle_outline_rounded,
-                size: 22,
-                color: Color(completeElement.color),
               ),
             ],
           ],
@@ -998,12 +988,10 @@ class _ListRow extends StatelessWidget {
     final rowDays = render.element('rowDays');
     final rowUnit = render.element('rowUnit');
     final rowSubtitle = render.element('rowSubtitle');
-    final complete = render.element('completeButton');
     final iconVisible = icon.visible && event.icon.isNotEmpty;
     final rowTitleVisible = rowTitle.visible;
     final rowDaysVisible = rowDays.visible;
     final rowUnitVisible = rowUnit.visible && displayUnitText.isNotEmpty;
-    final completeVisible = complete.visible;
     final subtitle = [
       if (settings.widgetShowCategory) event.category,
       if (settings.widgetShowPreciseTime)
@@ -1088,14 +1076,6 @@ class _ListRow extends StatelessWidget {
               ),
               fontSize: 11 * scale * rowUnit.size,
             ),
-          ),
-        ],
-        if (completeVisible) ...[
-          const SizedBox(width: 6),
-          Icon(
-            Icons.check_circle_outline_rounded,
-            size: 18,
-            color: Color(complete.color),
           ),
         ],
       ],
