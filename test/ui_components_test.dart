@@ -985,7 +985,7 @@ void main() {
       await flushPlatform(tester);
 
       expect(find.text('萤 $appVersion'), findsOneWidget);
-      expect(find.text('github.com/jiuxina/ying'), findsOneWidget);
+      expect(find.text('github.com/jiuxina/ying-321'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

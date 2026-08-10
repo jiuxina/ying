@@ -543,10 +543,10 @@ class SettingsCategoryPage extends ConsumerWidget {
               const _InsetDivider(),
               _SettingsActionTile(
                 icon: Icons.code_rounded,
-                title: 'github.com/jiuxina/ying',
-                subtitle: '开源仓库，欢迎反馈',
+                title: 'github.com/jiuxina/ying-321',
+                subtitle: '发布与在线字体，欢迎反馈',
                 onTap: () =>
-                    _copyLink(context, 'https://github.com/jiuxina/ying'),
+                    _copyLink(context, 'https://github.com/jiuxina/ying-321'),
               ),
             ],
           ),

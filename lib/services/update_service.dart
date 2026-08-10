@@ -52,7 +52,7 @@ class UpdateService {
   }) : fetcher = fetcher ?? fetchUrl;
 
   static const defaultOwner = 'jiuxina';
-  static const defaultRepo = 'ying';
+  static const defaultRepo = 'ying-321';
 
   final ReleaseFetcher fetcher;
   final String owner;

@@ -58,14 +58,14 @@ void main() {
         'tag_name': tag,
         'name': name,
         'body': body,
-        'html_url': 'https://github.com/jiuxina/ying/releases/tag/$tag',
+        'html_url': 'https://github.com/jiuxina/ying-321/releases/tag/$tag',
         'published_at': '2026-08-01T12:00:00Z',
       });
     }
 
     test('parses latest release and flags newer version', () async {
       final service = serviceFor({
-        '/repos/jiuxina/ying/releases/latest': FetchResult(
+        '/repos/jiuxina/ying-321/releases/latest': FetchResult(
           200,
           releaseJson(),
         ),
@@ -79,14 +79,14 @@ void main() {
       expect(result.release?.notes, contains('桌面小组件'));
       expect(
         result.release?.url,
-        'https://github.com/jiuxina/ying/releases/tag/v2.1.0',
+        'https://github.com/jiuxina/ying-321/releases/tag/v2.1.0',
       );
       expect(result.release?.publishedAt, DateTime.utc(2026, 8, 1, 12));
     });
 
     test('reports up-to-date when release is older', () async {
       final service = serviceFor({
-        '/repos/jiuxina/ying/releases/latest': FetchResult(
+        '/repos/jiuxina/ying-321/releases/latest': FetchResult(
           200,
           releaseJson(tag: 'v1.9.0'),
         ),
@@ -99,8 +99,8 @@ void main() {
 
     test('falls back to the highest tag without releases', () async {
       final service = serviceFor({
-        '/repos/jiuxina/ying/releases/latest': const FetchResult(404, ''),
-        '/repos/jiuxina/ying/tags': FetchResult(
+        '/repos/jiuxina/ying-321/releases/latest': const FetchResult(404, ''),
+        '/repos/jiuxina/ying-321/tags': FetchResult(
           200,
           jsonEncode([
             {'name': '1.0.0'},
@@ -116,14 +116,14 @@ void main() {
       expect(result.release?.version, '2.0.0');
       expect(
         result.release?.url,
-        'https://github.com/jiuxina/ying/releases/tag/v2.0.0',
+        'https://github.com/jiuxina/ying-321/releases/tag/v2.0.0',
       );
     });
 
     test('reports missing releases when tag list is empty', () async {
       final service = serviceFor({
-        '/repos/jiuxina/ying/releases/latest': const FetchResult(404, ''),
-        '/repos/jiuxina/ying/tags': const FetchResult(200, '[]'),
+        '/repos/jiuxina/ying-321/releases/latest': const FetchResult(404, ''),
+        '/repos/jiuxina/ying-321/tags': const FetchResult(200, '[]'),
       });
 
       final result = await service.checkForUpdate(currentVersion: '2.0.0');
@@ -132,7 +132,7 @@ void main() {
 
     test('surfaces rate limiting with a friendly message', () async {
       final service = serviceFor({
-        '/repos/jiuxina/ying/releases/latest': const FetchResult(403, ''),
+        '/repos/jiuxina/ying-321/releases/latest': const FetchResult(403, ''),
       });
 
       final result = await service.checkForUpdate(currentVersion: '2.0.0');
@@ -141,7 +141,7 @@ void main() {
 
     test('wraps unexpected status codes', () async {
       final service = serviceFor({
-        '/repos/jiuxina/ying/releases/latest': const FetchResult(500, ''),
+        '/repos/jiuxina/ying-321/releases/latest': const FetchResult(500, ''),
       });
 
       final result = await service.checkForUpdate(currentVersion: '2.0.0');
@@ -150,7 +150,7 @@ void main() {
 
     test('wraps malformed payloads', () async {
       final service = serviceFor({
-        '/repos/jiuxina/ying/releases/latest': const FetchResult(
+        '/repos/jiuxina/ying-321/releases/latest': const FetchResult(
           200,
           'not json',
         ),

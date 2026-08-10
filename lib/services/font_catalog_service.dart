@@ -11,7 +11,7 @@ abstract final class FontCatalogConfig {
   static const defaultManifestUrl = String.fromEnvironment(
     'FONT_MANIFEST_URL',
     defaultValue:
-        'https://raw.githubusercontent.com/jiuxina/ying/main/fonts/fonts.json',
+        'https://raw.githubusercontent.com/jiuxina/ying-321/main/fonts/fonts.json',
   );
 
   static const maxFontBytes = 25 * 1024 * 1024;

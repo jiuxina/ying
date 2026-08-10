@@ -10,14 +10,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jiuxina/ying/stargazers">
-    <img src="https://img.shields.io/github/stars/jiuxina/ying?style=social" alt="GitHub stars">
+  <a href="https://github.com/jiuxina/ying-321/stargazers">
+    <img src="https://img.shields.io/github/stars/jiuxina/ying-321?style=social" alt="GitHub stars">
   </a>
-  <a href="https://github.com/jiuxina/ying/network/members">
-    <img src="https://img.shields.io/github/forks/jiuxina/ying?style=social" alt="GitHub forks">
+  <a href="https://github.com/jiuxina/ying-321/network/members">
+    <img src="https://img.shields.io/github/forks/jiuxina/ying-321?style=social" alt="GitHub forks">
   </a>
-  <a href="https://github.com/jiuxina/ying/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/jiuxina/ying" alt="GitHub license">
+  <a href="https://github.com/jiuxina/ying-321/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/jiuxina/ying-321" alt="GitHub license">
   </a>
   <a href="https://flutter.dev">
     <img src="https://img.shields.io/badge/Flutter-3.35.4-02569B?logo=flutter" alt="Flutter">
@@ -137,7 +137,7 @@
 
 ### Android
 
-1. 前往 [Releases](https://github.com/jiuxina/ying/releases) 下载最新 APK
+1. 前往 [Releases](https://github.com/jiuxina/ying-321/releases) 下载最新 APK
 2. 根据设备架构选择：
    - **arm64-v8a**（推荐，适用于大多数现代安卓手机）
    - armeabi-v7a（旧款 32 位设备）
@@ -163,19 +163,17 @@
 
 ### 构建步骤
 
-```bash
-# 1. 克隆仓库
-git clone https://github.com/jiuxina/ying.git
-cd ying
+> 源码仓库为内部开发仓库，不对外公开；以下步骤供内部构建使用。
 
-# 2. 安装依赖
+```bash
+# 1. 安装依赖
 flutter pub get
 
-# 3. 构建 Android APK（分架构构建，体积更小）
+# 2. 构建 Android APK（分架构构建，体积更小）
 flutter build apk --release --split-per-abi \
   --split-debug-info=build/debug-info --obfuscate --tree-shake-icons
 
-# 4. APK 位于: build/app/outputs/flutter-apk/
+# 3. APK 位于: build/app/outputs/flutter-apk/
 #    - app-arm64-v8a-release.apk     (64-bit ARM)
 #    - app-armeabi-v7a-release.apk   (32-bit ARM)
 #    - app-x86_64-release.apk        (x86_64)
@@ -338,7 +336,7 @@ Flutter 官方支持通过 Android Gradle Plugin 的 `abiFilters` 限定 `x86_64
 
 ## 反馈与支持
 
-欢迎通过 [Issues](https://github.com/jiuxina/ying/issues) 提交问题和建议。
+欢迎通过 [Issues](https://github.com/jiuxina/ying-321/issues) 提交问题和建议。
 
 如果这个项目对你有帮助，也欢迎点个 Star 支持一下。
 
@@ -366,7 +364,7 @@ UI 视觉改版计划见 [docs/ui-visual-redesign-plan.md](docs/ui-visual-redesi
 
 ## 开源协议
 
-[MIT License](https://github.com/jiuxina/ying/blob/main/LICENSE)
+[MIT License](https://github.com/jiuxina/ying-321/blob/main/LICENSE)
 
 ---
 
