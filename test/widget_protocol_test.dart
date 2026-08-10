@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ying/models/app_settings.dart';
 import 'package:ying/models/countdown_event.dart';
+import 'package:ying/models/widget_element_style.dart';
 import 'package:ying/services/widget_service.dart';
 
 void main() {
@@ -25,6 +26,8 @@ void main() {
       expect(legacy.widgetWallpaperColor, -1);
       expect(legacy.widgetWallpaperDarkColor, -1);
       expect(legacy.widgetWallpaperTextColor, -1);
+      expect(legacy.widgetElementStyles, isEmpty);
+      expect(legacy.widgetVerticalAlign, WidgetVerticalAlign.center);
     });
 
     test('unknown style falls back to card', () {
@@ -65,6 +68,19 @@ void main() {
         widgetWallpaperColor: 0xFF102030,
         widgetWallpaperDarkColor: 0xFF0A0A0A,
         widgetWallpaperTextColor: 0xFFFFFFFF,
+        widgetElementStyles: {
+          'title': WidgetElementStyle(
+            visible: WidgetElementVisible.show,
+            size: WidgetElementSize.large,
+            colorMode: WidgetColorMode.custom,
+            color: 0xFFE91E63,
+            align: WidgetAlign.center,
+          ),
+          'prevButton': WidgetElementStyle(
+            visible: WidgetElementVisible.hide,
+          ),
+        },
+        widgetVerticalAlign: WidgetVerticalAlign.bottom,
       );
       final restored = AppSettings.fromMap(settings.toMap());
       expect(restored.widgetStyle, WidgetStyle.glass);
@@ -83,6 +99,27 @@ void main() {
       expect(restored.widgetWallpaperColor, 0xFF102030);
       expect(restored.widgetWallpaperDarkColor, 0xFF0A0A0A);
       expect(restored.widgetWallpaperTextColor, 0xFFFFFFFF);
+      expect(restored.widgetElementStyles['title']?.visible,
+          WidgetElementVisible.show);
+      expect(restored.widgetElementStyles['title']?.size,
+          WidgetElementSize.large);
+      expect(restored.widgetElementStyles['title']?.colorMode,
+          WidgetColorMode.custom);
+      expect(restored.widgetElementStyles['title']?.color, 0xFFE91E63);
+      expect(restored.widgetElementStyles['title']?.align,
+          WidgetAlign.center);
+      expect(restored.widgetElementStyles['prevButton']?.visible,
+          WidgetElementVisible.hide);
+      expect(restored.widgetVerticalAlign, WidgetVerticalAlign.bottom);
+    });
+
+    test('malformed element styles fall back to empty map', () {
+      final settings = AppSettings.fromMap({
+        'widgetElementStyles': '{broken',
+        'widgetVerticalAlign': 'unknown',
+      });
+      expect(settings.widgetElementStyles, isEmpty);
+      expect(settings.widgetVerticalAlign, WidgetVerticalAlign.center);
     });
   });
 
@@ -175,7 +212,7 @@ void main() {
 
     test('preference values include protocol version and every key', () {
       final values = widgetPreferenceValues(const AppSettings());
-      expect(values['widget_protocol_version'], 6);
+      expect(values['widget_protocol_version'], 7);
       expect(values['widget_color'], 'ff0f766e');
       expect(
         values.keys,
@@ -201,6 +238,8 @@ void main() {
           'widget_wallpaper_color',
           'widget_wallpaper_dark_color',
           'widget_wallpaper_text_color',
+          'widget_element_styles',
+          'widget_vertical_align',
           'widget_holiday',
           'widget_date_info',
         ]),

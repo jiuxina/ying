@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'event_sort_mode.dart';
+import 'widget_element_style.dart';
 
 /// 桌面小部件样式预设；旧配置或未知值统一回退 [WidgetStyle.card]。
 enum WidgetStyle {
@@ -47,6 +48,8 @@ class AppSettings {
     this.widgetWallpaperColor = -1,
     this.widgetWallpaperDarkColor = -1,
     this.widgetWallpaperTextColor = -1,
+    this.widgetElementStyles = const {},
+    this.widgetVerticalAlign = WidgetVerticalAlign.center,
   });
 
   final ThemeMode themeMode;
@@ -74,6 +77,8 @@ class AppSettings {
   final int widgetWallpaperColor;
   final int widgetWallpaperDarkColor;
   final int widgetWallpaperTextColor;
+  final Map<String, WidgetElementStyle> widgetElementStyles;
+  final WidgetVerticalAlign widgetVerticalAlign;
 
   AppSettings copyWith({
     ThemeMode? themeMode,
@@ -101,6 +106,8 @@ class AppSettings {
     int? widgetWallpaperColor,
     int? widgetWallpaperDarkColor,
     int? widgetWallpaperTextColor,
+    Map<String, WidgetElementStyle>? widgetElementStyles,
+    WidgetVerticalAlign? widgetVerticalAlign,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -132,6 +139,8 @@ class AppSettings {
           widgetWallpaperDarkColor ?? this.widgetWallpaperDarkColor,
       widgetWallpaperTextColor:
           widgetWallpaperTextColor ?? this.widgetWallpaperTextColor,
+      widgetElementStyles: widgetElementStyles ?? this.widgetElementStyles,
+      widgetVerticalAlign: widgetVerticalAlign ?? this.widgetVerticalAlign,
     );
   }
 
@@ -161,6 +170,8 @@ class AppSettings {
     'widgetWallpaperColor': widgetWallpaperColor,
     'widgetWallpaperDarkColor': widgetWallpaperDarkColor,
     'widgetWallpaperTextColor': widgetWallpaperTextColor,
+    'widgetElementStyles': encodeWidgetElementStyles(widgetElementStyles),
+    'widgetVerticalAlign': widgetVerticalAlign.name,
   };
 
   factory AppSettings.fromMap(Map<String, Object?> map) {
@@ -201,6 +212,13 @@ class AppSettings {
           (map['widgetWallpaperDarkColor'] as int?) ?? -1,
       widgetWallpaperTextColor:
           (map['widgetWallpaperTextColor'] as int?) ?? -1,
+      widgetElementStyles: decodeWidgetElementStyles(
+        map['widgetElementStyles'],
+      ),
+      widgetVerticalAlign: WidgetVerticalAlign.values.firstWhere(
+        (align) => align.name == map['widgetVerticalAlign'],
+        orElse: () => WidgetVerticalAlign.center,
+      ),
     );
   }
 }

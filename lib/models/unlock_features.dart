@@ -1,4 +1,5 @@
 import 'app_settings.dart';
+import 'widget_element_style.dart';
 
 /// 需要赞助解锁的小部件样式。
 const sponsorWidgetStyles = <WidgetStyle>{
@@ -35,6 +36,17 @@ AppSettings sanitizeSponsorSettings(AppSettings settings) {
       widgetWallpaperColor: -1,
       widgetWallpaperDarkColor: -1,
       widgetWallpaperTextColor: -1,
+    );
+  }
+  final needsVisibilityReset = result.widgetElementStyles.values.any(
+    (style) => style.visible != WidgetElementVisible.follow,
+  );
+  if (needsVisibilityReset) {
+    result = result.copyWith(
+      widgetElementStyles: {
+        for (final entry in result.widgetElementStyles.entries)
+          entry.key: entry.value.copyWith(visible: WidgetElementVisible.follow),
+      },
     );
   }
   return result;

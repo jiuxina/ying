@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
 import '../models/unlock_features.dart';
+import '../models/widget_element_style.dart';
 import '../models/widget_holiday.dart';
 import '../utils/widget_content_utils.dart';
 import 'storage_service.dart';
@@ -194,7 +195,7 @@ Map<String, Object?> widgetPreferenceValues(
   final today = now ?? DateTime.now();
   final resolved = sponsorUnlocked ? settings : sanitizeSponsorSettings(settings);
   return {
-    'widget_protocol_version': 6,
+    'widget_protocol_version': 7,
     'widget_sponsor_unlocked': sponsorUnlocked,
     'widget_color': resolved.widgetColor.toRadixString(16).padLeft(8, '0'),
     'widget_font_scale': resolved.widgetFontScale,
@@ -216,6 +217,10 @@ Map<String, Object?> widgetPreferenceValues(
     'widget_wallpaper_color': resolved.widgetWallpaperColor,
     'widget_wallpaper_dark_color': resolved.widgetWallpaperDarkColor,
     'widget_wallpaper_text_color': resolved.widgetWallpaperTextColor,
+    'widget_element_styles': encodeWidgetElementStyles(
+      resolved.widgetElementStyles,
+    ),
+    'widget_vertical_align': resolved.widgetVerticalAlign.name,
     'widget_holiday': holidayFor(today).wireName,
     'widget_date_info': widgetDateInfo(today),
   };

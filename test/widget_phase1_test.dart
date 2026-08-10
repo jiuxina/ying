@@ -62,7 +62,7 @@ void main() {
         const AppSettings(),
         now: DateTime(2026, 9, 25),
       );
-      expect(values['widget_protocol_version'], 6);
+      expect(values['widget_protocol_version'], 7);
       expect(values['widget_holiday'], 'mid_autumn');
       expect(values['widget_style'], 'card');
     });

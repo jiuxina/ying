@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
 import '../models/unlock_state.dart';
+import '../models/widget_element_style.dart';
 
 class StorageService {
   static const sponsorUnlockedKey = 'sponsor_unlocked';
@@ -38,6 +39,8 @@ class StorageService {
   static const _widgetWallpaperColorKey = 'widget_wallpaper_color';
   static const _widgetWallpaperDarkColorKey = 'widget_wallpaper_dark_color';
   static const _widgetWallpaperTextColorKey = 'widget_wallpaper_text_color';
+  static const _widgetElementStylesKey = 'widget_element_styles';
+  static const _widgetVerticalAlignKey = 'widget_vertical_align';
   static const _onboardingCompletedKey = 'onboarding_completed_v1';
 
   Future<bool> loadOnboardingCompleted() async {
@@ -105,6 +108,8 @@ class StorageService {
       'widgetWallpaperTextColor': preferences.getInt(
         _widgetWallpaperTextColorKey,
       ),
+      'widgetElementStyles': preferences.getString(_widgetElementStylesKey),
+      'widgetVerticalAlign': preferences.getString(_widgetVerticalAlignKey),
     });
   }
 
@@ -165,6 +170,14 @@ class StorageService {
       preferences.setInt(
         _widgetWallpaperTextColorKey,
         settings.widgetWallpaperTextColor,
+      ),
+      preferences.setString(
+        _widgetElementStylesKey,
+        encodeWidgetElementStyles(settings.widgetElementStyles),
+      ),
+      preferences.setString(
+        _widgetVerticalAlignKey,
+        settings.widgetVerticalAlign.name,
       ),
     ]);
   }

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ying/app_config.dart';
 import 'package:ying/models/app_settings.dart';
 import 'package:ying/models/unlock_features.dart';
+import 'package:ying/models/widget_element_style.dart';
 import 'package:ying/services/device_fingerprint.dart';
 import 'package:ying/services/unlock_service.dart';
 
@@ -27,6 +28,19 @@ void main() {
       widgetWallpaperColor: 0xFF112233,
       widgetWallpaperDarkColor: 0xFF223344,
       widgetWallpaperTextColor: 0xFFFFFFFF,
+      widgetElementStyles: {
+        'title': WidgetElementStyle(
+          visible: WidgetElementVisible.show,
+          size: WidgetElementSize.large,
+          colorMode: WidgetColorMode.custom,
+          color: 0xFFE91E63,
+          align: WidgetAlign.center,
+        ),
+        'prevButton': WidgetElementStyle(
+          visible: WidgetElementVisible.hide,
+        ),
+      },
+      widgetVerticalAlign: WidgetVerticalAlign.bottom,
     );
     final sanitized = sanitizeSponsorSettings(locked);
     expect(sanitized.widgetStyle, WidgetStyle.card);
@@ -37,6 +51,31 @@ void main() {
     expect(sanitized.widgetWallpaperColor, -1);
     expect(sanitized.widgetWallpaperDarkColor, -1);
     expect(sanitized.widgetWallpaperTextColor, -1);
+    expect(
+      sanitized.widgetElementStyles['title']?.visible,
+      WidgetElementVisible.follow,
+    );
+    expect(
+      sanitized.widgetElementStyles['prevButton']?.visible,
+      WidgetElementVisible.follow,
+    );
+    expect(
+      sanitized.widgetElementStyles['title']?.size,
+      WidgetElementSize.large,
+    );
+    expect(
+      sanitized.widgetElementStyles['title']?.colorMode,
+      WidgetColorMode.custom,
+    );
+    expect(
+      sanitized.widgetElementStyles['title']?.color,
+      0xFFE91E63,
+    );
+    expect(
+      sanitized.widgetElementStyles['title']?.align,
+      WidgetAlign.center,
+    );
+    expect(sanitized.widgetVerticalAlign, WidgetVerticalAlign.bottom);
   });
 
   test('keeps free settings untouched when locked', () {
