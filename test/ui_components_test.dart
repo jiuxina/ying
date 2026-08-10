@@ -853,7 +853,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Orbitron'), findsOneWidget);
+      // 在线候选与底部字体许可列表都会出现 Orbitron。
+      expect(find.text('Orbitron'), findsNWidgets(2));
       expect(find.text('下载并应用'), findsOneWidget);
       expect(find.text('赞助解锁后可用'), findsOneWidget);
     });
@@ -911,6 +912,40 @@ void main() {
       expect(controller.state.settings.widgetFontFamily, 'catalog:orbitron');
       expect(saved.last.widgetFontFamily, 'catalog:orbitron');
       expect(saved.last.widgetDigitFontPath, '/tmp/orbitron.ttf');
+    });
+
+    testWidgets('字体库内置许可证文本可查看', (tester) async {
+      phoneViewport(tester);
+      final controller = buildController(<AppSettings>[]);
+      final fontLibrary = FontLibraryController()..loading = false;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appControllerProvider.overrideWith((ref) => controller),
+            fontLibraryProvider.overrideWith((ref) => fontLibrary),
+            unlockControllerProvider.overrideWith(
+              (ref) => UnlockController(
+                StorageService(),
+                initialState: const UnlockState(unlocked: true),
+              ),
+            ),
+          ],
+          child: glassApp(
+            FontLibraryPage(
+              catalogFetcher: () async => const WidgetFontCatalog(
+                version: 1,
+                baseUrl: 'https://example.com',
+                fonts: [],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('DSEG7 Classic'), 300);
+      await tester.tap(find.text('DSEG7 Classic'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('SIL OPEN FONT LICENSE'), findsOneWidget);
     });
 
     testWidgets('事件列表模式开关持久化', (tester) async {

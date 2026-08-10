@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import '../models/app_settings.dart';
 import '../models/widget_font.dart';
@@ -361,6 +361,8 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
                 onApply: _apply,
                 onDelete: _delete,
               ),
+              const SizedBox(height: 16),
+              const _FontLicensesSection(),
             ],
           ),
         ),
@@ -615,5 +617,91 @@ class _FontDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Divider(height: 1, color: Theme.of(context).dividerColor);
+  }
+}
+
+Future<void> showFontLicenseDialog(
+  BuildContext context, {
+  required String title,
+  required String assetPath,
+}) async {
+  String text;
+  try {
+    text = await rootBundle.loadString(assetPath);
+  } catch (_) {
+    text = '许可证文件加载失败';
+  }
+  if (!context.mounted) return;
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text('$title 许可'),
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: SelectableText(
+            text,
+            style: Theme.of(dialogContext).textTheme.bodySmall,
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('关闭'),
+        ),
+      ],
+    ),
+  );
+}
+
+class _FontLicensesSection extends StatelessWidget {
+  const _FontLicensesSection();
+
+  static const licenses = <(String, String)>[
+    ('DSEG7 Classic', 'assets/licenses/DSEG-LICENSE.txt'),
+    ('Orbitron', 'assets/licenses/Orbitron-OFL.txt'),
+    ('霞鹜文楷 Lite', 'assets/licenses/LXGW-OFL.txt'),
+    ('得意黑 Smiley Sans', 'assets/licenses/SmileySans-LICENSE.txt'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return GlassSurface(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const GlassSectionTitle(
+            title: '字体许可',
+            subtitle: '内置 SIL OFL 1.1 文本',
+          ),
+          const SizedBox(height: 10),
+          for (final (index, license) in licenses.indexed) ...[
+            if (index > 0) const _FontDivider(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.description_outlined),
+              title: Text(license.$1),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => showFontLicenseDialog(
+                context,
+                title: license.$1,
+                assetPath: license.$2,
+              ),
+            ),
+          ],
+          const SizedBox(height: 4),
+          Text(
+            '以上字体均以 SIL OFL 1.1 开源许可分发，可免费商用。',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
