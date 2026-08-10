@@ -39,7 +39,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       padding: EdgeInsets.fromLTRB(
         wide ? 34 : 20,
         28,
-        wide ? 34 : 20,
+        20,
         wide ? 24 : 132,
       ),
       children: [
@@ -51,12 +51,24 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           ),
         ),
         const SizedBox(height: 5),
-        Text(
-          DateFormat('yyyy年M月d日 EEEE', 'zh_CN').format(now),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                DateFormat('yyyy年M月d日 EEEE', 'zh_CN').format(now),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (_showTodayButton)
+              TextButton(
+                key: const ValueKey('calendar-today'),
+                onPressed: _jumpToToday,
+                child: const Text('今天'),
+              ),
+          ],
         ),
         const SizedBox(height: 18),
         _ModeSelector(value: _mode, onChanged: _changeMode),
@@ -68,6 +80,24 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         },
       ],
     );
+  }
+
+  bool get _showTodayButton {
+    final now = DateTime.now();
+    return switch (_mode) {
+      CalendarMode.month =>
+        _selectedDate != null && !_sameDay(_selectedDate!, now),
+      CalendarMode.year => _focusedMonth.year != now.year,
+      CalendarMode.list => false,
+    };
+  }
+
+  void _jumpToToday() {
+    final now = DateTime.now();
+    setState(() {
+      _focusedMonth = DateTime(now.year, now.month);
+      _selectedDate = DateTime(now.year, now.month, now.day);
+    });
   }
 
   void _changeMode(CalendarMode mode) {
@@ -115,13 +145,6 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
-            ),
-            TextButton(
-              onPressed: () => setState(() {
-                _focusedMonth = DateTime(now.year, now.month);
-                _selectedDate = DateTime(now.year, now.month, now.day);
-              }),
-              child: const Text('今天'),
             ),
             GlassIconButton(
               icon: Icons.chevron_right_rounded,
@@ -213,12 +236,6 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
-            ),
-            TextButton(
-              onPressed: () => setState(() {
-                _focusedMonth = DateTime(now.year, now.month);
-              }),
-              child: const Text('今天'),
             ),
             GlassIconButton(
               icon: Icons.chevron_right_rounded,

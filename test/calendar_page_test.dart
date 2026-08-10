@@ -234,6 +234,52 @@ void main() {
           : '$nextYear年$nextMonth月';
       expect(find.text(nextLabel), findsOneWidget);
     });
+
+    testWidgets('今天按钮仅在选中非当日时显示，点击后回到今天', (tester) async {
+      phoneViewport(tester);
+      final now = DateTime.now();
+      final target = currentMonthDay(now);
+      final controller = await readyController([]);
+      await tester.pumpWidget(buildCalendar(controller));
+      await tester.pump();
+
+      expect(find.text('今天'), findsNothing);
+
+      await tester.tap(
+        find.byKey(
+          ValueKey('calendar-day-${target.year}-${target.month}-${target.day}'),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('今天'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('calendar-today')));
+      await tester.pump();
+
+      expect(find.text('今天'), findsNothing);
+    });
+
+    testWidgets('年视图仅在非当前年份显示今天按钮', (tester) async {
+      phoneViewport(tester);
+      final now = DateTime.now();
+      final controller = await readyController([]);
+      await tester.pumpWidget(buildCalendar(controller));
+      await tester.pump();
+
+      await tester.tap(find.byKey(const ValueKey('calendar-mode-year')));
+      await tester.pump();
+      expect(find.text('今天'), findsNothing);
+
+      await tester.tap(find.byTooltip('上一年'));
+      await tester.pump();
+      expect(find.text('今天'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('calendar-today')));
+      await tester.pump();
+      expect(find.text('${now.year} 年'), findsOneWidget);
+      expect(find.text('今天'), findsNothing);
+    });
   });
 }
 
