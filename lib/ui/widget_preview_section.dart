@@ -6,10 +6,10 @@ import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
 import '../models/widget_element_style.dart';
 import '../models/widget_holiday.dart';
+import '../models/widget_render_spec.dart';
 import '../services/background_image_provider.dart';
 import '../services/widget_service.dart';
 import '../utils/widget_content_utils.dart';
-import '../utils/widget_element_style_utils.dart';
 import 'glass_ui.dart';
 
 part 'widget_preview_painters.dart';
@@ -68,9 +68,14 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
   @override
   Widget build(BuildContext context) {
     final visible = widget.events.where((event) => !event.isCompleted).toList()
-      ..sort((a, b) => a.dayDelta().abs().compareTo(b.dayDelta().abs()));
+      ..sort(compareWidgetEvents);
     final event = visible.firstOrNull;
     final color = Color(widget.settings.widgetColor);
+    final renderSpec = resolveWidgetRenderSpec(
+      widget.events,
+      widget.settings,
+      sponsorUnlocked: true,
+    );
     return GlassSurface(
       radius: 20,
       padding: const EdgeInsets.all(16),
@@ -88,12 +93,16 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
                       settings: widget.settings,
                       color: color,
                       compact: true,
+                      texts: renderSpec.texts,
+                      render: renderSpec.compact,
                     )
                   : _WidgetPreview(
                       event: event,
                       settings: widget.settings,
                       color: color,
                       compact: true,
+                      texts: renderSpec.texts,
+                      render: renderSpec.compact,
                     );
               final mediumPreview = widget.settings.widgetListMode
                   ? _WidgetListPreview(
@@ -101,12 +110,16 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
                       settings: widget.settings,
                       color: color,
                       compact: false,
+                      texts: renderSpec.texts,
+                      render: renderSpec.full,
                     )
                   : _WidgetPreview(
                       event: event,
                       settings: widget.settings,
                       color: color,
                       compact: false,
+                      texts: renderSpec.texts,
+                      render: renderSpec.full,
                     );
               return vertical
                   ? Column(
@@ -248,39 +261,24 @@ class _WidgetPreview extends StatelessWidget {
     required this.settings,
     required this.color,
     required this.compact,
+    required this.texts,
+    required this.render,
   });
 
   final CountdownEvent? event;
   final AppSettings settings;
   final Color color;
   final bool compact;
+  final WidgetRenderTexts texts;
+  final WidgetRenderBranch render;
 
   @override
   Widget build(BuildContext context) {
     final scale = settings.widgetFontScale;
     final style = settings.widgetStyle;
     final holiday = combinedHoliday(event, DateTime.now());
-    final darkSurface = style == WidgetStyle.glass ||
-        style == WidgetStyle.polaroid ||
-        style == WidgetStyle.minimal ||
-        style == WidgetStyle.capsule;
-    final wallpaperText = settings.widgetWallpaperTextColor == -1
-        ? null
-        : Color(settings.widgetWallpaperTextColor);
     final accent = _holidayAccent(holiday) ?? Color(settings.widgetColor);
-    final neonPrimary = style == WidgetStyle.neonSign ? accent : null;
-    final crtPrimary = style == WidgetStyle.crt
-        ? const Color(0xFFC9F7D0)
-        : null;
-    final pixelPrimary = style == WidgetStyle.pixelHealth
-        ? const Color(0xFFB7FF9E)
-        : null;
-    final primaryText = neonPrimary ??
-        crtPrimary ??
-        pixelPrimary ??
-        wallpaperText ??
-        (darkSurface ? const Color(0xFF1C1C1E) : Colors.white);
-    final secondaryText = primaryText.withValues(alpha: 0.74);
+    final primaryText = Color(render.element('title').color);
     final borderColor = style == WidgetStyle.minimal
         ? primaryText.withValues(alpha: 0.4)
         : style == WidgetStyle.glass
@@ -316,9 +314,9 @@ class _WidgetPreview extends StatelessWidget {
     final body = _PreviewBody(
       event: event,
       settings: settings,
+      texts: texts,
+      render: render,
       compact: compact,
-      primaryText: primaryText,
-      secondaryText: secondaryText,
       accent: accent,
       holiday: holiday,
       shadow: shadow,
@@ -411,9 +409,9 @@ class _PreviewBody extends StatelessWidget {
   const _PreviewBody({
     required this.event,
     required this.settings,
+    required this.texts,
+    required this.render,
     required this.compact,
-    required this.primaryText,
-    required this.secondaryText,
     required this.accent,
     required this.holiday,
     required this.shadow,
@@ -422,63 +420,141 @@ class _PreviewBody extends StatelessWidget {
 
   final CountdownEvent? event;
   final AppSettings settings;
+  final WidgetRenderTexts texts;
+  final WidgetRenderBranch render;
   final bool compact;
-  final Color primaryText;
-  final Color secondaryText;
   final Color accent;
   final WidgetHoliday holiday;
   final List<Shadow>? shadow;
   final double scale;
 
+  WidgetElementRender _element(String id) => render.element(id);
+
+  TextAlign _align(WidgetAlign value) => switch (value) {
+    WidgetAlign.center => TextAlign.center,
+    WidgetAlign.end => TextAlign.end,
+    _ => TextAlign.start,
+  };
+
+  Color _color(String id, {Color? override}) {
+    final style = settings.widgetElementStyles[id];
+    final base = Color(_element(id).color);
+    if (style?.colorMode == WidgetColorMode.custom) return base;
+    return override ?? base;
+  }
+
+  Widget _iconButton(IconData icon, bool visible, Color color) {
+    if (!visible) return const SizedBox.shrink();
+    return Icon(icon, size: 22, color: color);
+  }
+
   @override
   Widget build(BuildContext context) {
     final current = event;
+    final categoryElement = _element('category');
+    final holidayElement = _element('holidayBadge');
+    final titleElement = _element('title');
+    final daysElement = _element('days');
+    final unitElement = _element('unit');
+    final iconElement = _element('icon');
+    final noteElement = _element('note');
+    final preciseElement = _element('precise');
+    final dateInfoElement = _element('dateInfo');
+    final progressElement = _element('progress');
+    final prevElement = _element('prevButton');
+    final nextElement = _element('nextButton');
+    final addElement = _element('addButton');
+    final completeElement = _element('completeButton');
+    final daysAlign = daysElement.align;
+
     if (current == null) {
-      final categoryVisible = widgetElementVisible(
-        settings,
-        'category',
-        followDefault: true,
+      final headerRow = Row(
+        children: [
+          if (categoryElement.visible)
+            Expanded(
+              child: Text(
+                texts.category,
+                style: TextStyle(
+                  color: Color(categoryElement.color),
+                  shadows: shadow,
+                ),
+              ),
+            )
+          else
+            const Spacer(),
+          _iconButton(
+            Icons.chevron_left_rounded,
+            prevElement.visible,
+            Color(prevElement.color),
+          ),
+          _iconButton(
+            Icons.chevron_right_rounded,
+            nextElement.visible,
+            Color(nextElement.color),
+          ),
+          _iconButton(
+            Icons.add_circle_outline_rounded,
+            addElement.visible,
+            Color(addElement.color),
+          ),
+        ],
       );
-      final titleVisible = widgetElementVisible(
-        settings,
-        'title',
-        followDefault: true,
-      );
+      final emptyDaysAlign = switch (daysAlign) {
+        WidgetAlign.center => MainAxisAlignment.center,
+        WidgetAlign.end => MainAxisAlignment.end,
+        _ => MainAxisAlignment.start,
+      };
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (categoryVisible)
-            Text(
-              '萤',
-              style: TextStyle(
-                color: widgetElementColor(
-                  settings,
-                  'category',
-                  primary: primaryText,
-                  secondary: secondaryText,
-                  defaultPrimary: false,
-                ),
-                shadows: shadow,
-              ),
-            ),
+          headerRow,
           const Spacer(),
-          if (titleVisible)
+          if (titleElement.visible)
             Text(
-              '添加一个倒数日',
-              textAlign: widgetElementAlign(settings, 'title'),
+              texts.title,
+              textAlign: _align(titleElement.align),
               style: TextStyle(
-                color: widgetElementColor(
-                  settings,
-                  'title',
-                  primary: primaryText,
-                  secondary: secondaryText,
-                  defaultPrimary: true,
-                ),
-                fontSize: 18 * scale * widgetElementSizeScale(settings, 'title'),
+                color: Color(titleElement.color),
+                fontSize: (compact ? 15 : 18) * scale * titleElement.size,
                 fontWeight: FontWeight.w700,
                 shadows: shadow,
               ),
             ),
+          if (daysElement.visible || unitElement.visible) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: emptyDaysAlign,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (daysElement.visible)
+                  Text(
+                    texts.days,
+                    style: TextStyle(
+                      color: Color(daysElement.color),
+                      fontSize:
+                          (compact ? 32 : 44) * scale * daysElement.size,
+                      fontWeight: FontWeight.w800,
+                      height: 0.95,
+                      shadows: shadow,
+                    ),
+                  ),
+                if (unitElement.visible) ...[
+                  const SizedBox(width: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      texts.unit,
+                      style: TextStyle(
+                        color: Color(unitElement.color),
+                        fontSize: 14 * scale * unitElement.size,
+                        shadows: shadow,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
         ],
       );
     }
@@ -506,126 +582,102 @@ class _PreviewBody extends StatelessWidget {
     final displayUnitText = urgentActive
         ? widgetUrgentLabel(urgentLevel, current.displayDays)
         : unitText;
-    final displayMainColor = capsuleToday
+    final Color? displayMainColor = capsuleToday
         ? accent
         : urgentActive
         ? Color(widgetUrgentArgb(urgentLevel))
-        : primaryText;
-    final showIcon = settings.widgetShowIcon && current.icon.isNotEmpty;
-    final iconVisible = widgetElementVisible(
-      settings,
-      'icon',
-      followDefault: showIcon,
-    );
-    final titleVisible = widgetElementVisible(
-      settings,
-      'title',
-      followDefault: true,
-    );
-    final daysVisible = widgetElementVisible(
-      settings,
-      'days',
-      followDefault: true,
-    );
-    final unitVisible = widgetElementVisible(
-      settings,
-      'unit',
-      followDefault: true,
-    );
+        : null;
     final fontFamily = settings.widgetStyle == WidgetStyle.pixelHealth
         ? 'monospace'
         : widgetFontName(settings.widgetFontFamily);
     final italic = settings.widgetFontFamily == 'hand' &&
         settings.widgetStyle != WidgetStyle.pixelHealth;
-    final dateInfo = settings.widgetShowLunarWeek
+    final dateInfoText = settings.widgetShowLunarWeek
         ? widgetDateInfo(now)
         : '';
     final quote = settings.widgetQuoteMode
         ? widgetQuoteText(current, now)
         : '';
-    final noteVisible = widgetElementVisible(
-      settings,
-      'note',
-      followDefault: !compact &&
-          (quote.isNotEmpty ||
-              (settings.widgetShowNote && current.note.isNotEmpty)),
-    );
     final noteText = quote.isNotEmpty ? quote : current.note;
-    final showProgress = !compact && settings.widgetShowProgress;
-    final progressVisible = widgetElementVisible(
-      settings,
-      'progress',
-      followDefault: showProgress,
-    );
-    final healthVisible = widgetElementVisible(
-      settings,
-      'progress',
-      followDefault:
-          settings.widgetStyle == WidgetStyle.pixelHealth && !compact,
-    );
-    final progress = widgetProgress(current, now);
+    final progressValue = widgetProgress(current, now);
     final glowShadows = settings.widgetStyle == WidgetStyle.neonSign
         ? [
             Shadow(color: accent.withValues(alpha: 0.9), blurRadius: 10),
             Shadow(color: accent.withValues(alpha: 0.45), blurRadius: 22),
           ]
         : shadow;
+    final iconVisible = iconElement.visible && current.icon.isNotEmpty;
+    final titleVisible = titleElement.visible;
+    final daysVisible = daysElement.visible;
+    final unitVisible = unitElement.visible && displayUnitText.isNotEmpty;
+    final categoryVisible = categoryElement.visible;
+    final holidayVisible =
+        holidayElement.visible && holiday != WidgetHoliday.none;
+    final preciseVisible = preciseElement.visible;
+    final dateInfoVisible = dateInfoElement.visible && dateInfoText.isNotEmpty;
+    final progressVisible =
+        progressElement.visible && settings.widgetShowProgress;
+    final healthVisible = progressElement.visible &&
+        settings.widgetStyle == WidgetStyle.pixelHealth;
+    final noteVisible = noteElement.visible &&
+        (quote.isNotEmpty ||
+            (settings.widgetShowNote && current.note.isNotEmpty));
+    final prevVisible = prevElement.visible;
+    final nextVisible = nextElement.visible;
+    final addVisible = addElement.visible;
+    final completeVisible = completeElement.visible;
     final mainFontSize = mainText.length > 3
-        ? (compact ? 24 : 28) * scale * widgetElementSizeScale(settings, 'days')
-        : (compact ? 38 : 44) * scale * widgetElementSizeScale(settings, 'days');
-    final daysMainAxisAlignment = switch (widgetElementAlign(settings, 'days')) {
-      TextAlign.center => MainAxisAlignment.center,
-      TextAlign.end => MainAxisAlignment.end,
+        ? (compact ? 22 : 26) * scale * daysElement.size
+        : (compact ? 32 : 44) * scale * daysElement.size;
+    final daysMainAxisAlignment = switch (daysAlign) {
+      WidgetAlign.center => MainAxisAlignment.center,
+      WidgetAlign.end => MainAxisAlignment.end,
       _ => MainAxisAlignment.start,
     };
-    final categoryVisible = widgetElementVisible(
-      settings,
-      'category',
-      followDefault: !compact && settings.widgetShowCategory,
-    );
-    final holidayVisible = widgetElementVisible(
-      settings,
-      'holidayBadge',
-      followDefault: holiday != WidgetHoliday.none,
-    );
-    final preciseVisible = widgetElementVisible(
-      settings,
-      'precise',
-      followDefault: settings.widgetShowPreciseTime,
-    );
-    final dateInfoVisible = widgetElementVisible(
-      settings,
-      'dateInfo',
-      followDefault: !compact && settings.widgetShowLunarWeek,
-    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (categoryVisible)
+        if (categoryVisible ||
+            holidayVisible ||
+            prevVisible ||
+            nextVisible ||
+            addVisible)
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  displayCategory,
-                  maxLines: 1,
-                  textAlign: widgetElementAlign(settings, 'category'),
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: widgetElementColor(
-                      settings,
-                      'category',
-                      primary: primaryText,
-                      secondary: secondaryText,
-                      defaultPrimary: false,
+              if (categoryVisible)
+                Expanded(
+                  child: Text(
+                    displayCategory,
+                    maxLines: 1,
+                    textAlign: _align(categoryElement.align),
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Color(categoryElement.color),
+                      shadows: shadow,
                     ),
-                    shadows: shadow,
                   ),
-                ),
-              ),
+                )
+              else
+                const Spacer(),
               if (holidayVisible) ...[
                 const SizedBox(width: 8),
                 _HolidayBadge(holiday: holiday, accent: accent),
               ],
+              _iconButton(
+                Icons.chevron_left_rounded,
+                prevVisible,
+                Color(prevElement.color),
+              ),
+              _iconButton(
+                Icons.chevron_right_rounded,
+                nextVisible,
+                Color(nextElement.color),
+              ),
+              _iconButton(
+                Icons.add_circle_outline_rounded,
+                addVisible,
+                Color(addElement.color),
+              ),
             ],
           ),
         const SizedBox(height: 2),
@@ -635,15 +687,8 @@ class _PreviewBody extends StatelessWidget {
               Text(
                 current.icon,
                 style: TextStyle(
-                  color: widgetElementColor(
-                    settings,
-                    'icon',
-                    primary: primaryText,
-                    secondary: secondaryText,
-                    defaultPrimary: true,
-                  ),
-                  fontSize:
-                      19 * scale * widgetElementSizeScale(settings, 'icon'),
+                  color: Color(iconElement.color),
+                  fontSize: 18 * scale * iconElement.size,
                 ),
               ),
               const SizedBox(width: 6),
@@ -653,18 +698,11 @@ class _PreviewBody extends StatelessWidget {
                 child: Text(
                   displayTitle,
                   maxLines: 1,
-                  textAlign: widgetElementAlign(settings, 'title'),
+                  textAlign: _align(titleElement.align),
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: widgetElementColor(
-                      settings,
-                      'title',
-                      primary: primaryText,
-                      secondary: secondaryText,
-                      defaultPrimary: true,
-                    ),
-                    fontSize:
-                        18 * scale * widgetElementSizeScale(settings, 'title'),
+                    color: Color(titleElement.color),
+                    fontSize: (compact ? 15 : 18) * scale * titleElement.size,
                     fontWeight: FontWeight.w700,
                     shadows: shadow,
                   ),
@@ -679,18 +717,18 @@ class _PreviewBody extends StatelessWidget {
           children: [
             if (healthVisible) ...[
               _PixelHealthBar(
-                progress: progress,
+                progress: progressValue,
                 accent: accent,
-                track: primaryText.withValues(alpha: 0.16),
+                track: Color(daysElement.color).withValues(alpha: 0.16),
               ),
               const SizedBox(width: 9),
             ],
             if (progressVisible) ...[
               _ProgressRing(
-                progress: progress,
+                progress: progressValue,
                 size: 42,
                 color: accent,
-                track: primaryText.withValues(alpha: 0.22),
+                track: Color(daysElement.color).withValues(alpha: 0.22),
               ),
               const SizedBox(width: 9),
             ],
@@ -698,14 +736,7 @@ class _PreviewBody extends StatelessWidget {
               Text(
                 mainText,
                 style: TextStyle(
-                  color: widgetElementColor(
-                    settings,
-                    'days',
-                    primary: primaryText,
-                    secondary: secondaryText,
-                    defaultPrimary: true,
-                    override: displayMainColor,
-                  ),
+                  color: _color('days', override: displayMainColor),
                   fontSize: mainFontSize,
                   fontWeight: FontWeight.w800,
                   height: 0.95,
@@ -714,28 +745,32 @@ class _PreviewBody extends StatelessWidget {
                   fontStyle: italic ? FontStyle.italic : null,
                 ),
               ),
-            if (unitVisible && displayUnitText.isNotEmpty) ...[
+            if (unitVisible) ...[
               const SizedBox(width: 6),
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   displayUnitText,
                   style: TextStyle(
-                    color: widgetElementColor(
-                      settings,
+                    color: _color(
                       'unit',
-                      primary: primaryText,
-                      secondary: secondaryText,
-                      defaultPrimary: false,
                       override: urgentActive
-                          ? displayMainColor.withValues(alpha: 0.92)
+                          ? (displayMainColor ?? const Color(0xFFFFFFFF))
+                              .withValues(alpha: 0.92)
                           : null,
                     ),
-                    fontSize:
-                        13 * scale * widgetElementSizeScale(settings, 'unit'),
+                    fontSize: 14 * scale * unitElement.size,
                     shadows: glowShadows,
                   ),
                 ),
+              ),
+            ],
+            if (completeVisible) ...[
+              const SizedBox(width: 6),
+              Icon(
+                Icons.check_circle_outline_rounded,
+                size: 22,
+                color: Color(completeElement.color),
               ),
             ],
           ],
@@ -745,16 +780,10 @@ class _PreviewBody extends StatelessWidget {
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               widgetPreciseTimeText(current, now),
-              textAlign: widgetElementAlign(settings, 'precise'),
+              textAlign: _align(preciseElement.align),
               style: TextStyle(
-                color: widgetElementColor(
-                  settings,
-                  'precise',
-                  primary: primaryText,
-                  secondary: secondaryText,
-                  defaultPrimary: false,
-                ),
-                fontSize: 14 * scale * widgetElementSizeScale(settings, 'precise'),
+                color: Color(preciseElement.color),
+                fontSize: 14 * scale * preciseElement.size,
                 fontFamily: fontFamily,
                 shadows: shadow,
               ),
@@ -764,20 +793,13 @@ class _PreviewBody extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              dateInfo,
+              dateInfoText,
               maxLines: 1,
-              textAlign: widgetElementAlign(settings, 'dateInfo'),
+              textAlign: _align(dateInfoElement.align),
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: widgetElementColor(
-                  settings,
-                  'dateInfo',
-                  primary: primaryText,
-                  secondary: secondaryText,
-                  defaultPrimary: false,
-                ),
-                fontSize:
-                    12 * scale * widgetElementSizeScale(settings, 'dateInfo'),
+                color: Color(dateInfoElement.color),
+                fontSize: 12 * scale * dateInfoElement.size,
                 shadows: shadow,
               ),
             ),
@@ -788,18 +810,11 @@ class _PreviewBody extends StatelessWidget {
             child: Text(
               noteText,
               maxLines: 1,
-              textAlign: widgetElementAlign(settings, 'note'),
+              textAlign: _align(noteElement.align),
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: widgetElementColor(
-                  settings,
-                  'note',
-                  primary: primaryText,
-                  secondary: secondaryText,
-                  defaultPrimary: false,
-                ),
-                fontSize:
-                    13 * scale * widgetElementSizeScale(settings, 'note'),
+                color: Color(noteElement.color),
+                fontSize: 14 * scale * noteElement.size,
                 fontStyle: quote.isNotEmpty ? FontStyle.italic : null,
                 shadows: shadow,
               ),
@@ -810,62 +825,45 @@ class _PreviewBody extends StatelessWidget {
   }
 }
 
+TextAlign _renderTextAlign(WidgetAlign value) => switch (value) {
+  WidgetAlign.center => TextAlign.center,
+  WidgetAlign.end => TextAlign.end,
+  _ => TextAlign.start,
+};
+
 class _WidgetListPreview extends StatelessWidget {
   const _WidgetListPreview({
     required this.events,
     required this.settings,
     required this.color,
     required this.compact,
+    required this.texts,
+    required this.render,
   });
 
   final List<CountdownEvent> events;
   final AppSettings settings;
   final Color color;
   final bool compact;
+  final WidgetRenderTexts texts;
+  final WidgetRenderBranch render;
 
   @override
   Widget build(BuildContext context) {
     final style = settings.widgetStyle;
-    final darkSurface = style == WidgetStyle.glass ||
-        style == WidgetStyle.polaroid ||
-        style == WidgetStyle.minimal ||
-        style == WidgetStyle.capsule;
-    final wallpaperText = settings.widgetWallpaperTextColor == -1
-        ? null
-        : Color(settings.widgetWallpaperTextColor);
     final accent = Color(settings.widgetColor);
-    final neonPrimary = style == WidgetStyle.neonSign ? accent : null;
-    final crtPrimary = style == WidgetStyle.crt
-        ? const Color(0xFFC9F7D0)
-        : null;
-    final pixelPrimary = style == WidgetStyle.pixelHealth
-        ? const Color(0xFFB7FF9E)
-        : null;
-    final primaryText = neonPrimary ??
-        crtPrimary ??
-        pixelPrimary ??
-        wallpaperText ??
-        (darkSurface ? const Color(0xFF1C1C1E) : Colors.white);
-    final secondaryText = primaryText.withValues(alpha: 0.74);
     final scale = settings.widgetFontScale;
+    final listHeader = render.element('listHeader');
+    final addButton = render.element('addButton');
+    final empty = render.element('empty');
+    final rowTitle = render.element('rowTitle');
+    final primaryText = Color(rowTitle.color);
     final rows = events.isEmpty
         ? <CountdownEvent>[]
-        : events.take(compact ? 3 : 4).toList();
-    final listHeaderVisible = widgetElementVisible(
-      settings,
-      'listHeader',
-      followDefault: true,
-    );
-    final addVisible = widgetElementVisible(
-      settings,
-      'addButton',
-      followDefault: true,
-    );
-    final emptyVisible = widgetElementVisible(
-      settings,
-      'empty',
-      followDefault: rows.isEmpty,
-    );
+        : events.take(compact ? 2 : 4).toList();
+    final listHeaderVisible = listHeader.visible;
+    final addVisible = addButton.visible;
+    final emptyVisible = empty.visible && rows.isEmpty;
     return Semantics(
       label: compact ? '小号事件列表预览' : '中号事件列表预览',
       child: Container(
@@ -921,24 +919,10 @@ class _WidgetListPreview extends StatelessWidget {
                             '事件列表',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            textAlign: widgetElementAlign(
-                              settings,
-                              'listHeader',
-                            ),
+                            textAlign: _renderTextAlign(listHeader.align),
                             style: TextStyle(
-                              color: widgetElementColor(
-                                settings,
-                                'listHeader',
-                                primary: primaryText,
-                                secondary: secondaryText,
-                                defaultPrimary: false,
-                              ),
-                              fontSize:
-                                  13 * scale *
-                                  widgetElementSizeScale(
-                                    settings,
-                                    'listHeader',
-                                  ),
+                              color: Color(listHeader.color),
+                              fontSize: 13 * scale * listHeader.size,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -948,7 +932,7 @@ class _WidgetListPreview extends StatelessWidget {
                           Icon(
                             Icons.add_circle_outline_rounded,
                             size: 20,
-                            color: secondaryText,
+                            color: Color(addButton.color),
                           ),
                         ],
                       ],
@@ -960,26 +944,11 @@ class _WidgetListPreview extends StatelessWidget {
                         ? Center(
                             child: emptyVisible
                                 ? Text(
-                                    '添加一个倒数日',
-                                    textAlign: widgetElementAlign(
-                                      settings,
-                                      'empty',
-                                    ),
+                                    texts.title,
+                                    textAlign: _renderTextAlign(empty.align),
                                     style: TextStyle(
-                                      color: widgetElementColor(
-                                        settings,
-                                        'empty',
-                                        primary: primaryText,
-                                        secondary: secondaryText,
-                                        defaultPrimary: false,
-                                      ),
-                                      fontSize:
-                                          15 *
-                                          scale *
-                                          widgetElementSizeScale(
-                                            settings,
-                                            'empty',
-                                          ),
+                                      color: Color(empty.color),
+                                      fontSize: 15 * scale * empty.size,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   )
@@ -1001,9 +970,7 @@ class _WidgetListPreview extends StatelessWidget {
                                   child: _ListRow(
                                     event: rows[index],
                                     settings: settings,
-                                    primaryText: primaryText,
-                                    secondaryText: secondaryText,
-                                    compact: compact,
+                                    render: render,
                                   ),
                                 ),
                               ],
@@ -1024,16 +991,12 @@ class _ListRow extends StatelessWidget {
   const _ListRow({
     required this.event,
     required this.settings,
-    required this.primaryText,
-    required this.secondaryText,
-    required this.compact,
+    required this.render,
   });
 
   final CountdownEvent event;
   final AppSettings settings;
-  final Color primaryText;
-  final Color secondaryText;
-  final bool compact;
+  final WidgetRenderBranch render;
 
   @override
   Widget build(BuildContext context) {
@@ -1048,61 +1011,44 @@ class _ListRow extends StatelessWidget {
     final displayUnitText = urgentActive
         ? widgetUrgentLabel(urgentLevel, event.displayDays)
         : unitText;
-    final displayMainColor = urgentActive
+    final Color? displayMainColor = urgentActive
         ? Color(widgetUrgentArgb(urgentLevel))
-        : primaryText;
+        : null;
     final fontFamily = widgetFontName(settings.widgetFontFamily);
     final scale = settings.widgetFontScale;
-    final showIcon = settings.widgetShowIcon && event.icon.isNotEmpty;
-    final iconVisible = widgetElementVisible(
-      settings,
-      'icon',
-      followDefault: showIcon,
-    );
-    final rowTitleVisible = widgetElementVisible(
-      settings,
-      'rowTitle',
-      followDefault: true,
-    );
-    final rowDaysVisible = widgetElementVisible(
-      settings,
-      'rowDays',
-      followDefault: true,
-    );
-    final rowUnitVisible = widgetElementVisible(
-      settings,
-      'rowUnit',
-      followDefault: true,
-    );
-    final completeVisible = widgetElementVisible(
-      settings,
-      'completeButton',
-      followDefault: true,
-    );
+    final icon = render.element('icon');
+    final rowTitle = render.element('rowTitle');
+    final rowDays = render.element('rowDays');
+    final rowUnit = render.element('rowUnit');
+    final rowSubtitle = render.element('rowSubtitle');
+    final complete = render.element('completeButton');
+    final iconVisible = icon.visible && event.icon.isNotEmpty;
+    final rowTitleVisible = rowTitle.visible;
+    final rowDaysVisible = rowDays.visible;
+    final rowUnitVisible = rowUnit.visible && displayUnitText.isNotEmpty;
+    final completeVisible = complete.visible;
     final subtitle = [
       if (settings.widgetShowCategory) event.category,
       if (settings.widgetShowPreciseTime)
         widgetPreciseTimeText(event, DateTime.now()),
     ].join(' · ');
-    final rowSubtitleVisible = widgetElementVisible(
-      settings,
-      'rowSubtitle',
-      followDefault: subtitle.isNotEmpty && !compact,
-    );
+    final rowSubtitleVisible = rowSubtitle.visible && subtitle.isNotEmpty;
+
+    Color color(String id, {Color? override}) {
+      final style = settings.widgetElementStyles[id];
+      final base = Color(render.element(id).color);
+      if (style?.colorMode == WidgetColorMode.custom) return base;
+      return override ?? base;
+    }
+
     return Row(
       children: [
         if (iconVisible) ...[
           Text(
             event.icon,
             style: TextStyle(
-              color: widgetElementColor(
-                settings,
-                'icon',
-                primary: primaryText,
-                secondary: secondaryText,
-                defaultPrimary: true,
-              ),
-              fontSize: 17 * scale * widgetElementSizeScale(settings, 'icon'),
+              color: Color(icon.color),
+              fontSize: 16 * scale * icon.size,
             ),
           ),
           const SizedBox(width: 8),
@@ -1116,20 +1062,11 @@ class _ListRow extends StatelessWidget {
                 Text(
                   event.title,
                   maxLines: 1,
-                  textAlign: widgetElementAlign(settings, 'rowTitle'),
+                  textAlign: _renderTextAlign(rowTitle.align),
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: widgetElementColor(
-                      settings,
-                      'rowTitle',
-                      primary: primaryText,
-                      secondary: secondaryText,
-                      defaultPrimary: true,
-                    ),
-                    fontSize:
-                        (compact ? 13 : 14) *
-                        scale *
-                        widgetElementSizeScale(settings, 'rowTitle'),
+                    color: Color(rowTitle.color),
+                    fontSize: 14 * scale * rowTitle.size,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1138,21 +1075,11 @@ class _ListRow extends StatelessWidget {
                 Text(
                   subtitle,
                   maxLines: 1,
-                  textAlign: widgetElementAlign(settings, 'rowSubtitle'),
+                  textAlign: _renderTextAlign(rowSubtitle.align),
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: widgetElementColor(
-                      settings,
-                      'rowSubtitle',
-                      primary: primaryText,
-                      secondary: secondaryText,
-                      defaultPrimary: false,
-                    ),
-                    fontSize:
-                        11 * scale * widgetElementSizeScale(
-                          settings,
-                          'rowSubtitle',
-                        ),
+                    color: Color(rowSubtitle.color),
+                    fontSize: 11 * scale * rowSubtitle.size,
                   ),
                 ),
               ],
@@ -1164,18 +1091,8 @@ class _ListRow extends StatelessWidget {
           Text(
             mainText,
             style: TextStyle(
-              color: widgetElementColor(
-                settings,
-                'rowDays',
-                primary: primaryText,
-                secondary: secondaryText,
-                defaultPrimary: true,
-                override: displayMainColor,
-              ),
-              fontSize:
-                  (compact ? 18 : 20) *
-                  scale *
-                  widgetElementSizeScale(settings, 'rowDays'),
+              color: color('rowDays', override: displayMainColor),
+              fontSize: 18 * scale * rowDays.size,
               fontWeight: FontWeight.w800,
               fontFamily: fontFamily,
             ),
@@ -1185,17 +1102,14 @@ class _ListRow extends StatelessWidget {
           Text(
             displayUnitText,
             style: TextStyle(
-              color: widgetElementColor(
-                settings,
+              color: color(
                 'rowUnit',
-                primary: primaryText,
-                secondary: secondaryText,
-                defaultPrimary: false,
                 override: urgentActive
-                    ? displayMainColor.withValues(alpha: 0.92)
+                    ? (displayMainColor ?? const Color(0xFFFFFFFF))
+                        .withValues(alpha: 0.92)
                     : null,
               ),
-              fontSize: 11 * scale * widgetElementSizeScale(settings, 'rowUnit'),
+              fontSize: 11 * scale * rowUnit.size,
             ),
           ),
         ],
@@ -1204,7 +1118,7 @@ class _ListRow extends StatelessWidget {
           Icon(
             Icons.check_circle_outline_rounded,
             size: 18,
-            color: secondaryText,
+            color: Color(complete.color),
           ),
         ],
       ],

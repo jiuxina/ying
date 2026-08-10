@@ -212,7 +212,7 @@ void main() {
 
     test('preference values include protocol version and every key', () {
       final values = widgetPreferenceValues(const AppSettings());
-      expect(values['widget_protocol_version'], 7);
+      expect(values['widget_protocol_version'], 8);
       expect(values['widget_color'], 'ff0f766e');
       expect(
         values.keys,
@@ -242,6 +242,7 @@ void main() {
           'widget_vertical_align',
           'widget_holiday',
           'widget_date_info',
+          'widget_render_spec',
         ]),
       );
     });

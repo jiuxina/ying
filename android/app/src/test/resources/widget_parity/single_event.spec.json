@@ -1,0 +1,264 @@
+{
+  "version": 8,
+  "style": "card",
+  "verticalAlign": "center",
+  "eventOrder": [
+    "evt-1"
+  ],
+  "texts": {
+    "title": "添加一个倒数日",
+    "category": "萤",
+    "days": "--",
+    "unit": "天"
+  },
+  "compact": {
+    "mode": "single",
+    "elements": {
+      "category": {
+        "visible": false,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "holidayBadge": {
+        "visible": false,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "title": {
+        "visible": true,
+        "color": 4294967295,
+        "size": 1.0,
+        "align": "start"
+      },
+      "days": {
+        "visible": true,
+        "color": 4294967295,
+        "size": 1.0,
+        "align": "start"
+      },
+      "unit": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "note": {
+        "visible": false,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "precise": {
+        "visible": false,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "dateInfo": {
+        "visible": false,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "progress": {
+        "visible": false,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "icon": {
+        "visible": false,
+        "color": 4294967295,
+        "size": 1.0,
+        "align": "start"
+      },
+      "listHeader": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "rowTitle": {
+        "visible": true,
+        "color": 4294967295,
+        "size": 1.0,
+        "align": "start"
+      },
+      "rowSubtitle": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "rowDays": {
+        "visible": true,
+        "color": 4294967295,
+        "size": 1.0,
+        "align": "start"
+      },
+      "rowUnit": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "empty": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "prevButton": {
+        "visible": false,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "nextButton": {
+        "visible": false,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "addButton": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "completeButton": {
+        "visible": false,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      }
+    }
+  },
+  "full": {
+    "mode": "single",
+    "elements": {
+      "category": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "holidayBadge": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "title": {
+        "visible": true,
+        "color": 4294967295,
+        "size": 1.0,
+        "align": "start"
+      },
+      "days": {
+        "visible": true,
+        "color": 4294967295,
+        "size": 1.0,
+        "align": "start"
+      },
+      "unit": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "note": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "precise": {
+        "visible": false,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "dateInfo": {
+        "visible": false,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "progress": {
+        "visible": false,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "icon": {
+        "visible": true,
+        "color": 4294967295,
+        "size": 1.0,
+        "align": "start"
+      },
+      "listHeader": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "rowTitle": {
+        "visible": true,
+        "color": 4294967295,
+        "size": 1.0,
+        "align": "start"
+      },
+      "rowSubtitle": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "rowDays": {
+        "visible": true,
+        "color": 4294967295,
+        "size": 1.0,
+        "align": "start"
+      },
+      "rowUnit": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "empty": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "prevButton": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "nextButton": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "addButton": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      },
+      "completeButton": {
+        "visible": true,
+        "color": 3187671039,
+        "size": 1.0,
+        "align": "start"
+      }
+    }
+  }
+}

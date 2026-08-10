@@ -309,6 +309,58 @@ class WidgetAppearanceTest {
     }
 
     @Test
+    fun renderSpecParsesEmptySingleSharedContract() {
+        val raw = File("src/test/resources/widget_parity/empty_single.spec.json").readText()
+        val spec = parseRenderSpec(raw)
+        assertTrue(spec != null)
+        assertEquals(8, spec!!.version)
+        assertEquals("single", spec.compact?.mode)
+        assertEquals("single", spec.full?.mode)
+        assertEquals(false, spec.compact?.element("category")?.visible)
+        assertEquals(true, spec.full?.element("category")?.visible)
+        assertEquals(true, spec.compact?.element("addButton")?.visible)
+        assertEquals(false, spec.compact?.element("completeButton")?.visible)
+        assertEquals(true, spec.full?.element("completeButton")?.visible)
+        assertEquals("添加一个倒数日", spec.texts.title)
+        assertEquals("--", spec.texts.days)
+        assertEquals("天", spec.texts.unit)
+    }
+
+    @Test
+    fun renderSpecParsesListModeSharedContract() {
+        val raw = File("src/test/resources/widget_parity/list_mode.spec.json").readText()
+        val spec = parseRenderSpec(raw)
+        assertTrue(spec != null)
+        assertEquals("list", spec!!.compact?.mode)
+        assertEquals("list", spec.full?.mode)
+        assertEquals(listOf("pinned", "near", "far"), spec.eventOrder)
+        assertEquals(true, spec.compact?.element("completeButton")?.visible)
+        assertEquals(true, spec.compact?.element("rowSubtitle")?.visible)
+        assertEquals(true, spec.compact?.element("empty")?.visible)
+    }
+
+    @Test
+    fun renderSpecParsesSingleEventSharedContract() {
+        val raw = File("src/test/resources/widget_parity/single_event.spec.json").readText()
+        val spec = parseRenderSpec(raw)
+        assertTrue(spec != null)
+        assertEquals(listOf("evt-1"), spec!!.eventOrder)
+        assertEquals(false, spec.compact?.element("icon")?.visible)
+        assertEquals(true, spec.full?.element("icon")?.visible)
+        assertEquals(0xFFFFFFFF.toInt(), spec.full?.element("title")?.color)
+    }
+
+    @Test
+    fun renderAlignGravityMatchesElementGravity() {
+        assertEquals(Gravity.START, renderAlignGravity(WidgetAlign.start))
+        assertEquals(
+            Gravity.CENTER_HORIZONTAL,
+            renderAlignGravity(WidgetAlign.center),
+        )
+        assertEquals(Gravity.END, renderAlignGravity(WidgetAlign.end))
+    }
+
+    @Test
     fun visibilityTristateOverridesFollowDefault() {
         assertTrue(effectiveVisible(null, true))
         assertFalse(effectiveVisible(null, false))

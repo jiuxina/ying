@@ -1,0 +1,50 @@
+{
+  "settings": {
+    "themeMode": "system",
+    "widgetColor": 4279203438,
+    "widgetFontScale": 1.0,
+    "widgetShowNote": true,
+    "widgetShowCategory": true,
+    "eventSortMode": "distance",
+    "reduceTransparency": false,
+    "reduceMotion": false,
+    "autoCheckUpdate": true,
+    "widgetStyle": "card",
+    "widgetBackgroundPath": "",
+    "widgetUnitText": "",
+    "widgetShowIcon": true,
+    "widgetShowProgress": false,
+    "widgetShowPreciseTime": false,
+    "widgetShowLunarWeek": false,
+    "widgetMysteryMode": false,
+    "widgetQuoteMode": false,
+    "widgetUrgentHighlight": false,
+    "widgetListMode": false,
+    "widgetFontFamily": "system",
+    "widgetTextOutline": false,
+    "widgetWallpaperColor": -1,
+    "widgetWallpaperDarkColor": -1,
+    "widgetWallpaperTextColor": -1,
+    "widgetElementStyles": "{}",
+    "widgetVerticalAlign": "center"
+  },
+  "events": [
+    {
+      "id": "evt-1",
+      "title": "毕业典礼",
+      "targetDate": "2026-08-20T00:00:00.000",
+      "category": "家庭",
+      "note": "记得合影",
+      "icon": "🎂",
+      "direction": "auto",
+      "reminders": [],
+      "isAllDay": false,
+      "isCompleted": false,
+      "isPinned": false,
+      "repeatType": "none",
+      "createdAt": "2026-07-01T09:30:00.000"
+    }
+  ],
+  "sponsorUnlocked": true,
+  "now": "2026-08-08T12:00:00.000"
+}

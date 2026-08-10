@@ -10,6 +10,7 @@ import '../models/countdown_event.dart';
 import '../models/unlock_features.dart';
 import '../models/widget_element_style.dart';
 import '../models/widget_holiday.dart';
+import '../models/widget_render_spec.dart';
 import '../utils/widget_content_utils.dart';
 import 'storage_service.dart';
 import 'widget_interaction_service.dart' show widgetBackgroundCallback;
@@ -59,7 +60,7 @@ class WidgetService {
   }) async {
     await HomeWidget.setAppGroupId(appGroupId);
     final visible = events.where((event) => !event.isCompleted).toList()
-      ..sort(_compareEvents);
+      ..sort(compareWidgetEvents);
     final previousFlipDay = await HomeWidget.getWidgetData<int>(
       'widget_flip_day',
     );
@@ -74,6 +75,11 @@ class WidgetService {
     final sponsorUnlocked =
         preferences.getBool(StorageService.sponsorUnlockedKey) ?? false;
     final encoded = encodeWidgetEvents(visible);
+    final renderSpec = resolveWidgetRenderSpec(
+      visible,
+      settings,
+      sponsorUnlocked: sponsorUnlocked,
+    );
     await Future.wait([
       HomeWidget.saveWidgetData<String>('widget_events', encoded),
       HomeWidget.saveWidgetData<int>('widget_event_count', visible.length),
@@ -84,9 +90,14 @@ class WidgetService {
       HomeWidget.saveWidgetData<int>('widget_flip_day', resolvedFlipDay),
       for (final entry in widgetPreferenceValues(
         settings,
+        events: visible,
         sponsorUnlocked: sponsorUnlocked,
       ).entries)
         HomeWidget.saveWidgetData(entry.key, entry.value),
+      HomeWidget.saveWidgetData<String>(
+        'widget_render_spec',
+        jsonEncode(renderSpec.toJson()),
+      ),
     ]);
     if (defaultTargetPlatform == TargetPlatform.android) {
       await Future.wait([
@@ -163,7 +174,7 @@ class WidgetService {
 /// [CountdownEvent.createdAt]（毫秒时间戳），并保持置顶优先、距离近优先的排序。
 String encodeWidgetEvents(List<CountdownEvent> events) {
   final visible = events.where((event) => !event.isCompleted).toList()
-    ..sort(_compareEvents);
+    ..sort(compareWidgetEvents);
   return jsonEncode(
     visible
         .map(
@@ -189,13 +200,20 @@ String encodeWidgetEvents(List<CountdownEvent> events) {
 /// 小部件偏好键值对；协议版本与全部新字段缺失时由 Android 侧回退默认值。
 Map<String, Object?> widgetPreferenceValues(
   AppSettings settings, {
+  List<CountdownEvent> events = const [],
   DateTime? now,
   bool sponsorUnlocked = true,
 }) {
   final today = now ?? DateTime.now();
   final resolved = sponsorUnlocked ? settings : sanitizeSponsorSettings(settings);
+  final renderSpec = resolveWidgetRenderSpec(
+    events,
+    resolved,
+    sponsorUnlocked: sponsorUnlocked,
+    now: today,
+  );
   return {
-    'widget_protocol_version': 7,
+    'widget_protocol_version': widgetRenderProtocolVersion,
     'widget_sponsor_unlocked': sponsorUnlocked,
     'widget_color': resolved.widgetColor.toRadixString(16).padLeft(8, '0'),
     'widget_font_scale': resolved.widgetFontScale,
@@ -223,14 +241,6 @@ Map<String, Object?> widgetPreferenceValues(
     'widget_vertical_align': resolved.widgetVerticalAlign.name,
     'widget_holiday': holidayFor(today).wireName,
     'widget_date_info': widgetDateInfo(today),
+    'widget_render_spec': jsonEncode(renderSpec.toJson()),
   };
-}
-
-int _compareEvents(CountdownEvent a, CountdownEvent b) {
-  if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
-  final aDays = a.dayDelta().abs();
-  final bDays = b.dayDelta().abs();
-  final distance = aDays.compareTo(bDays);
-  if (distance != 0) return distance;
-  return a.targetDate.compareTo(b.targetDate);
 }

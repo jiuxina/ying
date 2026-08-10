@@ -1096,6 +1096,30 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('空状态预览补齐天数占位与添加按钮', (tester) async {
+      await tester.pumpWidget(
+        glassApp(
+          Scaffold(
+            body: SingleChildScrollView(
+              child: WidgetPreviewSection(
+                events: const [],
+                settings: const AppSettings(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('添加一个倒数日'), findsNWidgets(2));
+      expect(find.text('--'), findsNWidgets(2));
+      expect(find.text('天'), findsNWidgets(2));
+      expect(find.byIcon(Icons.add_circle_outline_rounded), findsNWidgets(2));
+      expect(find.byIcon(Icons.chevron_left_rounded), findsOneWidget);
+      expect(find.text('萤'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('内容个性化设置渲染预览不抛异常', (tester) async {
       await tester.pumpWidget(
         glassApp(
@@ -1137,7 +1161,7 @@ void main() {
       );
       await tester.pump();
       expect(find.text('考试'), findsNWidgets(2));
-      expect(find.text('学习'), findsOneWidget);
+      expect(find.text('学习'), findsNWidgets(2));
       handle.dispose();
     });
 
@@ -1266,10 +1290,11 @@ void main() {
       );
       await tester.pump();
 
-      final titleText = tester.widgetList<Text>(find.text('考试')).first;
-      expect(titleText.style?.color, const Color(0xFFE91E63));
-      expect(titleText.style?.fontSize, 18 * 1.5);
-      expect(titleText.textAlign, TextAlign.end);
+      final titleTexts = tester.widgetList<Text>(find.text('考试')).toList();
+      expect(titleTexts.first.style?.color, const Color(0xFFE91E63));
+      expect(titleTexts.first.style?.fontSize, 15 * 1.5);
+      expect(titleTexts.last.style?.fontSize, 18 * 1.5);
+      expect(titleTexts.first.textAlign, TextAlign.end);
       expect(find.text('学习'), findsNothing);
       expect(tester.takeException(), isNull);
     });
