@@ -677,11 +677,16 @@ class _HomeTopBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: CircleAvatar(
-            radius: 24,
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            backgroundImage: avatarImage(avatarPath),
+          padding: const EdgeInsets.only(top: 10),
+          child: Semantics(
+            image: true,
+            label: '应用头像',
+            child: CircleAvatar(
+              radius: 24,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              backgroundImage:
+                  avatarImage(avatarPath) ?? const AssetImage('app.png'),
+            ),
           ),
         ),
         const Spacer(),

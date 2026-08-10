@@ -678,16 +678,8 @@ class _AvatarSettingTile extends StatelessWidget {
                   CircleAvatar(
                     radius: 20,
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    backgroundImage: image,
-                    child: image == null
-                        ? const Text(
-                            '萤',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          )
-                        : null,
+                    backgroundImage:
+                        image ?? const AssetImage('app.png'),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
