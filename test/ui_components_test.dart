@@ -1171,6 +1171,16 @@ void main() {
 
       expect(find.text('日子'), findsOneWidget);
       expect(find.text('日历'), findsOneWidget);
+      expect(find.text('萤'), findsNothing);
+      expect(find.byType(CircleAvatar), findsOneWidget);
+      final avatarTop = tester.getTopLeft(find.byType(CircleAvatar)).dy;
+      final settingsTop = tester.getTopLeft(find.byTooltip('设置')).dy;
+      final settingsBottom = tester.getBottomLeft(find.byTooltip('设置')).dy;
+      expect(avatarTop, closeTo(settingsTop, 1));
+      expect(
+        tester.getTopLeft(find.text('还没有日子')).dy,
+        greaterThan(settingsBottom),
+      );
       await tester.tap(find.byTooltip('设置'));
       await tester.pumpAndSettle();
       expect(find.text('设置'), findsOneWidget);

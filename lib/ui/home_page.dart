@@ -30,6 +30,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final state = ref.watch(appControllerProvider);
     final wide = MediaQuery.sizeOf(context).width >= 760;
+    final active = state.events.where((event) => !event.isCompleted).length;
     final pages = [
       _EventsPage(
         events: state.events,
@@ -61,18 +62,32 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                     ),
                   Expanded(
-                    child: IndexedStack(index: selectedIndex, children: pages),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            wide ? 34 : 20,
+                            8,
+                            20,
+                            0,
+                          ),
+                          child: _HomeTopBar(
+                            active: active,
+                            avatarPath: state.settings.avatarPath,
+                            onAdd: _openForm,
+                            onSettings: _openSettings,
+                          ),
+                        ),
+                        Expanded(
+                          child: IndexedStack(
+                            index: selectedIndex,
+                            children: pages,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-              ),
-            ),
-            Positioned(
-              top: MediaQuery.paddingOf(context).top + 8,
-              right: 18,
-              child: GlassIconButton(
-                icon: Icons.settings_outlined,
-                tooltip: '设置',
-                onPressed: _openSettings,
               ),
             ),
             if (state.latestUndo != null)
@@ -227,18 +242,12 @@ class _EventsPageState extends ConsumerState<_EventsPage> {
             child: Padding(
               padding: EdgeInsets.fromLTRB(
                 MediaQuery.sizeOf(context).width >= 760 ? 34 : 20,
-                28,
+                14,
                 20,
                 14,
               ),
               child: Column(
                 children: [
-                  _HeroHeader(
-                    active: active,
-                    avatarPath: widget.settings.avatarPath,
-                    onAdd: widget.onAdd,
-                  ),
-                  const SizedBox(height: 18),
                   EventFilterBar(
                     controller: searchController,
                     searchExpanded: searchExpanded,
@@ -648,70 +657,60 @@ class _UpdateBanner extends StatelessWidget {
   }
 }
 
-class _HeroHeader extends StatelessWidget {
-  const _HeroHeader({
+class _HomeTopBar extends StatelessWidget {
+  const _HomeTopBar({
     required this.active,
     required this.avatarPath,
     required this.onAdd,
+    required this.onSettings,
   });
 
   final int active;
   final String avatarPath;
   final VoidCallback onAdd;
+  final VoidCallback onSettings;
 
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 760;
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CircleAvatar(
-          radius: 24,
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          backgroundImage: avatarImage(avatarPath),
-          child: avatarImage(avatarPath) == null
-              ? const Text(
-                  '萤',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                )
-              : null,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '萤',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                active == 0 ? '还没有日子' : '$active 个待完成',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: CircleAvatar(
+            radius: 24,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            backgroundImage: avatarImage(avatarPath),
           ),
         ),
-        if (wide)
-          Row(
-            children: [
-              FilledButton.icon(
-                onPressed: onAdd,
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('新建日子'),
-              ),
-              const SizedBox(width: 56),
-            ],
+        const Spacer(),
+        if (wide) ...[
+          FilledButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('新建日子'),
           ),
+          const SizedBox(width: 12),
+        ],
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            GlassIconButton(
+              key: const ValueKey('home-settings'),
+              icon: Icons.settings_outlined,
+              tooltip: '设置',
+              onPressed: onSettings,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              active == 0 ? '还没有日子' : '$active 个待完成',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
