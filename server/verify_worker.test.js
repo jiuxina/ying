@@ -178,7 +178,7 @@ test("release manifest defaults and can be updated", async () => {
   const before = await verifyWorker(new Request("https://ying.test/v1/latest"), env);
   assert.equal(before.status, 200);
   const beforeBody = await before.json();
-  assert.equal(beforeBody.version, "3.0.0");
+  assert.equal(beforeBody.version, "3.3.0");
 
   const manifest = {
     version: "3.0.1",

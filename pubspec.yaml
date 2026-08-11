@@ -1,7 +1,7 @@
 name: ying
 description: "萤 - 本地优先的倒数日应用。"
 publish_to: "none"
-version: 3.0.0+6
+version: 3.3.0+7
 
 environment:
   sdk: ^3.9.2

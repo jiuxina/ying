@@ -223,8 +223,8 @@ async function handleLatest(env) {
   }
   if (manifest == null) {
     manifest = {
-      version: "3.0.0",
-      versionCode: 6,
+      version: "3.3.0",
+      versionCode: 7,
       url: "",
       notes: "",
       publishedAt: null,
