@@ -155,8 +155,12 @@ internal fun elementColor(
 internal fun elementSizeScale(style: WidgetElementStyle?): Float =
     style?.sizeScale ?: 1f
 
-internal fun elementWeight(style: WidgetElementStyle?): Int =
-    style?.weight ?: 0
+internal val widgetNonTextElementIds = setOf("holidayBadge", "progress", "icon", "empty")
+
+internal fun elementWeight(style: WidgetElementStyle?, id: String? = null): Int {
+    if (id != null && id in widgetNonTextElementIds) return 0
+    return style?.weight ?: 0
+}
 
 internal fun elementGravity(style: WidgetElementStyle?): Int = when (style?.align) {
     WidgetAlign.center -> Gravity.CENTER_HORIZONTAL

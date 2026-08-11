@@ -436,18 +436,24 @@ class _WidgetPreview extends StatelessWidget {
               ),
             Padding(
               padding: EdgeInsets.all(settings.widgetContentMargin),
-              child: style == WidgetStyle.mirror
-                  ? Transform.rotate(
-                      angle: -0.045,
-                      child: Align(
-                        alignment: verticalAlignment,
-                        child: body,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final content = style == WidgetStyle.mirror
+                      ? Transform.rotate(angle: -0.045, child: body)
+                      : body;
+                  return Align(
+                    alignment: verticalAlignment,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.topLeft,
+                      child: SizedBox(
+                        width: constraints.maxWidth,
+                        child: content,
                       ),
-                    )
-                  : Align(
-                      alignment: verticalAlignment,
-                      child: body,
                     ),
+                  );
+                },
+              ),
             ),
             if (style == WidgetStyle.envelope)
               const Positioned.fill(child: _EnvelopeCover()),
@@ -566,7 +572,7 @@ class _PreviewBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           headerRow,
-          const Spacer(),
+          const SizedBox(height: 6),
           if (titleElement.visible)
             Text(
               texts.title,
@@ -589,36 +595,44 @@ class _PreviewBody extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 if (daysElement.visible)
-                  Text(
-                    texts.days,
-                    style: TextStyle(
-                      color: Color(daysElement.color),
-                      fontSize:
-                          (compact ? 32 : 44) * scale * daysElement.size,
-                      fontWeight: _previewFontWeight(
-                        daysElement.weight,
-                        FontWeight.w800,
+                  Flexible(
+                    child: Text(
+                      texts.days,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Color(daysElement.color),
+                        fontSize:
+                            (compact ? 32 : 44) * scale * daysElement.size,
+                        fontWeight: _previewFontWeight(
+                          daysElement.weight,
+                          FontWeight.w800,
+                        ),
+                        height: 0.95,
+                        shadows: shadow,
+                        fontFamily: digitFamily,
                       ),
-                      height: 0.95,
-                      shadows: shadow,
-                      fontFamily: digitFamily,
                     ),
                   ),
                 if (unitElement.visible) ...[
                   const SizedBox(width: 6),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      texts.unit,
-                    style: TextStyle(
-                      color: Color(unitElement.color),
-                      fontSize: 14 * scale * unitElement.size,
-                      fontWeight: _previewFontWeight(
-                        unitElement.weight,
-                        FontWeight.w400,
-                      ),
-                      shadows: shadow,
-                      fontFamily: textFamily,
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        texts.unit,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Color(unitElement.color),
+                          fontSize: 14 * scale * unitElement.size,
+                          fontWeight: _previewFontWeight(
+                            unitElement.weight,
+                            FontWeight.w400,
+                          ),
+                          shadows: shadow,
+                          fontFamily: textFamily,
+                        ),
                       ),
                     ),
                   ),
@@ -780,10 +794,10 @@ class _PreviewBody extends StatelessWidget {
                     fontFamily: textFamily,
                   ),
                 ),
-              ),
+            ),
           ],
         ),
-        const Spacer(),
+        const SizedBox(height: 6),
         Row(
           mainAxisAlignment: daysMainAxisAlignment,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -806,42 +820,50 @@ class _PreviewBody extends StatelessWidget {
               const SizedBox(width: 9),
             ],
             if (daysVisible)
-              Text(
-                mainText,
-                style: TextStyle(
-                  color: _color('days', override: displayMainColor),
-                  fontSize: mainFontSize,
-                  fontWeight: _previewFontWeight(
-                    daysElement.weight,
-                    FontWeight.w800,
+              Flexible(
+                child: Text(
+                  mainText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _color('days', override: displayMainColor),
+                    fontSize: mainFontSize,
+                    fontWeight: _previewFontWeight(
+                      daysElement.weight,
+                      FontWeight.w800,
+                    ),
+                    height: 0.95,
+                    shadows: glowShadows,
+                    fontFamily: digitFamily,
+                    fontStyle: italic ? FontStyle.italic : null,
                   ),
-                  height: 0.95,
-                  shadows: glowShadows,
-                  fontFamily: digitFamily,
-                  fontStyle: italic ? FontStyle.italic : null,
                 ),
               ),
             if (unitVisible) ...[
               const SizedBox(width: 6),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  displayUnitText,
-                  style: TextStyle(
-                    color: _color(
-                      'unit',
-                      override: urgentActive
-                          ? (displayMainColor ?? const Color(0xFFFFFFFF))
-                              .withValues(alpha: 0.92)
-                          : null,
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    displayUnitText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _color(
+                        'unit',
+                        override: urgentActive
+                            ? (displayMainColor ?? const Color(0xFFFFFFFF))
+                                .withValues(alpha: 0.92)
+                            : null,
+                      ),
+                      fontSize: 14 * scale * unitElement.size,
+                      fontWeight: _previewFontWeight(
+                        unitElement.weight,
+                        FontWeight.w400,
+                      ),
+                      shadows: glowShadows,
+                      fontFamily: textFamily,
                     ),
-                    fontSize: 14 * scale * unitElement.size,
-                    fontWeight: _previewFontWeight(
-                      unitElement.weight,
-                      FontWeight.w400,
-                    ),
-                    shadows: glowShadows,
-                    fontFamily: textFamily,
                   ),
                 ),
               ),
@@ -1061,11 +1083,21 @@ class _WidgetListPreview extends StatelessWidget {
                                     color: primaryText.withValues(alpha: 0.14),
                                   ),
                                 Expanded(
-                                  child: _ListRow(
-                                    event: rows[index],
-                                    settings: settings,
-                                    render: render,
-                                    fontFamilies: fontFamilies,
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) =>
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.centerLeft,
+                                          child: SizedBox(
+                                            width: constraints.maxWidth,
+                                            child: _ListRow(
+                                              event: rows[index],
+                                              settings: settings,
+                                              render: render,
+                                              fontFamilies: fontFamilies,
+                                            ),
+                                          ),
+                                        ),
                                   ),
                                 ),
                               ],
@@ -1194,36 +1226,44 @@ class _ListRow extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         if (rowDaysVisible)
-          Text(
-            mainText,
-            style: TextStyle(
-              color: color('rowDays', override: displayMainColor),
-              fontSize: 18 * scale * rowDays.size,
-              fontWeight: _previewFontWeight(
-                rowDays.weight,
-                FontWeight.w800,
+          Flexible(
+            child: Text(
+              mainText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color('rowDays', override: displayMainColor),
+                fontSize: 18 * scale * rowDays.size,
+                fontWeight: _previewFontWeight(
+                  rowDays.weight,
+                  FontWeight.w800,
+                ),
+                fontFamily: digitFamily,
               ),
-              fontFamily: digitFamily,
             ),
           ),
         if (rowUnitVisible && displayUnitText.isNotEmpty) ...[
           const SizedBox(width: 4),
-          Text(
-            displayUnitText,
-            style: TextStyle(
-              color: color(
-                'rowUnit',
-                override: urgentActive
-                    ? (displayMainColor ?? const Color(0xFFFFFFFF))
-                        .withValues(alpha: 0.92)
-                    : null,
+          Flexible(
+            child: Text(
+              displayUnitText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color(
+                  'rowUnit',
+                  override: urgentActive
+                      ? (displayMainColor ?? const Color(0xFFFFFFFF))
+                          .withValues(alpha: 0.92)
+                      : null,
+                ),
+                fontSize: 11 * scale * rowUnit.size,
+                fontWeight: _previewFontWeight(
+                  rowUnit.weight,
+                  FontWeight.w400,
+                ),
+                fontFamily: textFamily,
               ),
-              fontSize: 11 * scale * rowUnit.size,
-              fontWeight: _previewFontWeight(
-                rowUnit.weight,
-                FontWeight.w400,
-              ),
-              fontFamily: textFamily,
             ),
           ),
         ],

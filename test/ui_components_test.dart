@@ -602,6 +602,92 @@ void main() {
       expect(saved.last.widgetElementStyles['title']?.weight, greaterThan(0));
     });
 
+    testWidgets('全局字号滑块防抖合并保存', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.widget),
+      );
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.text('全局字号'), 400);
+      await tester.ensureVisible(find.text('全局字号'));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final slider = find.byKey(const ValueKey('slider-全局字号'));
+      final gesture = await tester.startGesture(tester.getCenter(slider));
+      await gesture.moveBy(const Offset(90, 0));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(controller.state.settings.widgetFontScale, 1.0);
+      expect(saved, isEmpty);
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
+      expect(controller.state.settings.widgetFontScale, isNot(1.0));
+      expect(saved, isNotEmpty);
+
+      await gesture.up();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(saved, hasLength(1));
+    });
+
+    testWidgets('全局字号与内容边距滑块上限降低且步进更精细', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.widget),
+      );
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.text('全局字号'), 400);
+      await tester.ensureVisible(find.text('全局字号'));
+      await tester.pump(const Duration(milliseconds: 400));
+      final fontSlider = tester.widget<Slider>(
+        find.byKey(const ValueKey('slider-全局字号')),
+      );
+      expect(fontSlider.max, 1.75);
+      expect(fontSlider.divisions, 50);
+
+      await tester.scrollUntilVisible(find.text('内容边距'), 400);
+      await tester.ensureVisible(find.text('内容边距'));
+      await tester.pump(const Duration(milliseconds: 400));
+      final marginSlider = tester.widget<Slider>(
+        find.byKey(const ValueKey('slider-内容边距')),
+      );
+      expect(marginSlider.max, 32);
+      expect(marginSlider.divisions, 56);
+    });
+
+    testWidgets('元素样式字号与粗细滑块上限降低且步进更精细', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.widget),
+      );
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.text('标题样式'), 400);
+      await tester.ensureVisible(find.text('标题样式'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('标题样式'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final sizeSlider = tester.widget<Slider>(
+        find.byKey(const ValueKey('slider-字号')),
+      );
+      expect(sizeSlider.max, 1.75);
+      expect(sizeSlider.divisions, 50);
+      final weightSlider = tester.widget<Slider>(
+        find.byKey(const ValueKey('slider-粗细')),
+      );
+      expect(weightSlider.max, 800);
+      expect(weightSlider.divisions, 16);
+    });
+
     testWidgets('小部件元素样式弹层在短屏不溢出且可滚动到底部', (tester) async {
       tester.view.physicalSize = const Size(360, 640);
       tester.view.devicePixelRatio = 1.0;
@@ -629,6 +715,38 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
       expect(find.text('重置此元素'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('非文字元素不显示粗细且字号改称大小', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.widget),
+      );
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.text('节日徽章样式'), 400);
+      await tester.ensureVisible(find.text('节日徽章样式'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('节日徽章样式'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('大小'), findsOneWidget);
+      expect(find.text('字号'), findsNothing);
+      expect(find.text('粗细'), findsNothing);
+
+      await tester.tap(find.byTooltip('关闭'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('标题样式'), 400);
+      await tester.ensureVisible(find.text('标题样式'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('标题样式'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('字号'), findsOneWidget);
+      expect(find.text('粗细'), findsOneWidget);
+      expect(find.text('大小'), findsNothing);
     });
 
     testWidgets('小部件按钮显隐面板保存三态', (tester) async {
@@ -1562,6 +1680,75 @@ void main() {
       expect(titleTexts.first.textAlign, TextAlign.end);
       expect(find.text('学习'), findsNothing);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('极端字号与逐元素样式组合预览不溢出', (tester) async {
+      final base = DateTime.now();
+      final today = DateTime(base.year, base.month, base.day);
+      final event = CountdownEvent(
+        id: 'extreme-preview',
+        title: '考试',
+        targetDate: today.add(const Duration(days: 5)),
+        category: '学习',
+        note: '加油',
+        createdAt: today.subtract(const Duration(days: 2)),
+      );
+      const elementIds = [
+        'category',
+        'holidayBadge',
+        'title',
+        'days',
+        'unit',
+        'note',
+        'precise',
+        'dateInfo',
+        'progress',
+        'icon',
+        'listHeader',
+        'rowTitle',
+        'rowSubtitle',
+        'rowDays',
+        'rowUnit',
+        'empty',
+      ];
+      final styles = <String, WidgetElementStyle>{
+        for (final id in elementIds)
+          id: WidgetElementStyle(
+            sizeScale: 1.6,
+            weight: widgetNonTextElementIds.contains(id) ? 0 : 900,
+            colorMode: WidgetColorMode.custom,
+            color: 0xFFFFD60A,
+            align: WidgetAlign.center,
+          ),
+      };
+      for (final listMode in [false, true]) {
+        await tester.pumpWidget(
+          glassApp(
+            Scaffold(
+              body: SingleChildScrollView(
+                child: WidgetPreviewSection(
+                  events: [event],
+                  settings: AppSettings(
+                    widgetListMode: listMode,
+                    widgetFontScale: 1.5,
+                    widgetContentMargin: 4,
+                    widgetShowIcon: true,
+                    widgetShowProgress: true,
+                    widgetShowPreciseTime: true,
+                    widgetShowLunarWeek: true,
+                    widgetUrgentHighlight: true,
+                    widgetShowNote: true,
+                    widgetShowCategory: true,
+                    widgetElementStyles: styles,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+      }
     });
   });
 }

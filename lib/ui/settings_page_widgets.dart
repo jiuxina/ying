@@ -500,17 +500,34 @@ class _ChoiceSetting extends StatelessWidget {
   }
 }
 
-class _SliderSetting extends StatelessWidget {
+const _widgetSliderDebounce = Duration(milliseconds: 150);
+
+String _formatPercent(double value) {
+  final percent = value * 100;
+  return percent == percent.roundToDouble()
+      ? '${percent.round()}%'
+      : '${percent.toStringAsFixed(1)}%';
+}
+
+String _formatUnit(double value, String unit) {
+  final number = value == value.roundToDouble()
+      ? '${value.round()}'
+      : value.toStringAsFixed(1);
+  return '$number $unit';
+}
+
+class _SliderSetting extends StatefulWidget {
   const _SliderSetting({
     required this.icon,
     required this.title,
     required this.value,
     required this.min,
     required this.max,
-    required this.valueLabel,
+    required this.formatLabel,
     required this.onChanged,
     this.divisions,
     this.subtitle,
+    this.debounce = Duration.zero,
   });
 
   final IconData icon;
@@ -520,33 +537,92 @@ class _SliderSetting extends StatelessWidget {
   final double min;
   final double max;
   final int? divisions;
-  final String valueLabel;
+  final String Function(double value) formatLabel;
   final ValueChanged<double> onChanged;
+  final Duration debounce;
+
+  @override
+  State<_SliderSetting> createState() => _SliderSettingState();
+}
+
+class _SliderSettingState extends State<_SliderSetting> {
+  Timer? _debounce;
+  bool _dragging = false;
+  late double _displayValue;
+  late double _committedValue;
+
+  @override
+  void initState() {
+    super.initState();
+    _displayValue = widget.value;
+    _committedValue = widget.value;
+  }
+
+  @override
+  void didUpdateWidget(_SliderSetting oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.value != oldWidget.value && !_dragging) {
+      _displayValue = widget.value;
+      _committedValue = widget.value;
+    }
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _handleChanged(double value) {
+    _dragging = true;
+    setState(() => _displayValue = value);
+    if (widget.debounce == Duration.zero) {
+      _commit(value);
+      return;
+    }
+    _debounce?.cancel();
+    _debounce = Timer(widget.debounce, () => _commit(value));
+  }
+
+  void _handleChangeEnd(double value) {
+    _dragging = false;
+    _debounce?.cancel();
+    _debounce = null;
+    _commit(value);
+  }
+
+  void _commit(double value) {
+    if (value == _committedValue) return;
+    _committedValue = value;
+    widget.onChanged(value);
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final displayValue = _displayValue.clamp(widget.min, widget.max);
+    final valueLabel = widget.formatLabel(displayValue);
     return Semantics(
-      label: title,
+      label: widget.title,
       value: valueLabel,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           children: [
-            Icon(icon, color: scheme.onSurfaceVariant, size: 18),
+            Icon(widget.icon, color: scheme.onSurfaceVariant, size: 18),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    widget.title,
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  if (subtitle != null) ...[
+                  if (widget.subtitle != null) ...[
                     const SizedBox(height: 2),
                     Text(
-                      subtitle!,
+                      widget.subtitle!,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
@@ -569,12 +645,13 @@ class _SliderSetting extends StatelessWidget {
                       ),
                     ),
                     child: Slider(
-                      key: ValueKey('slider-$title'),
-                      value: value.clamp(min, max),
-                      min: min,
-                      max: max,
-                      divisions: divisions,
-                      onChanged: onChanged,
+                      key: ValueKey('slider-${widget.title}'),
+                      value: displayValue,
+                      min: widget.min,
+                      max: widget.max,
+                      divisions: widget.divisions,
+                      onChanged: _handleChanged,
+                      onChangeEnd: _handleChangeEnd,
                     ),
                   ),
                 ],
@@ -981,7 +1058,8 @@ String _elementStyleSummary(AppSettings settings, String elementId) {
     return '当前：$visible';
   }
   final size = (style?.sizeScale ?? 1.0).toStringAsFixed(2);
-  final weight = style == null || style.weight == 0 ? '默认' : '${style.weight}';
+  final isNonText = widgetNonTextElementIds.contains(elementId);
+  final sizeLabel = isNonText ? '大小' : '字号';
   final color = switch (style?.colorMode) {
     WidgetColorMode.custom => '自定义色',
     WidgetColorMode.secondary => '次要色',
@@ -992,7 +1070,13 @@ String _elementStyleSummary(AppSettings settings, String elementId) {
     WidgetAlign.end => '右对齐',
     _ => '左对齐',
   };
-  final parts = ['颜色：$color', '字号：${size}x', '粗细：$weight'];
+  final parts = ['颜色：$color', '$sizeLabel：${size}x'];
+  if (!isNonText) {
+    final weight = style == null || style.weight == 0
+        ? '默认'
+        : '${style.weight}';
+    parts.add('粗细：$weight');
+  }
   if (widgetAlignableElementIds.contains(elementId)) {
     parts.add('对齐：$align');
   }
@@ -1074,6 +1158,7 @@ class _ElementStyleSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = style ?? const WidgetElementStyle();
+    final isNonText = widgetNonTextElementIds.contains(elementId);
     final scheme = Theme.of(context).colorScheme;
     return Material(
       color: scheme.surface,
@@ -1133,13 +1218,14 @@ class _ElementStyleSheet extends StatelessWidget {
                   const _InsetDivider(),
                   _SliderSetting(
                     icon: Icons.text_fields_rounded,
-                    title: '字号',
+                    title: isNonText ? '大小' : '字号',
                     subtitle: '叠加在全局字号缩放之上',
                     value: current.sizeScale,
                     min: 0.5,
-                    max: 2.0,
-                    divisions: 30,
-                    valueLabel: '${(current.sizeScale * 100).round()}%',
+                    max: 1.75,
+                    divisions: 50,
+                    formatLabel: _formatPercent,
+                    debounce: _widgetSliderDebounce,
                     onChanged: (value) => onChanged(
                       current.copyWith(
                         sizeScale: value,
@@ -1147,21 +1233,23 @@ class _ElementStyleSheet extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const _InsetDivider(),
-                  _SliderSetting(
-                    icon: Icons.format_bold_rounded,
-                    title: '粗细',
-                    subtitle: '0 表示跟随默认，100–900 为字重',
-                    value: current.weight.toDouble(),
-                    min: 0,
-                    max: 900,
-                    divisions: 9,
-                    valueLabel: current.weight == 0
-                        ? '默认'
-                        : '${current.weight}',
-                    onChanged: (value) =>
-                        onChanged(current.copyWith(weight: value.round())),
-                  ),
+                  if (!isNonText) ...[
+                    const _InsetDivider(),
+                    _SliderSetting(
+                      icon: Icons.format_bold_rounded,
+                      title: '粗细',
+                      subtitle: '0 表示跟随默认，50–800 为字重',
+                      value: current.weight.toDouble(),
+                      min: 0,
+                      max: 800,
+                      divisions: 16,
+                      formatLabel: (value) =>
+                          value == 0 ? '默认' : '${value.round()}',
+                      debounce: _widgetSliderDebounce,
+                      onChanged: (value) =>
+                          onChanged(current.copyWith(weight: value.round())),
+                    ),
+                  ],
                   const _InsetDivider(),
                   _ChoiceSetting(
                     icon: Icons.palette_outlined,
@@ -1505,9 +1593,9 @@ class _PhotoBackgroundEditorSheetState
                   title: '亮度',
                   value: _brightness,
                   min: 0.5,
-                  max: 1.6,
-                  divisions: 11,
-                  valueLabel: '${(_brightness * 100).round()}%',
+                  max: 1.5,
+                  divisions: 20,
+                  formatLabel: _formatPercent,
                   onChanged: (value) {
                     setState(() {
                       _brightness = value;
@@ -1521,9 +1609,11 @@ class _PhotoBackgroundEditorSheetState
                   title: '高斯模糊',
                   value: _blur,
                   min: 0,
-                  max: 24,
-                  divisions: 24,
-                  valueLabel: _blur.round().toString(),
+                  max: 20,
+                  divisions: 40,
+                  formatLabel: (value) => value == value.roundToDouble()
+                      ? '${value.round()}'
+                      : value.toStringAsFixed(1),
                   onChanged: (value) {
                     setState(() {
                       _blur = value;

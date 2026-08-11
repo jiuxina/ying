@@ -512,6 +512,13 @@ class WidgetAppearanceTest {
         )
         assertEquals(700, elementWeight(WidgetElementStyle(weight = 700)))
         assertEquals(0, elementWeight(null))
+        for (id in widgetNonTextElementIds) {
+            assertEquals(
+                "non-text element must not render weight: $id",
+                0,
+                elementWeight(WidgetElementStyle(weight = 700), id),
+            )
+        }
         assertEquals(Gravity.START, elementGravity(null))
         assertEquals(
             Gravity.CENTER_HORIZONTAL,

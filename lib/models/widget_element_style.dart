@@ -1,11 +1,16 @@
 import 'dart:convert';
 
 /// 小部件元素的显隐策略；`follow` 表示沿用现有开关与紧凑尺寸规则。
-enum WidgetElementVisible {
-  follow,
-  show,
-  hide;
-}
+enum WidgetElementVisible { follow, show, hide }
+
+/// 非纯文本元素：节日徽章、进度、图标与空状态只提供大小和颜色，
+/// 不参与字重（粗细）渲染。
+const widgetNonTextElementIds = <String>{
+  'holidayBadge',
+  'progress',
+  'icon',
+  'empty',
+};
 
 /// 小部件元素字号档位，叠加在全局字号缩放之上。
 enum WidgetElementSize {
@@ -23,25 +28,13 @@ enum WidgetElementSize {
 }
 
 /// 小部件文字颜色来源。
-enum WidgetColorMode {
-  primary,
-  secondary,
-  custom;
-}
+enum WidgetColorMode { primary, secondary, custom }
 
 /// 小部件文字水平对齐；内联元素不提供对齐选项。
-enum WidgetAlign {
-  start,
-  center,
-  end;
-}
+enum WidgetAlign { start, center, end }
 
 /// 单事件小部件整体垂直布局。
-enum WidgetVerticalAlign {
-  top,
-  center,
-  bottom;
-}
+enum WidgetVerticalAlign { top, center, bottom }
 
 /// 单个小部件元素的样式；元素 ID 见设置页与原生渲染的角色清单。
 class WidgetElementStyle {
@@ -105,7 +98,8 @@ class WidgetElementStyle {
         json['size'],
         WidgetElementSize.normal,
       ),
-      sizeScale: (json['sizeScale'] as num?)?.toDouble() ??
+      sizeScale:
+          (json['sizeScale'] as num?)?.toDouble() ??
           _legacySizeScale(json['size']),
       weight: ((json['weight'] as num?)?.clamp(0, 900) ?? 0).toInt(),
       colorMode: _enumByName(
@@ -114,11 +108,7 @@ class WidgetElementStyle {
         WidgetColorMode.primary,
       ),
       color: (json['color'] as int?) ?? -1,
-      align: _enumByName(
-        WidgetAlign.values,
-        json['align'],
-        WidgetAlign.start,
-      ),
+      align: _enumByName(WidgetAlign.values, json['align'], WidgetAlign.start),
     );
   }
 }

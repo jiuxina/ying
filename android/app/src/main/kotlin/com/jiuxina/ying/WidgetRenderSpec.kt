@@ -189,7 +189,7 @@ internal fun fallbackRenderBranch(
             ),
             size = elementSizeScale(styles[id]),
             align = styles[id]?.align ?: WidgetAlign.start,
-            weight = elementWeight(styles[id]),
+            weight = elementWeight(styles[id], id),
         )
     }
     return WidgetRenderBranch(mode = mode, elements = elements)

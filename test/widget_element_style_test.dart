@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ying/models/app_settings.dart';
 import 'package:ying/models/widget_element_style.dart';
+import 'package:ying/utils/widget_element_style_utils.dart';
 
 void main() {
   group('WidgetElementStyle protocol', () {
@@ -52,9 +54,7 @@ void main() {
     });
 
     test('out of range weight clamps to supported range', () {
-      final decoded = decodeWidgetElementStyles(
-        '{"title":{"weight":1200}}',
-      );
+      final decoded = decodeWidgetElementStyles('{"title":{"weight":1200}}');
       expect(decoded['title']?.weight, 900);
     });
 
@@ -63,6 +63,20 @@ void main() {
       expect(decodeWidgetElementStyles(''), isEmpty);
       expect(decodeWidgetElementStyles('[]'), isEmpty);
       expect(decodeWidgetElementStyles('{broken'), isEmpty);
+    });
+
+    test('non-text elements never resolve weight', () {
+      final settings = AppSettings(
+        widgetElementStyles: {
+          for (final id in widgetNonTextElementIds)
+            id: const WidgetElementStyle(weight: 700),
+          'title': const WidgetElementStyle(weight: 700),
+        },
+      );
+      for (final id in widgetNonTextElementIds) {
+        expect(widgetElementWeight(settings, id), 0, reason: id);
+      }
+      expect(widgetElementWeight(settings, 'title'), 700);
     });
   });
 }

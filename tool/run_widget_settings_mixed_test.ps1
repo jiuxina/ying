@@ -7,7 +7,8 @@ param(
     [int]$StartIndex = 1,
     [int]$EndIndex = 0,
     [switch]$SkipInstall,
-    [switch]$FontTextOnly
+    [switch]$FontTextOnly,
+    [switch]$EveryElement
 )
 
 $ErrorActionPreference = 'Stop'
@@ -659,6 +660,129 @@ function Get-FontTextScenarios {
     return $scenarioList.ToArray()
 }
 
+function Get-EveryElementScenarios {
+    $textIds = @(
+        'category',
+        'holidayBadge',
+        'title',
+        'days',
+        'unit',
+        'note',
+        'precise',
+        'dateInfo',
+        'progress',
+        'icon',
+        'listHeader',
+        'rowTitle',
+        'rowSubtitle',
+        'rowDays',
+        'rowUnit',
+        'empty'
+    )
+    $buttonIds = @('prevButton', 'nextButton')
+    $nonTextIds = @('holidayBadge', 'progress', 'icon', 'empty')
+    $alignableIds = @(
+        'category',
+        'title',
+        'days',
+        'note',
+        'precise',
+        'dateInfo',
+        'empty',
+        'listHeader',
+        'rowTitle',
+        'rowSubtitle'
+    )
+    $yellow = ConvertTo-HexInt64 'FFFFD60A'
+    $scenarioList = [System.Collections.Generic.List[object]]::new()
+
+    function Add-ElementScenario {
+        param(
+            [string]$Name,
+            [hashtable]$Overrides,
+            [hashtable]$ElementStyles
+        )
+        $settings = Get-BaseSettings
+        foreach ($entry in $Overrides.GetEnumerator()) {
+            $settings[$entry.Key] = $entry.Value
+        }
+        $settings.widget_element_styles = New-ElementStylesJson $ElementStyles
+        $scenarioList.Add(@{ name = $Name; settings = $settings }) | Out-Null
+    }
+
+    $index = 0
+    foreach ($id in $textIds) {
+        $index++
+        $name = ('e{0:D2}-{1}' -f $index, $id)
+        $style = @{
+            visible = 'show'
+            sizeScale = 1.4
+            colorMode = 'custom'
+            color = $yellow
+        }
+        if ($id -notin $nonTextIds) {
+            $style.weight = 700
+        }
+        if ($id -in $alignableIds) {
+            $style.align = 'center'
+        }
+        $overrides = @{
+            widget_show_icon = $true
+            widget_show_progress = $true
+            widget_show_precise_time = $true
+            widget_show_lunar_week = $true
+            widget_urgent_highlight = $true
+            widget_show_note = $true
+            widget_show_category = $true
+        }
+        if ($id -in @('listHeader', 'rowTitle', 'rowSubtitle', 'rowDays', 'rowUnit', 'empty')) {
+            $overrides.widget_list_mode = $true
+        }
+        Add-ElementScenario $name $overrides @{ $id = $style }
+    }
+
+    foreach ($id in $buttonIds) {
+        $index++
+        $name = ('e{0:D2}-{1}' -f $index, $id)
+        Add-ElementScenario $name @{} @{ $id = @{ visible = 'hide' } }
+    }
+
+    $index++
+    $allStyles = @{}
+    foreach ($id in $textIds) {
+        $style = @{
+            visible = 'show'
+            sizeScale = 1.6
+            colorMode = 'custom'
+            color = $yellow
+        }
+        if ($id -notin $nonTextIds) {
+            $style.weight = 900
+        }
+        if ($id -in $alignableIds) {
+            $style.align = 'center'
+        }
+        $allStyles[$id] = $style
+    }
+    foreach ($id in $buttonIds) {
+        $allStyles[$id] = @{ visible = 'hide' }
+    }
+    Add-ElementScenario ('e{0:D2}-all-combined' -f $index) @{
+        widget_show_icon = $true
+        widget_show_progress = $true
+        widget_show_precise_time = $true
+        widget_show_lunar_week = $true
+        widget_urgent_highlight = $true
+        widget_show_note = $true
+        widget_show_category = $true
+        widget_list_mode = $true
+        widget_font_scale = 1.5
+        widget_content_margin = 4.0
+    } $allStyles
+
+    return $scenarioList.ToArray()
+}
+
 function Get-EventsJson {
     $now = [DateTime]::Now
     $events = @(
@@ -785,6 +909,9 @@ function Get-ErrorLines {
 if ($FontTextOnly) {
     $OutputRoot = 'F:\xm\ying\outputs\widget-font-text-mixed-test'
 }
+if ($EveryElement) {
+    $OutputRoot = 'F:\xm\ying\outputs\widget-every-element-mixed-test'
+}
 
 New-Item -ItemType Directory -Force -Path $OutputRoot | Out-Null
 New-Item -ItemType Directory -Force -Path "$OutputRoot\prefs" | Out-Null
@@ -800,7 +927,13 @@ if (-not $SkipInstall -and (Test-Path $ApkPath)) {
 }
 
 $eventsJson = Get-EventsJson
-$scenarios = if ($FontTextOnly) { Get-FontTextScenarios } else { Get-Scenarios }
+$scenarios = if ($EveryElement) {
+    Get-EveryElementScenarios
+} elseif ($FontTextOnly) {
+    Get-FontTextScenarios
+} else {
+    Get-Scenarios
+}
 
 $summary = [System.Collections.Generic.List[object]]::new()
 $scenarioIndex = 0

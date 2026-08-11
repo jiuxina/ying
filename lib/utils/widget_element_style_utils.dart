@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/app_settings.dart';
 import '../models/widget_element_style.dart';
 
-WidgetElementStyle? widgetElementStyleOf(
-  AppSettings settings,
-  String id,
-) {
+WidgetElementStyle? widgetElementStyleOf(AppSettings settings, String id) {
   return settings.widgetElementStyles[id];
 }
 
@@ -26,8 +23,10 @@ bool widgetElementVisible(
 double widgetElementSizeScale(AppSettings settings, String id) =>
     widgetElementStyleOf(settings, id)?.sizeScale ?? 1.0;
 
-int widgetElementWeight(AppSettings settings, String id) =>
-    widgetElementStyleOf(settings, id)?.weight ?? 0;
+int widgetElementWeight(AppSettings settings, String id) {
+  if (widgetNonTextElementIds.contains(id)) return 0;
+  return widgetElementStyleOf(settings, id)?.weight ?? 0;
+}
 
 /// 颜色优先级：自定义色 > 特殊色（临近高亮/胶囊/节日）> 角色默认色。
 Color widgetElementColor(
