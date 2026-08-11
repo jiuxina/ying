@@ -276,6 +276,15 @@ class WidgetAppearanceTest {
     }
 
     @Test
+    fun chronometerSkipsUnsupportedFontVariation() {
+        val source = File("src/main/kotlin/com/jiuxina/ying/DaymarkWidgetProvider.kt").readText()
+        assertTrue(
+            "Chronometer cannot receive RemoteViews setFontVariationSettings; the call would make the whole widget fail to load",
+            "if (viewId == R.id.widget_precise) return" in source,
+        )
+    }
+
+    @Test
     fun phase5SingleWidgetLayoutHasEnvelopeHealthAndNeonViews() {
         val layout = File("src/main/res/layout/daymark_widget.xml").readText()
         assertTrue("single layout should have neon day view", "widget_days_neon" in layout)

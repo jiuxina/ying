@@ -2042,6 +2042,9 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         weight: Int,
     ) {
         if (weight < 600 || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        // Chronometer does not expose setFontVariationSettings through
+        // RemoteViews; applying it breaks the whole widget inflation.
+        if (viewId == R.id.widget_precise) return
         views.setString(viewId, "setFontVariationSettings", "'wght' 700")
     }
 
