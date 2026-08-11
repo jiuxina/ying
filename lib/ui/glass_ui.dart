@@ -466,7 +466,7 @@ Future<T?> showGlassBottomSheet<T>({
               ),
             ),
           ),
-          child,
+          Flexible(child: child),
         ],
       );
     },

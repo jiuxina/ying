@@ -59,6 +59,18 @@ java.lang.RuntimeException: Canvas: trying to use a recycled bitmap
 更新竞争的偶发问题；重启模拟器并复跑同一场景未再复现，小部件最终正常显示。
 建议在标准 Launcher/真机继续观察。
 
+### P3：360×640 短屏下标题样式弹层底部溢出 127px
+
+在模拟器 360×640 逻辑分辨率打开“文字样式 → 标题样式”时，弹层底部出现
+`BOTTOM OVERFLOWED BY 127 PIXELS` 黄色调试条纹，遮挡“对齐”设置与“重置此元素”按钮。
+
+根因：`showGlassBottomSheet` 在显示拖拽把手时用外层 `Column(mainAxisSize: min)`
+包裹弹层内容，弹层内容高于屏幕时外层 Column 没有滚动约束，内部
+`SingleChildScrollView` 撑满内容高度后整体溢出。
+
+修复：把拖拽把手后的弹层内容改为 `Flexible(child: child)`，让内部滚动视图获得
+剩余可用高度并正常滚动。该修复同时覆盖照片背景编辑等同类长弹层。
+
 ### 其他观察
 
 - 紧凑尺寸 + 2.0 全局字号 + 4dp 内容边距时，文字会被省略号截断（应用内预览与
@@ -75,6 +87,7 @@ java.lang.RuntimeException: Canvas: trying to use a recycled bitmap
   - `f08` 与 `f11` 复跑 logcat 不再出现 `AppWidgetHostView` / `ActionException`，
     视觉桥描述桌面小部件正常显示，无“无法加载微件”。
   - `f15` 复跑无 FATAL EXCEPTION、无 recycled bitmap 崩溃。
+  - 标题样式弹层在 360×640 短屏下无溢出条纹，可滚动到“对齐”与“重置此元素”。
 - 18 个场景的应用内预览与桌面小部件截图均已收集。
 
 ## 四、证据位置

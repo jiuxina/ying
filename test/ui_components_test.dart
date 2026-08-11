@@ -602,6 +602,35 @@ void main() {
       expect(saved.last.widgetElementStyles['title']?.weight, greaterThan(0));
     });
 
+    testWidgets('小部件元素样式弹层在短屏不溢出且可滚动到底部', (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      await tester.pumpWidget(
+        buildSettingsPage(controller, category: SettingsCategory.widget),
+      );
+      await flushPlatform(tester);
+
+      await tester.scrollUntilVisible(find.text('标题样式'), 400);
+      await tester.ensureVisible(find.text('标题样式'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('标题样式'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(tester.takeException(), isNull);
+
+      await tester.ensureVisible(find.widgetWithText(ChoiceChip, '中'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.widgetWithText(ChoiceChip, '中'), findsOneWidget);
+      await tester.ensureVisible(find.text('重置此元素'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('重置此元素'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('小部件按钮显隐面板保存三态', (tester) async {
       phoneViewport(tester);
       final saved = <AppSettings>[];
