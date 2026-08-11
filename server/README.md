@@ -73,6 +73,9 @@ node tools/check_worker.js
 ## 密钥流程
 
 1. 运行 `dart run tools/generate_unlock_keys.dart 100` 生成 100 把密钥，输出 `keys.csv`。
+   - `--append`：追加写入并去重，不覆盖已有密钥。
+   - `--source <文件>`：不生成新密钥，改为合并已有密钥文件，例如 `dart run tools/generate_unlock_keys.dart --source keys.csv keys_activity.csv --append`。
+   - 每次生成/合并的批次以 `# batch: ...` 标记行开头；`upload_keys.js` 与 `update_afdian_reply.js` 会自动跳过标记行。
 2. 运行 `node tools/upload_keys.js` 把密钥哈希导入 Worker KV。
 3. 运行 `node tools/update_afdian_reply.js` 把密钥库存写入爱发电方案的自动随机回复。
 
@@ -83,9 +86,9 @@ node tools/check_worker.js
 ```bash
 set WORKER_URL=https://ying-verify.xxx.workers.dev
 set ADMIN_TOKEN=你的token
-set RELEASE_VERSION=3.0.0
-set RELEASE_VERSION_CODE=6
-set RELEASE_URL=https://你的公开下载地址/ying-3.0.0.apk
+set RELEASE_VERSION=3.3.0
+set RELEASE_VERSION_CODE=7
+set RELEASE_URL=https://你的公开下载地址/ying-3.3.0.apk
 node tools/publish_release.js
 ```
 

@@ -21,7 +21,12 @@ if (!userId || !token || !planId) {
 
 const lines = readFileSync(input, "utf8")
   .split(/\r?\n/)
-  .filter((line) => line.trim().length > 0 && !line.startsWith("keyId"));
+  .filter(
+    (line) =>
+      line.trim().length > 0 &&
+      !line.startsWith("#") &&
+      !line.startsWith("keyId"),
+  );
 const keys = lines
   .map((line) => line.split(",")[1]?.trim())
   .filter((value) => value != null && value.length > 0);
