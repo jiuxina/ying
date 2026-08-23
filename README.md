@@ -216,6 +216,8 @@ keyPassword=你的别名密码
 
 `flutter build apk --debug` 不受影响；`flutter build apk --release` 在缺少密钥时会报错并提示配置方式。
 
+推送形如 `v3.4.0` 的 tag 后，仓库内的 GitHub Actions 工作流会自动完成 analyze、测试、分架构 Release APK 构建、签名校验，并生成 `SHA256SUMS.txt` 与 debug info 后发布到 [Releases](https://github.com/jiuxina/ying/releases)；`workflow_dispatch` 手动触发只构建并上传构建产物，不会创建 Release。
+
 ---
 
 ## 快速上手

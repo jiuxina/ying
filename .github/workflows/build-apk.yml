@@ -1,4 +1,4 @@
-name: Build APK
+name: Build and Publish Release
 
 on:
   workflow_dispatch:
@@ -6,10 +6,13 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
@@ -73,6 +76,18 @@ jobs:
             echo "Verified: $apk"
           done
 
+      - name: Generate checksums
+        run: |
+          mkdir -p build/release
+          (cd build/app/outputs/flutter-apk && sha256sum *-release.apk) > build/release/SHA256SUMS.txt
+          cat build/release/SHA256SUMS.txt
+
+      - name: Archive debug info
+        run: |
+          if [ -d build/debug-info ]; then
+            (cd build && zip -r debug-info.zip debug-info)
+          fi
+
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
@@ -88,3 +103,24 @@ jobs:
           path: build/debug-info/
           if-no-files-found: warn
           retention-days: 90
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          NOTES="docs/RELEASE_NOTES-${TAG#v}.md"
+          ASSETS=()
+          for apk in build/app/outputs/flutter-apk/*-release.apk; do
+            ASSETS+=("$apk")
+          done
+          ASSETS+=(build/release/SHA256SUMS.txt)
+          if [ -f build/debug-info.zip ]; then
+            ASSETS+=(build/debug-info.zip)
+          fi
+          if [ -f "$NOTES" ]; then
+            gh release create "$TAG" "${ASSETS[@]}" --title "萤 $TAG" --notes-file "$NOTES"
+          else
+            gh release create "$TAG" "${ASSETS[@]}" --title "萤 $TAG" --generate-notes
+          fi
