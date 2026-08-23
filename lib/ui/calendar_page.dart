@@ -130,7 +130,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           transitionBuilder: (child, animation) {
             final slide =
                 Tween<Offset>(
-                  begin: Offset(-0.03 * _modeNavigationDirection, 0),
+                  begin: Offset(0.03 * _modeNavigationDirection, 0),
                   end: Offset.zero,
                 ).animate(
                   CurvedAnimation(
@@ -176,7 +176,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
 
   void _changeMode(CalendarMode mode) {
     setState(() {
-      _modeNavigationDirection = mode.index - _mode.index;
+      _modeNavigationDirection = (mode.index - _mode.index).sign;
       _mode = mode;
       if (mode == CalendarMode.year) _selectedDate = null;
     });
@@ -310,7 +310,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               'calendar-month-grid-${_focusedMonth.year}-${_focusedMonth.month}',
             ),
             duration: AppMotion.switchDuration,
-            begin: Offset(-0.03 * _monthNavigationDirection, 0),
+            begin: Offset(0.03 * _monthNavigationDirection, 0),
             child: swipeableGrid,
           ),
         const SizedBox(height: 16),
@@ -426,7 +426,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           transitionBuilder: (child, animation) {
             final slide =
                 Tween<Offset>(
-                  begin: Offset(-0.03 * _monthNavigationDirection, 0),
+                  begin: Offset(0.03 * _monthNavigationDirection, 0),
                   end: Offset.zero,
                 ).animate(
                   CurvedAnimation(
