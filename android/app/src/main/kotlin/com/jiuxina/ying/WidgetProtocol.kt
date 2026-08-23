@@ -55,23 +55,8 @@ enum class WidgetStyle {
 
 internal fun parseWidgetStyle(value: String?): WidgetStyle = WidgetStyle.fromName(value)
 
-internal val sponsorOnlyStyles = setOf(
-    WidgetStyle.envelope,
-    WidgetStyle.capsule,
-    WidgetStyle.crt,
-    WidgetStyle.neonSign,
-    WidgetStyle.pixelHealth,
-    WidgetStyle.mirror,
-)
-
-internal fun sponsorUnlocked(data: SharedPreferences): Boolean =
-    data.getBoolean("widget_sponsor_unlocked", false)
-
-internal fun effectiveWidgetStyle(data: SharedPreferences): WidgetStyle {
-    val style = parseWidgetStyle(data.getString("widget_style", "card"))
-    if (!sponsorUnlocked(data) && style in sponsorOnlyStyles) return WidgetStyle.card
-    return style
-}
+internal fun effectiveWidgetStyle(data: SharedPreferences): WidgetStyle =
+    parseWidgetStyle(data.getString("widget_style", "card"))
 
 internal data class WidgetEvent(
     val id: String,

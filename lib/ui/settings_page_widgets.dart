@@ -157,8 +157,6 @@ class _StyleOption extends StatelessWidget {
     required this.icon,
     required this.selected,
     required this.onTap,
-    this.locked = false,
-    this.onLockedTap,
   });
 
   final WidgetStyle style;
@@ -166,8 +164,6 @@ class _StyleOption extends StatelessWidget {
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
-  final bool locked;
-  final VoidCallback? onLockedTap;
 
   @override
   Widget build(BuildContext context) {
@@ -182,11 +178,7 @@ class _StyleOption extends StatelessWidget {
           child: InkWell(
             onTap: () {
               HapticFeedback.selectionClick();
-              if (locked) {
-                (onLockedTap ?? () {})();
-              } else {
-                onTap();
-              }
+              onTap();
             },
             borderRadius: BorderRadius.circular(14),
             child: AnimatedContainer(
@@ -228,14 +220,6 @@ class _StyleOption extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if (locked) ...[
-                      const SizedBox(width: 5),
-                      Icon(
-                        Icons.lock_rounded,
-                        size: 12,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -316,8 +300,6 @@ class _SettingSwitch extends StatelessWidget {
     required this.subtitle,
     required this.value,
     required this.onChanged,
-    this.locked = false,
-    this.onLockedTap,
   });
 
   final IconData icon;
@@ -325,8 +307,6 @@ class _SettingSwitch extends StatelessWidget {
   final String subtitle;
   final bool value;
   final ValueChanged<bool> onChanged;
-  final bool locked;
-  final VoidCallback? onLockedTap;
 
   @override
   Widget build(BuildContext context) {
@@ -338,7 +318,7 @@ class _SettingSwitch extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: locked ? (onLockedTap ?? () {}) : () => onChanged(!value),
+          onTap: () => onChanged(!value),
           borderRadius: BorderRadius.circular(14),
           // 整行可点，扩大触控区域；最小高度保证 48px。
           child: ConstrainedBox(
@@ -374,14 +354,6 @@ class _SettingSwitch extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (locked) ...[
-                    const SizedBox(width: 6),
-                    Icon(
-                      Icons.lock_rounded,
-                      size: 14,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ],
                   GlassSwitch(value: value, onChanged: onChanged),
                 ],
               ),
@@ -401,8 +373,6 @@ class _ChoiceSetting extends StatelessWidget {
     required this.options,
     required this.selected,
     required this.onSelected,
-    this.locked = false,
-    this.onLockedTap,
   });
 
   final IconData icon;
@@ -411,8 +381,6 @@ class _ChoiceSetting extends StatelessWidget {
   final List<(String, String)> options;
   final (String, String) selected;
   final ValueChanged<(String, String)> onSelected;
-  final bool locked;
-  final VoidCallback? onLockedTap;
 
   @override
   Widget build(BuildContext context) {
@@ -437,14 +405,6 @@ class _ChoiceSetting extends StatelessWidget {
                       title,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    if (locked) ...[
-                      const SizedBox(width: 6),
-                      Icon(
-                        Icons.lock_rounded,
-                        size: 14,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 2),
@@ -468,29 +428,15 @@ class _ChoiceSetting extends StatelessWidget {
                           child: ChoiceChip(
                             label: Text(option.$2),
                             selected: option.$1 == selected.$1,
-                            onSelected: locked
-                                ? null
-                                : (_) {
-                                    HapticFeedback.selectionClick();
-                                    onSelected(option);
-                                  },
+                            onSelected: (_) {
+                              HapticFeedback.selectionClick();
+                              onSelected(option);
+                            },
                           ),
                         ),
                       ),
                   ],
                 ),
-                if (locked) ...[
-                  const SizedBox(height: 4),
-                  InkWell(
-                    onTap: onLockedTap,
-                    child: Text(
-                      '赞助后解锁',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -986,67 +932,6 @@ class _CategoryCard extends StatelessWidget {
   }
 }
 
-class _SponsorCard extends ConsumerWidget {
-  const _SponsorCard({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final unlocked = isSponsorUnlocked(ref);
-    final scheme = Theme.of(context).colorScheme;
-    return Semantics(
-      button: true,
-      label: '赞助支持',
-      hint: unlocked ? '已解锁全部赞助功能' : '一次赞助 ¥5 解锁赞助功能',
-      child: GlassSurface(
-        radius: 20,
-        padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
-        onTap: onTap,
-        haptic: GlassHaptic.selectionClick,
-        child: Row(
-          children: [
-            Icon(
-              unlocked ? Icons.verified_rounded : Icons.favorite_rounded,
-              color: unlocked
-                  ? const Color(0xFF0F766E)
-                  : scheme.onSurfaceVariant,
-              size: 20,
-            ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '赞助支持',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    unlocked ? '已解锁全部赞助功能' : '一次赞助 ¥5，解锁整活样式等',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: scheme.onSurfaceVariant,
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 String _elementStyleSummary(AppSettings settings, String elementId) {
   final style = settings.widgetElementStyles[elementId];
   final visible = switch (style?.visible) {
@@ -1090,7 +975,7 @@ Future<void> _openElementStyleSheet(
   String elementId,
   String label,
   IconData icon,
-  bool unlocked, {
+  {
   required bool isButton,
 }) async {
   await showGlassBottomSheet<void>(
@@ -1121,7 +1006,6 @@ Future<void> _openElementStyleSheet(
           label: label,
           icon: icon,
           style: style,
-          unlocked: unlocked,
           isButton: isButton,
           onChanged: update,
           onReset: () {
@@ -1140,7 +1024,6 @@ class _ElementStyleSheet extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.style,
-    required this.unlocked,
     required this.isButton,
     required this.onChanged,
     required this.onReset,
@@ -1150,7 +1033,6 @@ class _ElementStyleSheet extends StatelessWidget {
   final String label;
   final IconData icon;
   final WidgetElementStyle? style;
-  final bool unlocked;
   final bool isButton;
   final ValueChanged<WidgetElementStyle?> onChanged;
   final VoidCallback onReset;
@@ -1204,8 +1086,6 @@ class _ElementStyleSheet extends StatelessWidget {
                         .firstWhere((option) => option.$1 == current.visible)
                         .$2,
                   ),
-                  locked: !unlocked,
-                  onLockedTap: () => openSponsorPage(context),
                   onSelected: (option) => onChanged(
                     current.copyWith(
                       visible: WidgetElementVisible.values.firstWhere(

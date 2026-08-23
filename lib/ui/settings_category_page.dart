@@ -59,10 +59,7 @@ class SettingsCategoryPage extends ConsumerWidget {
     AppSettings incomingSettings,
     AppController controller,
   ) {
-    final unlocked = isSponsorUnlocked(ref);
-    final settings = unlocked
-        ? incomingSettings
-        : sanitizeSponsorSettings(incomingSettings);
+    final settings = incomingSettings;
     final content = switch (category) {
       SettingsCategory.appearance => [
         _Section(
@@ -130,10 +127,6 @@ class SettingsCategoryPage extends ConsumerWidget {
                         label: preset.$2,
                         icon: preset.$3,
                         selected: settings.widgetStyle == preset.$1,
-                        locked:
-                            !unlocked &&
-                            sponsorWidgetStyles.contains(preset.$1),
-                        onLockedTap: () => openSponsorPage(context),
                         onTap: () => controller.updateSettings(
                           settings.copyWith(widgetStyle: preset.$1),
                         ),
@@ -186,8 +179,6 @@ class SettingsCategoryPage extends ConsumerWidget {
                 title: '跟随壁纸颜色',
                 subtitle: '自动适配壁纸主色',
                 value: settings.widgetWallpaperColor != -1,
-                locked: !unlocked,
-                onLockedTap: () => openSponsorPage(context),
                 onChanged: (value) => unawaited(
                   _toggleWallpaperColors(context, ref, settings, value),
                 ),
@@ -300,8 +291,6 @@ class SettingsCategoryPage extends ConsumerWidget {
                 title: '神秘模式',
                 subtitle: '隐藏数字与日期',
                 value: settings.widgetMysteryMode,
-                locked: !unlocked,
-                onLockedTap: () => openSponsorPage(context),
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetMysteryMode: value),
                 ),
@@ -312,8 +301,6 @@ class SettingsCategoryPage extends ConsumerWidget {
                 title: '每日一句',
                 subtitle: '每日轮播一句话',
                 value: settings.widgetQuoteMode,
-                locked: !unlocked,
-                onLockedTap: () => openSponsorPage(context),
                 onChanged: (value) => controller.updateSettings(
                   settings.copyWith(widgetQuoteMode: value),
                 ),
@@ -430,7 +417,6 @@ class SettingsCategoryPage extends ConsumerWidget {
                       option.$1,
                       option.$2,
                       option.$3,
-                      unlocked,
                       isButton: false,
                     ),
                   ),
@@ -459,7 +445,6 @@ class SettingsCategoryPage extends ConsumerWidget {
                       option.$1,
                       option.$2,
                       option.$3,
-                      unlocked,
                       isButton: true,
                     ),
                   ),
@@ -561,11 +546,17 @@ class SettingsCategoryPage extends ConsumerWidget {
               ),
               const _InsetDivider(),
               _SettingsActionTile(
+                icon: Icons.favorite_rounded,
+                title: '赞助支持',
+                subtitle: '完全免费开源 · 爱发电入口',
+                onTap: () => openSponsorPage(context),
+              ),
+              const _InsetDivider(),
+              _SettingsActionTile(
                 icon: Icons.code_rounded,
-                title: 'github.com/jiuxina/ying-321',
-                subtitle: '发布与在线字体，欢迎反馈',
-                onTap: () =>
-                    _copyLink(context, 'https://github.com/jiuxina/ying-321'),
+                title: 'github.com/jiuxina/ying',
+                subtitle: '开源仓库，欢迎反馈',
+                onTap: () => _copyLink(context, 'https://github.com/jiuxina/ying'),
               ),
             ],
           ),

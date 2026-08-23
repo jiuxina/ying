@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "baseUrl": "https://raw.githubusercontent.com/jiuxina/ying/main/fonts/files",
+  "fonts": [
+    {
+      "id": "dseg7",
+      "name": "DSEG7 Classic",
+      "kind": "digit",
+      "file": "DSEG7-Classic-Bold.ttf",
+      "bytes": 23040,
+      "sha256": "d16181c4eeae29e695ca547ee9be437d01d4909ac1f8f349f04176dc6858873b",
+      "licenseName": "OFL-1.1",
+      "licenseUrl": "https://raw.githubusercontent.com/jiuxina/ying/main/fonts/licenses/DSEG-LICENSE.txt"
+    },
+    {
+      "id": "orbitron",
+      "name": "Orbitron",
+      "kind": "digit",
+      "file": "Orbitron-Regular.ttf",
+      "bytes": 38576,
+      "sha256": "f42db2dd16e642258e35782916eceb1dcdbea06fb958d77ad71dc5963587e8fd",
+      "licenseName": "OFL-1.1",
+      "licenseUrl": "https://raw.githubusercontent.com/jiuxina/ying/main/fonts/licenses/Orbitron-OFL.txt"
+    },
+    {
+      "id": "lxgw-wenkai-lite",
+      "name": "霞鹜文楷 Lite",
+      "kind": "text",
+      "file": "LXGWWenKaiLite-Regular.ttf",
+      "bytes": 13872424,
+      "sha256": "140c99ba4e28e817cec49bf82a0c5fcdc4fe633fb9dfda16d0ee8d59a8545f15",
+      "licenseName": "OFL-1.1",
+      "licenseUrl": "https://raw.githubusercontent.com/jiuxina/ying/main/fonts/licenses/LXGW-OFL.txt"
+    },
+    {
+      "id": "smiley-sans",
+      "name": "得意黑 Smiley Sans",
+      "kind": "text",
+      "file": "SmileySans-Oblique.ttf",
+      "bytes": 2629764,
+      "sha256": "b447d7e781f08bc95c4c9f23ba71ed2b8ebb639aa7184485c71c4ca5afcd25c4",
+      "licenseName": "OFL-1.1",
+      "licenseUrl": "https://raw.githubusercontent.com/jiuxina/ying/main/fonts/licenses/SmileySans-LICENSE"
+    }
+  ]
+}

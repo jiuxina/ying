@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'app_settings.dart';
 import 'countdown_event.dart';
-import 'unlock_features.dart';
 import 'widget_element_style.dart';
 import 'widget_holiday.dart';
 import '../utils/widget_element_style_utils.dart';
@@ -221,16 +220,12 @@ int compareWidgetEvents(CountdownEvent a, CountdownEvent b) {
   return a.targetDate.compareTo(b.targetDate);
 }
 
-/// 由设置与事件解析出完整渲染配置；未解锁时先降级赞助相关设置。
+/// 由设置与事件解析出完整渲染配置。
 WidgetRenderSpec resolveWidgetRenderSpec(
   List<CountdownEvent> rawEvents,
-  AppSettings rawSettings, {
-  required bool sponsorUnlocked,
+  AppSettings settings, {
   DateTime? now,
 }) {
-  final settings = sponsorUnlocked
-      ? rawSettings
-      : sanitizeSponsorSettings(rawSettings);
   final visible = rawEvents.where((event) => !event.isCompleted).toList()
     ..sort(compareWidgetEvents);
   final date = now ?? DateTime.now();

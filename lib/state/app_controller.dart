@@ -3,11 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../app_config.dart';
 import '../app_version.dart';
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
-import '../models/unlock_features.dart';
 import '../models/undo_operation.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
@@ -15,7 +13,6 @@ import '../services/update_service.dart';
 import '../services/widget_service.dart';
 import '../utils/event_query.dart';
 import '../utils/event_repeat_utils.dart';
-import 'unlock_controller.dart';
 
 typedef EventsLoader = Future<List<CountdownEvent>> Function();
 typedef EventsSaver = Future<void> Function(List<CountdownEvent> events);
@@ -87,7 +84,6 @@ class AppController extends StateNotifier<AppState> {
     WidgetSynchronizer? syncWidget,
     UndoTimerFactory? timerFactory,
     UpdateChecker? checkUpdate,
-    bool Function()? isSponsorUnlocked,
     Duration undoDuration = const Duration(seconds: 6),
     Duration updateCheckInterval = const Duration(hours: 24),
     bool autoLoad = true,
@@ -103,7 +99,6 @@ class AppController extends StateNotifier<AppState> {
        _timerFactory =
            timerFactory ?? ((duration, run) => Timer(duration, run)),
        _checkUpdate = checkUpdate ?? _defaultCheckUpdate,
-       _isSponsorUnlocked = isSponsorUnlocked ?? (() => true),
        _undoDuration = undoDuration,
        _updateCheckInterval = updateCheckInterval,
        super(const AppState()) {
@@ -113,11 +108,7 @@ class AppController extends StateNotifier<AppState> {
   static Future<UpdateCheckResult> _defaultCheckUpdate(
     String currentVersion,
   ) {
-    return UpdateService(
-      manifestBaseUrl: UnlockConfig.isApiConfigured
-          ? UnlockConfig.apiBaseUrl
-          : null,
-    ).checkForUpdate(currentVersion: currentVersion);
+    return UpdateService().checkForUpdate(currentVersion: currentVersion);
   }
 
   // ignore: unused_field
@@ -131,7 +122,6 @@ class AppController extends StateNotifier<AppState> {
   final WidgetSynchronizer _syncWidget;
   final UndoTimerFactory _timerFactory;
   final UpdateChecker _checkUpdate;
-  final bool Function() _isSponsorUnlocked;
   final Duration _undoDuration;
   final Duration _updateCheckInterval;
   static const _batchUndoDuration = Duration(seconds: 10);
@@ -327,10 +317,7 @@ class AppController extends StateNotifier<AppState> {
   }
 
   Future<void> updateSettings(AppSettings settings) async {
-    var resolved = settings;
-    if (!_isSponsorUnlocked()) {
-      resolved = sanitizeSponsorSettings(settings);
-    }
+    final resolved = settings;
     state = state.copyWith(
       settings: resolved,
       // 关闭自动检测时一并收起更新横幅。
@@ -460,10 +447,7 @@ class AppController extends StateNotifier<AppState> {
 final storageProvider = Provider((ref) => StorageService());
 
 final appControllerProvider = StateNotifierProvider<AppController, AppState>(
-  (ref) => AppController(
-    ref.read(storageProvider),
-    isSponsorUnlocked: () => ref.read(unlockControllerProvider).isUnlocked,
-  ),
+  (ref) => AppController(ref.read(storageProvider)),
 );
 
 final themeModeProvider = Provider<ThemeMode>(

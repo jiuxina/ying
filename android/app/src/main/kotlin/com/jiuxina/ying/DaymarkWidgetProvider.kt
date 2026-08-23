@@ -217,15 +217,11 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 130) < 150
             val size = backdropSize(context, options)
             val style = effectiveWidgetStyle(widgetData)
-            val holiday = if (sponsorUnlocked(widgetData)) {
-                resolveHoliday(
-                    widgetData.getString("widget_holiday", ""),
-                    LocalDate.now(),
-                    events.getOrNull(widgetData.getInt(perWidgetIndexKey(widgetId), 0)),
-                )
-            } else {
-                ""
-            }
+            val holiday = resolveHoliday(
+                widgetData.getString("widget_holiday", ""),
+                LocalDate.now(),
+                events.getOrNull(widgetData.getInt(perWidgetIndexKey(widgetId), 0)),
+            )
             val elementStyles = parseElementStyles(
                 widgetData.getString(WIDGET_ELEMENT_STYLES_KEY, ""),
             )
@@ -446,8 +442,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         val days = event.daysFromToday()
         val countUp = event.isCountUp || days < 0
         val preset = widgetData.getString("widget_unit_text", "")
-        val mystery = sponsorUnlocked(widgetData) &&
-            widgetData.getBoolean("widget_mystery_mode", false)
+        val mystery = widgetData.getBoolean("widget_mystery_mode", false)
         val flipDay = widgetData.getInt(FLIP_DAY_KEY, -1)
         if (flipDay >= 0 && abs(days.toInt()) != flipDay && !mystery) {
             val oldText = countMainText(event, preset, flipDay.toLong())
@@ -605,8 +600,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             views.setViewVisibility(R.id.widget_health_bar, View.GONE)
         }
 
-        val quote = if (sponsorUnlocked(widgetData) &&
-            widgetData.getBoolean("widget_quote_mode", false)) {
+        val quote = if (widgetData.getBoolean("widget_quote_mode", false)) {
             quoteText(event, LocalDate.now())
         } else {
             ""
@@ -752,8 +746,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         applyBackdrop(context, views, widgetData, style, size.width, size.height)
         val events = parseEvents(widgetData.getString("widget_events", "[]") ?: "[]")
         val scale = widgetFontScale(widgetData)
-        val mystery = sponsorUnlocked(widgetData) &&
-            widgetData.getBoolean("widget_mystery_mode", false)
+        val mystery = widgetData.getBoolean("widget_mystery_mode", false)
         val preset = widgetData.getString("widget_unit_text", "")
         val showCategory = widgetData.getBoolean("widget_show_category", true)
         val showPrecise = widgetData.getBoolean("widget_show_precise_time", false)
@@ -1929,7 +1922,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         val selection = data.getString(selectionKey, "system") ?: "system"
         val kind = customFontSelectionKind(selection)
         if (kind == null) return null
-        if (kind == "local" && !sponsorUnlocked(data)) return null
         val path = data.getString(pathKey, "") ?: ""
         if (path.isBlank()) return null
         return try {
@@ -2182,8 +2174,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         val days = event.daysFromToday()
         val countUp = event.isCountUp || days < 0
         val preset = data.getString("widget_unit_text", "")
-        val mystery = sponsorUnlocked(data) &&
-            data.getBoolean("widget_mystery_mode", false)
+        val mystery = data.getBoolean("widget_mystery_mode", false)
         val capsuleToday = style == WidgetStyle.capsule && days == 0L
         val urgentLevel = if (data.getBoolean("widget_urgent_highlight", false) &&
             !mystery
@@ -2213,8 +2204,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             else -> branch.element("unit").color
         }
         val unitVisible = branch.element("unit").visible && unitText.isNotEmpty()
-        val quote = if (sponsorUnlocked(data) &&
-            data.getBoolean("widget_quote_mode", false)
+        val quote = if (data.getBoolean("widget_quote_mode", false)
         ) {
             quoteText(event, LocalDate.now())
         } else {
@@ -2352,8 +2342,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         if (digitTypeface == null && branch.element("days").weight <= 0) return
         val days = event.daysFromToday()
         val preset = data.getString("widget_unit_text", "")
-        val mystery = sponsorUnlocked(data) &&
-            data.getBoolean("widget_mystery_mode", false)
+        val mystery = data.getBoolean("widget_mystery_mode", false)
         val text = if (mystery) "🕯️" else countMainText(event, preset, days)
         if (!isPureDigitText(text)) return
         val capsuleToday = style == WidgetStyle.capsule && days == 0L
@@ -2596,11 +2585,7 @@ internal fun resolveTextColors(
     data: SharedPreferences,
     style: WidgetStyle,
 ): WidgetTextColors {
-    val wallpaperTextColor = if (sponsorUnlocked(data)) {
-        data.getInt("widget_wallpaper_text_color", -1)
-    } else {
-        -1
-    }
+    val wallpaperTextColor = data.getInt("widget_wallpaper_text_color", -1)
     val darkSurface = style == WidgetStyle.glass ||
         style == WidgetStyle.polaroid ||
         style == WidgetStyle.minimal ||

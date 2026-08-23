@@ -87,13 +87,11 @@ void main() {
       final input = <String, Object?>{
         'settings': settings.toMap(),
         'events': events.map((event) => event.toJson()).toList(),
-        'sponsorUnlocked': true,
         'now': now.toIso8601String(),
       };
       final spec = resolveWidgetRenderSpec(
         events,
         settings,
-        sponsorUnlocked: true,
         now: now,
       );
       File('${root.path}/$name.input.json').writeAsStringSync(

@@ -13,7 +13,6 @@ import '../services/font_library_service.dart';
 import '../state/app_controller.dart';
 import '../state/font_library_controller.dart';
 import 'glass_ui.dart';
-import 'unlock_gate.dart';
 
 typedef CatalogFetcher = Future<WidgetFontCatalog> Function();
 typedef LocalFontPicker = Future<String?> Function();
@@ -126,10 +125,6 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
   }
 
   Future<void> _pickLocalFont() async {
-    if (!isSponsorUnlocked(ref)) {
-      await openSponsorPage(context);
-      return;
-    }
     final path = await (widget.localFontPicker ?? _pickFontFile)();
     if (path == null || !mounted) return;
     final kind = await _chooseImportKind();
@@ -283,7 +278,6 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
               GlassReveal(
                 slide: false,
                 child: _ImportCard(
-                  locked: !isSponsorUnlocked(ref),
                   onTap: _pickLocalFont,
                 ),
               ),
@@ -364,7 +358,6 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
                       .installed
                       .where((asset) => asset.source == WidgetFontSource.local)
                       .toList(),
-                  locked: !isSponsorUnlocked(ref),
                   onApply: _apply,
                   onDelete: _delete,
                 ),
@@ -404,9 +397,8 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
 }
 
 class _ImportCard extends StatelessWidget {
-  const _ImportCard({required this.locked, required this.onTap});
+  const _ImportCard({required this.onTap});
 
-  final bool locked;
   final VoidCallback onTap;
 
   @override
@@ -420,7 +412,7 @@ class _ImportCard extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            locked ? Icons.lock_rounded : Icons.upload_file_outlined,
+            Icons.upload_file_outlined,
             color: scheme.onSurfaceVariant,
             size: 20,
           ),
@@ -435,7 +427,7 @@ class _ImportCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  locked ? '赞助解锁后可用' : '选择 TTF / OTF 文件导入',
+                  '选择 TTF / OTF 文件导入',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
@@ -586,13 +578,11 @@ class _CatalogFontTile extends StatelessWidget {
 class _InstalledFontsSection extends StatelessWidget {
   const _InstalledFontsSection({
     required this.installed,
-    required this.locked,
     required this.onApply,
     required this.onDelete,
   });
 
   final List<WidgetFontAsset> installed;
-  final bool locked;
   final ValueChanged<WidgetFontAsset> onApply;
   final ValueChanged<WidgetFontAsset> onDelete;
 
@@ -605,16 +595,9 @@ class _InstalledFontsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const GlassSectionTitle(title: '本地已导入', subtitle: '导入字体为赞助功能'),
+          const GlassSectionTitle(title: '本地已导入'),
           const SizedBox(height: 10),
-          if (locked)
-            Text(
-              '赞助解锁后可导入与管理本地字体',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-            )
-          else if (installed.isEmpty)
+          if (installed.isEmpty)
             Text(
               '还没有导入的字体',
               style: Theme.of(

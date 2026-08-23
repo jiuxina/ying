@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import '../app_version.dart';
 import '../models/app_settings.dart';
 import '../models/countdown_event.dart';
-import '../models/unlock_features.dart';
 import '../models/widget_font.dart';
 import '../state/app_controller.dart';
 import '../state/font_library_controller.dart';
@@ -24,7 +23,7 @@ import 'font_library_page.dart';
 import 'glass_ui.dart';
 import 'permission_manage_section.dart';
 import 'reminder_diagnostics_section.dart';
-import 'unlock_gate.dart';
+import 'sponsor_navigation.dart';
 import 'update_dialog.dart';
 import 'widget_element_presets.dart';
 import 'widget_preview_section.dart';
@@ -119,8 +118,6 @@ class SettingsPage extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              _SponsorCard(onTap: () => openSponsorPage(context)),
-              const SizedBox(height: 12),
               for (final category in SettingsCategory.values) ...[
                 _CategoryCard(
                   category: category,

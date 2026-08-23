@@ -35,7 +35,6 @@ void main() {
       final spec = resolveWidgetRenderSpec(
         events,
         settings,
-        sponsorUnlocked: input['sponsorUnlocked'] as bool? ?? true,
         now: DateTime.parse(input['now'] as String),
       );
       expect(spec.toJson(), expected);

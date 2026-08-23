@@ -10,13 +10,11 @@ import 'package:ying/app_version.dart';
 import 'package:ying/models/app_settings.dart';
 import 'package:ying/models/countdown_event.dart';
 import 'package:ying/models/event_sort_mode.dart';
-import 'package:ying/models/unlock_state.dart';
 import 'package:ying/models/widget_font.dart';
 import 'package:ying/models/widget_element_style.dart';
 import 'package:ying/services/storage_service.dart';
 import 'package:ying/state/app_controller.dart';
 import 'package:ying/state/font_library_controller.dart';
-import 'package:ying/state/unlock_controller.dart';
 import 'package:ying/ui/app_theme.dart';
 import 'package:ying/ui/event_card.dart';
 import 'package:ying/ui/event_detail_page.dart';
@@ -455,12 +453,6 @@ void main() {
         overrides: [
           appControllerProvider.overrideWith((ref) => controller),
           fontLibraryProvider.overrideWith((ref) => fontLibrary),
-          unlockControllerProvider.overrideWith(
-            (ref) => UnlockController(
-              StorageService(),
-              initialState: const UnlockState(unlocked: true),
-            ),
-          ),
         ],
         child: glassApp(SettingsCategoryPage(category: category)),
       );
@@ -786,7 +778,7 @@ void main() {
       );
     });
 
-    testWidgets('未解锁时元素显隐锁定但字号可用', (tester) async {
+    testWidgets('元素显隐与字号均可自由修改', (tester) async {
       phoneViewport(tester);
       final saved = <AppSettings>[];
       final controller = buildController(saved);
@@ -794,12 +786,6 @@ void main() {
         ProviderScope(
           overrides: [
             appControllerProvider.overrideWith((ref) => controller),
-            unlockControllerProvider.overrideWith(
-              (ref) => UnlockController(
-                StorageService(),
-                initialState: const UnlockState(),
-              ),
-            ),
           ],
           child: glassApp(
             const SettingsCategoryPage(category: SettingsCategory.widget),
@@ -819,7 +805,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(
         controller.state.settings.widgetElementStyles['title']?.visible,
-        isNull,
+        WidgetElementVisible.show,
       );
 
       await tester.drag(
@@ -972,7 +958,7 @@ void main() {
       expect(saved.last.widgetFontFamily, 'catalog:test-font');
     });
 
-    testWidgets('字体库在线候选渲染且导入入口锁定', (tester) async {
+    testWidgets('字体库在线候选渲染且本地导入入口可用', (tester) async {
       phoneViewport(tester);
       final controller = buildController(<AppSettings>[]);
       final entry = WidgetFontCatalogEntry(
@@ -989,12 +975,6 @@ void main() {
           overrides: [
             appControllerProvider.overrideWith((ref) => controller),
             fontLibraryProvider.overrideWith((ref) => fontLibrary),
-            unlockControllerProvider.overrideWith(
-              (ref) => UnlockController(
-                StorageService(),
-                initialState: const UnlockState(),
-              ),
-            ),
           ],
           child: glassApp(
             FontLibraryPage(
@@ -1011,7 +991,7 @@ void main() {
       // 在线候选与底部字体许可列表都会出现 Orbitron。
       expect(find.text('Orbitron'), findsNWidgets(2));
       expect(find.text('下载并应用'), findsOneWidget);
-      expect(find.text('赞助解锁后可用'), findsOneWidget);
+      expect(find.text('选择 TTF / OTF 文件导入'), findsOneWidget);
     });
 
     testWidgets('字体库已安装字体可一键应用', (tester) async {
@@ -1043,12 +1023,6 @@ void main() {
           overrides: [
             appControllerProvider.overrideWith((ref) => controller),
             fontLibraryProvider.overrideWith((ref) => fontLibrary),
-            unlockControllerProvider.overrideWith(
-              (ref) => UnlockController(
-                StorageService(),
-                initialState: const UnlockState(unlocked: true),
-              ),
-            ),
           ],
           child: glassApp(
             FontLibraryPage(
@@ -1078,12 +1052,6 @@ void main() {
           overrides: [
             appControllerProvider.overrideWith((ref) => controller),
             fontLibraryProvider.overrideWith((ref) => fontLibrary),
-            unlockControllerProvider.overrideWith(
-              (ref) => UnlockController(
-                StorageService(),
-                initialState: const UnlockState(unlocked: true),
-              ),
-            ),
           ],
           child: glassApp(
             FontLibraryPage(
@@ -1175,7 +1143,8 @@ void main() {
       await flushPlatform(tester);
 
       expect(find.text('萤 $appVersion'), findsOneWidget);
-      expect(find.text('github.com/jiuxina/ying-321'), findsOneWidget);
+      expect(find.text('github.com/jiuxina/ying'), findsOneWidget);
+      expect(find.text('赞助支持'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

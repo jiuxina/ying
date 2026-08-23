@@ -120,7 +120,6 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
     final renderSpec = resolveWidgetRenderSpec(
       widget.events,
       widget.settings,
-      sponsorUnlocked: true,
     );
     return GlassSurface(
       radius: 20,
