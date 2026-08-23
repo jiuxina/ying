@@ -10,14 +10,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jiuxina/ying-321/stargazers">
-    <img src="https://img.shields.io/github/stars/jiuxina/ying-321?style=social" alt="GitHub stars">
+  <a href="https://github.com/jiuxina/ying/stargazers">
+    <img src="https://img.shields.io/github/stars/jiuxina/ying?style=social" alt="GitHub stars">
   </a>
-  <a href="https://github.com/jiuxina/ying-321/network/members">
-    <img src="https://img.shields.io/github/forks/jiuxina/ying-321?style=social" alt="GitHub forks">
+  <a href="https://github.com/jiuxina/ying/network/members">
+    <img src="https://img.shields.io/github/forks/jiuxina/ying?style=social" alt="GitHub forks">
   </a>
-  <a href="https://github.com/jiuxina/ying-321/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/jiuxina/ying-321" alt="GitHub license">
+  <a href="https://github.com/jiuxina/ying/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/jiuxina/ying" alt="GitHub license">
   </a>
   <a href="https://flutter.dev">
     <img src="https://img.shields.io/badge/Flutter-3.35.4-02569B?logo=flutter" alt="Flutter">
@@ -96,7 +96,7 @@
 
 ### 📱 桌面小部件
 
-- **Android 原生 AppWidget**：总览小部件（单事件左右切换与多事件列表）+ 单事件专注小部件（每实例独立索引）、分区点击（标题打开详情 / 日期区复制卡片）、6 秒内撤销、跨日翻牌动效、逐元素文字样式（颜色 / 字号 / 粗细 / 对齐 / 显隐）、切换按钮显隐、整体内容边距与顶部 / 居中 / 底部布局、14 套样式预设（卡片 / 贴纸 / 照片 / 玻璃 / 拍立得 / 霓虹 / 像素 / 极简 / 神秘信封 / 时间胶囊 / 复古 CRT / 霓虹灯牌 / 像素血条 / 镜像整活）、壁纸取色、相册背景自由裁切与亮度 / 高斯模糊调节、节日皮肤、Emoji、单位文案、精确到秒、农历星期、进度环、神秘模式、每日一句、临近高亮、数字 / 文字字体、在线字体库与本地字体导入（仅导入为赞助功能）与系统定时刷新
+- **Android 原生 AppWidget**：总览小部件（单事件左右切换与多事件列表）+ 单事件专注小部件（每实例独立索引）、分区点击（标题打开详情 / 日期区复制卡片）、6 秒内撤销、跨日翻牌动效、逐元素文字样式（颜色 / 字号 / 粗细 / 对齐 / 显隐）、切换按钮显隐、整体内容边距与顶部 / 居中 / 底部布局、14 套样式预设（卡片 / 贴纸 / 照片 / 玻璃 / 拍立得 / 霓虹 / 像素 / 极简 / 神秘信封 / 时间胶囊 / 复古 CRT / 霓虹灯牌 / 像素血条 / 镜像整活）、壁纸取色、相册背景自由裁切与亮度 / 高斯模糊调节、节日皮肤、Emoji、单位文案、精确到秒、农历星期、进度环、神秘模式、每日一句、临近高亮、数字 / 文字字体、在线字体库与本地字体导入与系统定时刷新
 - **iOS 17+ WidgetKit**：小 / 中尺寸、左右切换、快速完成、单事件专注小部件（可选择固定事件）、临近高亮、自定义颜色 / 字号 / 字段、午夜时间线刷新
 - 应用内小部件预览、安装状态、最近同步、一键刷新和 Android / iOS 添加引导（Android 支持一键添加总览 / 单事件小部件）
 
@@ -137,13 +137,16 @@
 
 ### Android
 
-1. 前往 [Releases](https://github.com/jiuxina/ying-321/releases) 下载最新 APK
+1. 前往 [Releases](https://github.com/jiuxina/ying/releases) 下载最新 APK
 2. 根据设备架构选择：
    - **arm64-v8a**（推荐，适用于大多数现代安卓手机）
    - armeabi-v7a（旧款 32 位设备）
    - x86_64（模拟器）
 3. 安装后授予必要权限
 4. 开始记录你的重要时刻～
+
+> 也可以在 App 的「更新与关于」中自动检查更新：应用会先测速 GitHub 直连与三个镜像，
+> 选择最快的下载源后在应用内下载并拉起系统安装器。
 
 ### iOS
 
@@ -163,7 +166,7 @@
 
 ### 构建步骤
 
-> 源码仓库为内部开发仓库，不对外公开；以下步骤供内部构建使用。
+> 源码仓库完全公开（MIT），欢迎自行构建、二次开发或参与反馈。
 
 ```bash
 # 1. 安装依赖
@@ -338,7 +341,7 @@ Flutter 官方支持通过 Android Gradle Plugin 的 `abiFilters` 限定 `x86_64
 
 ## 反馈与支持
 
-欢迎通过 [Issues](https://github.com/jiuxina/ying-321/issues) 提交问题和建议。
+欢迎通过 [Issues](https://github.com/jiuxina/ying/issues) 提交问题和建议。
 
 如果这个项目对你有帮助，也欢迎点个 Star 支持一下。
 
@@ -352,7 +355,7 @@ Android 桌面小部件的个性化路线图、开发顺序、注意事项与完
 
 UI 视觉改版计划见 [docs/ui-visual-redesign-plan.md](docs/ui-visual-redesign-plan.md)。
 
-赞助制解锁方案见 [docs/sponsor-unlock-plan.md](docs/sponsor-unlock-plan.md)。
+v3.4.0 完全免费开源、镜像下载更新与首页交互调整见 [docs/RELEASE_NOTES-v3.4.0.md](docs/RELEASE_NOTES-v3.4.0.md)。
 
 ---
 
@@ -366,7 +369,7 @@ UI 视觉改版计划见 [docs/ui-visual-redesign-plan.md](docs/ui-visual-redesi
 
 ## 开源协议
 
-[MIT License](https://github.com/jiuxina/ying-321/blob/main/LICENSE)
+[MIT License](https://github.com/jiuxina/ying/blob/main/LICENSE)
 
 ---
 

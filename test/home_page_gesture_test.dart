@@ -10,7 +10,6 @@ import 'package:ying/models/countdown_event.dart';
 import 'package:ying/services/storage_service.dart';
 import 'package:ying/state/app_controller.dart';
 import 'package:ying/ui/app_theme.dart';
-import 'package:ying/ui/calendar_page.dart';
 import 'package:ying/ui/event_card.dart';
 import 'package:ying/ui/event_filter_bar.dart';
 import 'package:ying/ui/glass_ui.dart';
