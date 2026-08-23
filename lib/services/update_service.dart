@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'device_abi.dart';
 import 'update_fetcher.dart';
 
 /// GitHub 上最新一次发布的信息。
@@ -10,6 +11,8 @@ class ReleaseInfo {
     this.name,
     this.notes,
     this.publishedAt,
+    this.downloadUrl,
+    this.downloadSize,
   });
 
   /// 规范化后的版本号，如 `2.1.0`。
@@ -22,6 +25,10 @@ class ReleaseInfo {
   /// 发布说明正文。
   final String? notes;
   final DateTime? publishedAt;
+
+  /// APK 直链；GitHub Release 解析资产得出，清单模式直接使用 `url`。
+  final String? downloadUrl;
+  final int? downloadSize;
 }
 
 /// 一次检测的结果：[errorMessage] 非空表示失败；
@@ -49,15 +56,18 @@ class UpdateService {
     this.owner = defaultOwner,
     this.repo = defaultRepo,
     this.manifestBaseUrl,
-  }) : fetcher = fetcher ?? fetchUrl;
+    Future<List<String>> Function()? abiProvider,
+  }) : fetcher = fetcher ?? fetchUrl,
+       _abiProvider = abiProvider ?? deviceAbis;
 
   static const defaultOwner = 'jiuxina';
-  static const defaultRepo = 'ying-321';
+  static const defaultRepo = 'ying';
 
   final ReleaseFetcher fetcher;
   final String owner;
   final String repo;
   final String? manifestBaseUrl;
+  final Future<List<String>> Function() _abiProvider;
 
   Uri get _latestReleaseUri => Uri.parse(
     'https://api.github.com/repos/$owner/$repo/releases/latest',
@@ -104,7 +114,11 @@ class UpdateService {
     }
     final response = await fetcher(_latestReleaseUri);
     if (response.statusCode == 200) {
-      return _parseRelease(jsonDecode(response.body) as Map<String, Object?>);
+      final abis = await _abiProvider();
+      return _parseRelease(
+        jsonDecode(response.body) as Map<String, Object?>,
+        preferredAbis: abis,
+      );
     }
     if (response.statusCode == 404) {
       return _fetchLatestTag();
@@ -136,8 +150,19 @@ class UpdateService {
     );
   }
 
-  ReleaseInfo _parseRelease(Map<String, Object?> json) {
+  ReleaseInfo _parseRelease(
+    Map<String, Object?> json, {
+    List<String> preferredAbis = const [],
+  }) {
     final tag = json['tag_name'];
+    final assets = json['assets'];
+    final assetList = assets is List
+        ? assets.whereType<Map<String, Object?>>().toList()
+        : const <Map<String, Object?>>[];
+    final apk = pickApkAsset(
+      assetList,
+      preferredAbis: preferredAbis,
+    );
     return ReleaseInfo(
       version: normalizeVersion(tag is String ? tag : ''),
       url: (json['html_url'] as String?) ??
@@ -145,6 +170,8 @@ class UpdateService {
       name: json['name'] as String?,
       notes: json['body'] as String?,
       publishedAt: DateTime.tryParse((json['published_at'] as String?) ?? ''),
+      downloadUrl: _apkDownloadUrl(apk),
+      downloadSize: _apkSize(apk),
     );
   }
 
@@ -156,6 +183,9 @@ class UpdateService {
       name: (json['name'] as String?) ?? (json['notes'] as String?),
       notes: json['notes'] as String?,
       publishedAt: DateTime.tryParse((json['publishedAt'] as String?) ?? ''),
+      downloadUrl: (json['url'] as String?)?.isNotEmpty == true
+          ? json['url'] as String
+          : null,
     );
   }
 
@@ -166,6 +196,40 @@ class UpdateService {
     return UpdateFetchException('检查更新失败（HTTP $statusCode）');
   }
 }
+
+/// 从 Release 资产中挑选 APK：优先匹配设备 ABI，其次通用包，最后首个 APK。
+Map<String, Object?>? pickApkAsset(
+  List<Map<String, Object?>> assets, {
+  List<String> preferredAbis = const [],
+}) {
+  final apks = assets
+      .where(
+        (asset) =>
+            ((asset['name'] as String?) ?? '').toLowerCase().endsWith('.apk'),
+      )
+      .toList();
+  if (apks.isEmpty) return null;
+  for (final abi in preferredAbis) {
+    for (final asset in apks) {
+      if ((asset['name'] as String).toLowerCase().contains(abi)) {
+        return asset;
+      }
+    }
+  }
+  for (final asset in apks) {
+    final name = (asset['name'] as String).toLowerCase();
+    final branded = name.contains('arm64') ||
+        name.contains('armeabi') ||
+        name.contains('x86');
+    if (!branded) return asset;
+  }
+  return apks.first;
+}
+
+String? _apkDownloadUrl(Map<String, Object?>? asset) =>
+    asset?['browser_download_url'] as String?;
+
+int? _apkSize(Map<String, Object?>? asset) => (asset?['size'] as num?)?.toInt();
 
 /// 去掉 `v` 前缀与预发布/构建后缀，如 `v2.1.0-beta+3` → `2.1.0`；
 /// 无法解析为空字符串。

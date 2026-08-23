@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../services/update_service.dart';
+import 'download_source_dialog.dart';
+
+enum _ReleaseAction { skip, copy, download }
 
 /// 新版本发布详情弹窗：设置页手动检测与首页横幅共用。
 ///
@@ -12,7 +15,7 @@ Future<void> showReleaseDialog(
   ReleaseInfo release, {
   VoidCallback? onSkip,
 }) async {
-  final copied = await showDialog<bool>(
+  final action = await showDialog<_ReleaseAction>(
     context: context,
     builder: (dialogContext) => AlertDialog(
       title: Text('发现新版本 v${release.version}'),
@@ -30,25 +33,34 @@ Future<void> showReleaseDialog(
         if (onSkip != null)
           TextButton(
             onPressed: () {
-              Navigator.pop(dialogContext, false);
+              Navigator.pop(dialogContext, _ReleaseAction.skip);
               onSkip();
             },
             child: const Text('跳过此版本'),
           ),
-        FilledButton.icon(
-          onPressed: () => Navigator.pop(dialogContext, true),
+        TextButton.icon(
+          onPressed: () => Navigator.pop(dialogContext, _ReleaseAction.copy),
           icon: const Icon(Icons.link_rounded, size: 18),
           label: const Text('复制发布页链接'),
+        ),
+        FilledButton.icon(
+          onPressed: () => Navigator.pop(dialogContext, _ReleaseAction.download),
+          icon: const Icon(Icons.download_rounded, size: 18),
+          label: const Text('下载更新'),
         ),
       ],
     ),
   );
-  if (copied != true || !context.mounted) return;
-  await Clipboard.setData(ClipboardData(text: release.url));
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('发布页链接已复制，前往浏览器打开即可下载')),
-  );
+  if (!context.mounted || action == null) return;
+  if (action == _ReleaseAction.copy) {
+    await Clipboard.setData(ClipboardData(text: release.url));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('发布页链接已复制')),
+    );
+  } else if (action == _ReleaseAction.download) {
+    await showDownloadSourceDialog(context, release);
+  }
 }
 
 List<Widget> _releaseDetails(BuildContext context, ReleaseInfo release) {
