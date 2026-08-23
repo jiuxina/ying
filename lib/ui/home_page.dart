@@ -65,24 +65,36 @@ class _HomePageState extends ConsumerState<HomePage> {
                   Expanded(
                     child: Column(
                       children: [
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            wide ? 34 : 20,
-                            8,
-                            20,
-                            0,
+                        if (selectedIndex == 0)
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              wide ? 34 : 20,
+                              8,
+                              20,
+                              0,
+                            ),
+                            child: _HomeTopBar(
+                              active: active,
+                              avatarPath: state.settings.avatarPath,
+                              onAdd: _openForm,
+                              onSettings: _openSettings,
+                            ),
                           ),
-                          child: _HomeTopBar(
-                            active: active,
-                            avatarPath: state.settings.avatarPath,
-                            onAdd: _openForm,
-                            onSettings: _openSettings,
-                          ),
-                        ),
                         Expanded(
-                          child: CrossfadeIndexedStack(
-                            index: selectedIndex,
-                            children: pages,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            onHorizontalDragEnd: (details) {
+                              final velocity = details.primaryVelocity ?? 0;
+                              if (velocity.abs() < 120) return;
+                              final next = selectedIndex + (velocity < 0 ? 1 : -1);
+                              if (next < 0 || next >= pages.length) return;
+                              HapticFeedback.selectionClick();
+                              setState(() => selectedIndex = next);
+                            },
+                            child: CrossfadeIndexedStack(
+                              index: selectedIndex,
+                              children: pages,
+                            ),
                           ),
                         ),
                       ],
@@ -236,74 +248,71 @@ class _EventsPageState extends ConsumerState<_EventsPage> {
     } else {
       _scheduleSync();
     }
-    return RefreshIndicator.adaptive(
-      onRefresh: ref.read(appControllerProvider.notifier).load,
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                MediaQuery.sizeOf(context).width >= 760 ? 34 : 20,
-                14,
-                20,
-                14,
-              ),
-              child: Column(
-                children: [
-                  EventFilterBar(
-                    controller: searchController,
-                    searchExpanded: searchExpanded,
-                    incompleteOnly: incompleteOnly,
-                    selectedCategory: selectedCategory,
-                    categories: categories,
-                    sortMode: widget.settings.eventSortMode,
-                    onToggleSearch: () =>
-                        setState(() => searchExpanded = !searchExpanded),
-                    onSearchChanged: (_) => setState(() {}),
-                    onIncompleteChanged: (value) =>
-                        setState(() => incompleteOnly = value),
-                    onCategoryChanged: (value) =>
-                        setState(() => selectedCategory = value),
-                    onSortChanged: (value) => ref
-                        .read(appControllerProvider.notifier)
-                        .updateSettings(
-                          widget.settings.copyWith(eventSortMode: value),
-                        ),
-                    onClear: _clearFilters,
+    final wide = MediaQuery.sizeOf(context).width >= 760;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(wide ? 34 : 20, 14, 20, 4),
+          child: EventFilterBar(
+            controller: searchController,
+            searchExpanded: searchExpanded,
+            incompleteOnly: incompleteOnly,
+            selectedCategory: selectedCategory,
+            categories: categories,
+            sortMode: widget.settings.eventSortMode,
+            onToggleSearch: () =>
+                setState(() => searchExpanded = !searchExpanded),
+            onSearchChanged: (_) => setState(() {}),
+            onIncompleteChanged: (value) =>
+                setState(() => incompleteOnly = value),
+            onCategoryChanged: (value) =>
+                setState(() => selectedCategory = value),
+            onSortChanged: (value) => ref
+                .read(appControllerProvider.notifier)
+                .updateSettings(
+                  widget.settings.copyWith(eventSortMode: value),
+                ),
+            onClear: _clearFilters,
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator.adaptive(
+            onRefresh: ref.read(appControllerProvider.notifier).load,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                if (allEvents.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _EmptyState(onAdd: widget.onAdd),
+                  )
+                else if (events.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _NoFilterResults(onClear: _clearFilters),
+                  )
+                else
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      wide ? 34 : 20,
+                      8,
+                      20,
+                      132,
+                    ),
+                    sliver: SliverAnimatedList(
+                      key: _listKey,
+                      initialItemCount: _items.length,
+                      findChildIndexCallback: _findItemIndex,
+                      itemBuilder: (context, index, animation) =>
+                          _buildListItem(index, animation),
+                    ),
                   ),
-                ],
-              ),
+              ],
             ),
           ),
-          if (allEvents.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: _EmptyState(onAdd: widget.onAdd),
-            )
-          else if (events.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: _NoFilterResults(onClear: _clearFilters),
-            )
-          else
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                MediaQuery.sizeOf(context).width >= 760 ? 34 : 20,
-                8,
-                20,
-                132,
-              ),
-              sliver: SliverAnimatedList(
-                key: _listKey,
-                initialItemCount: _items.length,
-                findChildIndexCallback: _findItemIndex,
-                itemBuilder: (context, index, animation) =>
-                    _buildListItem(index, animation),
-              ),
-            ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

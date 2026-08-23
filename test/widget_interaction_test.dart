@@ -16,7 +16,8 @@ void main() {
     int days = 5,
     bool countingUp = false,
   }) {
-    final base = DateTime(2026, 8, 8);
+    final now = DateTime.now();
+    final base = DateTime(now.year, now.month, now.day);
     return CountdownEvent(
       id: id,
       title: '考试',
@@ -29,25 +30,28 @@ void main() {
 
   group('widgetShareCardText', () {
     test('future event uses 还有', () {
+      final now = DateTime.now();
       expect(
-        widgetShareCardText(event(days: 5), now: DateTime(2026, 8, 8)),
+        widgetShareCardText(event(days: 5), now: now),
         '考试：还有 5 天',
       );
     });
 
     test('past count-up event uses 已经', () {
+      final now = DateTime.now();
       expect(
         widgetShareCardText(
           event(days: -3, countingUp: true),
-          now: DateTime(2026, 8, 8),
+          now: now,
         ),
         '考试：已经 3 天',
       );
     });
 
     test('today event returns 就是今天', () {
+      final now = DateTime.now();
       expect(
-        widgetShareCardText(event(days: 0), now: DateTime(2026, 8, 8)),
+        widgetShareCardText(event(days: 0), now: now),
         '考试：就是今天',
       );
     });

@@ -265,6 +265,15 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       selectedDate: _selectedDate,
       onOpen: _openEvent,
     );
+    final swipeableGrid = GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragEnd: (details) {
+        final velocity = details.primaryVelocity ?? 0;
+        if (velocity.abs() < 120) return;
+        _goToMonth(velocity < 0 ? 1 : -1);
+      },
+      child: grid,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -294,7 +303,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         ),
         const SizedBox(height: 10),
         if (reduceMotionOf(context))
-          grid
+          swipeableGrid
         else
           _calendarSwitcher(
             key: ValueKey(
@@ -302,7 +311,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             ),
             duration: AppMotion.switchDuration,
             begin: Offset(-0.03 * _monthNavigationDirection, 0),
-            child: grid,
+            child: swipeableGrid,
           ),
         const SizedBox(height: 16),
         if (reduceMotionOf(context))
@@ -349,6 +358,39 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     final year = _focusedMonth.year;
     final byMonth = calendarOccurrencesByMonth(events, year);
     final wide = MediaQuery.sizeOf(context).width >= 760;
+    final swipeableYearGrid = GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragEnd: (details) {
+        final velocity = details.primaryVelocity ?? 0;
+        if (velocity.abs() < 120) return;
+        _goToYear(velocity < 0 ? 1 : -1);
+      },
+      child: GridView.builder(
+        key: ValueKey('calendar-year-grid-$year'),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 12,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: wide ? 3 : 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: wide ? 1.15 : 0.82,
+        ),
+        itemBuilder: (context, index) {
+          final month = index + 1;
+          return _MiniMonthCard(
+            year: year,
+            month: month,
+            occurrences: byMonth[month]!,
+            onTap: () => setState(() {
+              _focusedMonth = DateTime(year, month);
+              _mode = CalendarMode.month;
+              _selectedDate = null;
+            }),
+          );
+        },
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -397,31 +439,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               child: SlideTransition(position: slide, child: child),
             );
           },
-          child: GridView.builder(
-            key: ValueKey('calendar-year-grid-$year'),
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 12,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: wide ? 3 : 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: wide ? 1.15 : 0.82,
-            ),
-            itemBuilder: (context, index) {
-              final month = index + 1;
-              return _MiniMonthCard(
-                year: year,
-                month: month,
-                occurrences: byMonth[month]!,
-                onTap: () => setState(() {
-                  _focusedMonth = DateTime(year, month);
-                  _mode = CalendarMode.month;
-                  _selectedDate = null;
-                }),
-              );
-            },
-          ),
+          child: swipeableYearGrid,
         ),
       ],
     );
