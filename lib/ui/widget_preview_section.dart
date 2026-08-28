@@ -129,64 +129,26 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
         children: [
           const GlassSectionTitle(title: '桌面小部件', subtitle: '预览、状态与添加引导'),
           const SizedBox(height: 16),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final vertical = constraints.maxWidth < 500;
-              final compactPreview = widget.settings.widgetListMode
-                  ? _WidgetListPreview(
-                      events: visible,
-                      settings: widget.settings,
-                      color: color,
-                      compact: true,
-                      texts: renderSpec.texts,
-                      render: renderSpec.compact,
-                      fontFamilies: _fontFamilies,
-                    )
-                  : _WidgetPreview(
-                      event: event,
-                      settings: widget.settings,
-                      color: color,
-                      compact: true,
-                      texts: renderSpec.texts,
-                      render: renderSpec.compact,
-                      fontFamilies: _fontFamilies,
-                    );
-              final mediumPreview = widget.settings.widgetListMode
-                  ? _WidgetListPreview(
-                      events: visible,
-                      settings: widget.settings,
-                      color: color,
-                      compact: false,
-                      texts: renderSpec.texts,
-                      render: renderSpec.full,
-                      fontFamilies: _fontFamilies,
-                    )
-                  : _WidgetPreview(
-                      event: event,
-                      settings: widget.settings,
-                      color: color,
-                      compact: false,
-                      texts: renderSpec.texts,
-                      render: renderSpec.full,
-                      fontFamilies: _fontFamilies,
-                    );
-              return vertical
-                  ? Column(
-                      children: [
-                        compactPreview,
-                        const SizedBox(height: 12),
-                        mediumPreview,
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        Expanded(child: compactPreview),
-                        const SizedBox(width: 12),
-                        Expanded(child: mediumPreview),
-                      ],
-                    );
-            },
-          ),
+          if (widget.settings.widgetListMode)
+            _WidgetListPreview(
+              events: visible,
+              settings: widget.settings,
+              color: color,
+              compact: true,
+              texts: renderSpec.texts,
+              render: renderSpec.compact,
+              fontFamilies: _fontFamilies,
+            )
+          else
+            _WidgetPreview(
+              event: event,
+              settings: widget.settings,
+              color: color,
+              compact: true,
+              texts: renderSpec.texts,
+              render: renderSpec.compact,
+              fontFamilies: _fontFamilies,
+            ),
           const SizedBox(height: 16),
           FutureBuilder<WidgetStatus>(
             future: statusFuture,
@@ -291,7 +253,7 @@ class _WidgetPreviewSectionState extends State<WidgetPreviewSection> {
           const SizedBox(height: 14),
           Text(
             defaultTargetPlatform == TargetPlatform.iOS
-                ? '添加方法：长按桌面空白处，点击“+”，搜索“萤”，选择小号或中号。'
+                ? '添加方法：长按桌面空白处，点击“+”，搜索“萤”，选择小号。'
                 : '若一键添加不可用：长按桌面空白处，打开“小部件”，找到“萤”并拖到桌面。',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,

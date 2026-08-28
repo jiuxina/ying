@@ -1486,12 +1486,13 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('添加一个倒数日'), findsNWidgets(2));
-      expect(find.text('--'), findsNWidgets(2));
-      expect(find.text('天'), findsNWidgets(2));
+      expect(find.text('添加一个倒数日'), findsOneWidget);
+      expect(find.text('--'), findsOneWidget);
+      expect(find.text('天'), findsOneWidget);
       expect(find.byIcon(Icons.add_circle_outline_rounded), findsNothing);
-      expect(find.byIcon(Icons.chevron_left_rounded), findsOneWidget);
-      expect(find.text('萤'), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_left_rounded), findsNothing);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+      expect(find.text('萤'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -1535,8 +1536,8 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.text('考试'), findsNWidgets(2));
-      expect(find.text('学习'), findsNWidgets(2));
+      expect(find.text('考试'), findsOneWidget);
+      expect(find.text('学习'), findsOneWidget);
       handle.dispose();
     });
 
@@ -1638,10 +1639,9 @@ void main() {
       await tester.pump();
 
       final titleTexts = tester.widgetList<Text>(find.text('考试')).toList();
-      expect(titleTexts.first.style?.color, const Color(0xFFE91E63));
-      expect(titleTexts.first.style?.fontSize, 15 * 1.5);
-      expect(titleTexts.last.style?.fontSize, 18 * 1.5);
-      expect(titleTexts.first.textAlign, TextAlign.end);
+      expect(titleTexts.single.style?.color, const Color(0xFFE91E63));
+      expect(titleTexts.single.style?.fontSize, 15 * 1.5);
+      expect(titleTexts.single.textAlign, TextAlign.end);
       expect(find.text('学习'), findsNothing);
       expect(tester.takeException(), isNull);
     });

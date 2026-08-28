@@ -460,92 +460,100 @@ class _CatalogFontTile extends StatelessWidget {
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    AnimatedSwitcher(
-                      duration: motionDuration(context, AppMotion.state),
-                      switchInCurve: AppMotion.enter,
-                      switchOutCurve: AppMotion.exit,
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: ScaleTransition(
-                          scale: Tween<double>(begin: 0.9, end: 1).animate(
-                            CurvedAnimation(
-                              parent: animation,
-                              curve: AppMotion.enter,
-                            ),
-                          ),
-                          child: child,
-                        ),
-                      ),
-                      child: downloading
-                          ? const SizedBox(
-                              key: ValueKey('font-downloading'),
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : installed != null
-                          ? Row(
-                              key: ValueKey('font-downloaded-${entry.id}'),
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.check_circle_outline,
-                                  size: 16,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '已下载',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: scheme.onSurfaceVariant,
-                                      ),
-                                ),
-                              ],
-                            )
-                          : FilledButton.icon(
-                              key: ValueKey('font-download-${entry.id}'),
-                              onPressed: () {
-                                HapticFeedback.selectionClick();
-                                onDownload();
-                              },
-                              icon: const Icon(
-                                Icons.download_rounded,
-                                size: 16,
-                              ),
-                              label: const Text('下载'),
-                            ),
-                    ),
-                    if (installed != null)
-                      IconButton(
-                        key: ValueKey('font-delete-${entry.id}'),
-                        tooltip: '删除',
-                        onPressed: () {
-                          HapticFeedback.selectionClick();
-                          onDelete(installed!);
-                        },
-                        icon: const Icon(Icons.delete_outline_rounded),
-                      ),
-                  ],
-                ),
-                if (entry.licenseName != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    '许可：${entry.licenseName}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
               ],
             ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.end,
+                children: [
+                  AnimatedSwitcher(
+                    duration: motionDuration(context, AppMotion.state),
+                    switchInCurve: AppMotion.enter,
+                    switchOutCurve: AppMotion.exit,
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 0.9, end: 1).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: AppMotion.enter,
+                          ),
+                        ),
+                        child: child,
+                      ),
+                    ),
+                    child: downloading
+                        ? const SizedBox(
+                            key: ValueKey('font-downloading'),
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : installed != null
+                        ? Row(
+                            key: ValueKey('font-downloaded-${entry.id}'),
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline,
+                                size: 16,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '已下载',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: scheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          )
+                        : FilledButton.icon(
+                            key: ValueKey('font-download-${entry.id}'),
+                            onPressed: () {
+                              HapticFeedback.selectionClick();
+                              onDownload();
+                            },
+                            icon: const Icon(
+                              Icons.download_rounded,
+                              size: 16,
+                            ),
+                            label: const Text('下载'),
+                          ),
+                  ),
+                  if (installed != null)
+                    IconButton(
+                      key: ValueKey('font-delete-${entry.id}'),
+                      tooltip: '删除',
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        onDelete(installed!);
+                      },
+                      icon: const Icon(Icons.delete_outline_rounded),
+                    ),
+                ],
+              ),
+              if (entry.licenseName != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  '许可：${entry.licenseName}',
+                  textAlign: TextAlign.end,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),
