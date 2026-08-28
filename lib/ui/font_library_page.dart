@@ -21,6 +21,11 @@ typedef FontDownloader =
       WidgetFontCatalog catalog,
       WidgetFontCatalogEntry entry,
     );
+typedef FontInstaller =
+    Future<WidgetFontAsset> Function(
+      WidgetFontCatalogEntry entry,
+      Uint8List bytes,
+    );
 
 class FontLibraryPage extends ConsumerStatefulWidget {
   const FontLibraryPage({
@@ -28,12 +33,14 @@ class FontLibraryPage extends ConsumerStatefulWidget {
     this.catalogFetcher,
     this.localFontPicker,
     this.fontDownloader,
+    this.fontInstaller,
     this.fontDirectory,
   });
 
   final CatalogFetcher? catalogFetcher;
   final LocalFontPicker? localFontPicker;
   final FontDownloader? fontDownloader;
+  final FontInstaller? fontInstaller;
   final Directory? fontDirectory;
 
   @override
@@ -96,7 +103,7 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
     _showMessage('已应用“${asset.name}”');
   }
 
-  Future<void> _downloadAndApply(WidgetFontCatalogEntry entry) async {
+  Future<void> _download(WidgetFontCatalogEntry entry) async {
     final catalog = _catalog;
     if (catalog == null) return;
     setState(() => _downloading.add(entry.id));
@@ -105,13 +112,16 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
         catalog,
         entry,
       );
-      final asset = await FontLibraryService.installCatalogFont(
-        entry,
-        bytes,
-        dir: widget.fontDirectory,
-      );
+      final installer = widget.fontInstaller ??
+          (entry, bytes) => FontLibraryService.installCatalogFont(
+            entry,
+            bytes,
+            dir: widget.fontDirectory,
+          );
+      final asset = await installer(entry, bytes);
       await ref.read(fontLibraryProvider.notifier).refresh();
-      await _apply(asset);
+      if (!mounted) return;
+      _showMessage('已下载“${asset.name}”');
     } catch (error) {
       if (!mounted) return;
       _showMessage(
@@ -293,7 +303,7 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
                     children: [
                       const GlassSectionTitle(
                         title: '在线候选',
-                        subtitle: '免费下载并应用',
+                        subtitle: '免费下载',
                       ),
                       const SizedBox(height: 12),
                       if (_loading)
@@ -338,8 +348,7 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
                             installed: _installedFor(entry),
                             applied: _isApplied(entry),
                             downloading: _downloading.contains(entry.id),
-                            onDownload: () =>
-                                unawaited(_downloadAndApply(entry)),
+                            onDownload: () => unawaited(_download(entry)),
                             onApply: _apply,
                             onDelete: _delete,
                           ),
@@ -361,12 +370,6 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
                   onApply: _apply,
                   onDelete: _delete,
                 ),
-              ),
-              const SizedBox(height: 16),
-              const GlassReveal(
-                delay: Duration(milliseconds: 180),
-                slide: false,
-                child: _FontLicensesSection(),
               ),
             ],
           ),
@@ -488,7 +491,6 @@ class _CatalogFontTile extends StatelessWidget {
                   [
                     widgetFontKindLabel(entry.kind),
                     _sizeLabel(entry.bytes),
-                    if (entry.licenseName != null) entry.licenseName!,
                   ].join(' · '),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: scheme.onSurfaceVariant,
@@ -544,7 +546,7 @@ class _CatalogFontTile extends StatelessWidget {
                                 Icons.download_rounded,
                                 size: 16,
                               ),
-                              label: const Text('下载并应用'),
+                              label: const Text('下载'),
                             ),
                     ),
                     if (installed != null)
@@ -559,6 +561,15 @@ class _CatalogFontTile extends StatelessWidget {
                       ),
                   ],
                 ),
+                if (entry.licenseName != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    '许可：${entry.licenseName}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -641,88 +652,5 @@ class _FontDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Divider(height: 1, color: Theme.of(context).dividerColor);
-  }
-}
-
-Future<void> showFontLicenseDialog(
-  BuildContext context, {
-  required String title,
-  required String assetPath,
-}) async {
-  String text;
-  try {
-    text = await rootBundle.loadString(assetPath);
-  } catch (_) {
-    text = '许可证文件加载失败';
-  }
-  if (!context.mounted) return;
-  await showDialog<void>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text('$title 许可'),
-      content: SizedBox(
-        width: 520,
-        child: SingleChildScrollView(
-          child: SelectableText(
-            text,
-            style: Theme.of(dialogContext).textTheme.bodySmall,
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext),
-          child: const Text('关闭'),
-        ),
-      ],
-    ),
-  );
-}
-
-class _FontLicensesSection extends StatelessWidget {
-  const _FontLicensesSection();
-
-  static const licenses = <(String, String)>[
-    ('DSEG7 Classic', 'assets/licenses/DSEG-LICENSE.txt'),
-    ('Orbitron', 'assets/licenses/Orbitron-OFL.txt'),
-    ('霞鹜文楷 Lite', 'assets/licenses/LXGW-OFL.txt'),
-    ('得意黑 Smiley Sans', 'assets/licenses/SmileySans-LICENSE.txt'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return GlassSurface(
-      radius: 20,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const GlassSectionTitle(title: '字体许可', subtitle: '内置 SIL OFL 1.1 文本'),
-          const SizedBox(height: 10),
-          for (final (index, license) in licenses.indexed) ...[
-            if (index > 0) const _FontDivider(),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.description_outlined),
-              title: Text(license.$1),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => showFontLicenseDialog(
-                context,
-                title: license.$1,
-                assetPath: license.$2,
-              ),
-            ),
-          ],
-          const SizedBox(height: 4),
-          Text(
-            '以上字体均以 SIL OFL 1.1 开源许可分发，可免费商用。',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
   }
 }

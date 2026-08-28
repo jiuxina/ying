@@ -968,6 +968,7 @@ void main() {
         file: 'orbitron.ttf',
         bytes: 128,
         sha256: '0' * 64,
+        licenseName: 'OFL-1.1',
       );
       final fontLibrary = FontLibraryController()..loading = false;
       await tester.pumpWidget(
@@ -988,10 +989,63 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // 在线候选与底部字体许可列表都会出现 Orbitron。
-      expect(find.text('Orbitron'), findsNWidgets(2));
-      expect(find.text('下载并应用'), findsOneWidget);
+      // 在线候选出现 Orbitron，许可以小字显示在下载旁。
+      expect(find.text('Orbitron'), findsOneWidget);
+      expect(find.text('下载'), findsOneWidget);
+      expect(find.text('许可：OFL-1.1'), findsOneWidget);
       expect(find.text('选择 TTF / OTF 文件导入'), findsOneWidget);
+    });
+
+    testWidgets('字体库下载后不自动应用，可手动应用', (tester) async {
+      phoneViewport(tester);
+      final saved = <AppSettings>[];
+      final controller = buildController(saved);
+      final bytes = Uint8List.fromList([0x00, 0x01, 0x00, 0x00]);
+      final entry = WidgetFontCatalogEntry(
+        id: 'orbitron',
+        name: 'Orbitron',
+        kind: WidgetFontKind.digit,
+        file: 'orbitron.ttf',
+        bytes: bytes.length,
+        sha256: '0' * 64,
+      );
+      final asset = WidgetFontAsset(
+        id: 'orbitron',
+        name: 'Orbitron',
+        kind: WidgetFontKind.digit,
+        source: WidgetFontSource.catalog,
+        filePath: '/tmp/orbitron.ttf',
+        bytes: bytes.length,
+        sha256: '0' * 64,
+      );
+      final fontLibrary = _FakeFontLibraryController(
+        installedAfterRefresh: asset,
+      )..loading = false;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appControllerProvider.overrideWith((ref) => controller),
+            fontLibraryProvider.overrideWith((ref) => fontLibrary),
+          ],
+          child: glassApp(
+            FontLibraryPage(
+              catalogFetcher: () async => WidgetFontCatalog(
+                version: 1,
+                baseUrl: 'https://example.com',
+                fonts: [entry],
+              ),
+              fontDownloader: (catalog, entry) async => bytes,
+              fontInstaller: (entry, bytes) async => asset,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('font-download-orbitron')));
+      await tester.pumpAndSettle();
+      expect(controller.state.settings.widgetFontFamily, 'system');
+      expect(saved, isEmpty);
+      expect(find.byKey(const ValueKey('font-apply-orbitron')), findsOneWidget);
     });
 
     testWidgets('字体库已安装字体可一键应用', (tester) async {
@@ -1041,34 +1095,6 @@ void main() {
       expect(controller.state.settings.widgetFontFamily, 'catalog:orbitron');
       expect(saved.last.widgetFontFamily, 'catalog:orbitron');
       expect(saved.last.widgetDigitFontPath, '/tmp/orbitron.ttf');
-    });
-
-    testWidgets('字体库内置许可证文本可查看', (tester) async {
-      phoneViewport(tester);
-      final controller = buildController(<AppSettings>[]);
-      final fontLibrary = FontLibraryController()..loading = false;
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appControllerProvider.overrideWith((ref) => controller),
-            fontLibraryProvider.overrideWith((ref) => fontLibrary),
-          ],
-          child: glassApp(
-            FontLibraryPage(
-              catalogFetcher: () async => const WidgetFontCatalog(
-                version: 1,
-                baseUrl: 'https://example.com',
-                fonts: [],
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(find.text('DSEG7 Classic'), 300);
-      await tester.tap(find.text('DSEG7 Classic'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('SIL OPEN FONT LICENSE'), findsOneWidget);
     });
 
     testWidgets('事件列表模式开关持久化', (tester) async {
@@ -1751,4 +1777,16 @@ class _IdleTimer implements Timer {
 
   @override
   int get tick => 0;
+}
+
+class _FakeFontLibraryController extends FontLibraryController {
+  _FakeFontLibraryController({required this.installedAfterRefresh});
+
+  final WidgetFontAsset installedAfterRefresh;
+
+  @override
+  Future<void> refresh() async {
+    installed = [installedAfterRefresh];
+    notifyListeners();
+  }
 }

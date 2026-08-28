@@ -869,7 +869,7 @@ class _FontSettingsSection extends StatelessWidget {
         _SettingsActionTile(
           icon: Icons.font_download_outlined,
           title: '字体库',
-          subtitle: '下载并应用 · 导入本地字体',
+          subtitle: '下载 · 导入本地字体',
           onTap: onOpenLibrary,
         ),
       ],
