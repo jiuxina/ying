@@ -996,7 +996,7 @@ void main() {
       expect(find.text('选择 TTF / OTF 文件导入'), findsOneWidget);
     });
 
-    testWidgets('字体库下载后不自动应用，可手动应用', (tester) async {
+    testWidgets('字体库下载后不自动应用，也不显示应用按钮', (tester) async {
       phoneViewport(tester);
       final saved = <AppSettings>[];
       final controller = buildController(saved);
@@ -1045,10 +1045,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.state.settings.widgetFontFamily, 'system');
       expect(saved, isEmpty);
-      expect(find.byKey(const ValueKey('font-apply-orbitron')), findsOneWidget);
+      expect(find.text('已下载'), findsOneWidget);
+      expect(find.byKey(const ValueKey('font-apply-orbitron')), findsNothing);
     });
 
-    testWidgets('字体库已安装字体可一键应用', (tester) async {
+    testWidgets('字体库已下载字体不显示应用按钮', (tester) async {
       phoneViewport(tester);
       final saved = <AppSettings>[];
       final controller = buildController(saved);
@@ -1090,11 +1091,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('font-apply-orbitron')));
-      await tester.pumpAndSettle();
-      expect(controller.state.settings.widgetFontFamily, 'catalog:orbitron');
-      expect(saved.last.widgetFontFamily, 'catalog:orbitron');
-      expect(saved.last.widgetDigitFontPath, '/tmp/orbitron.ttf');
+      expect(find.text('已下载'), findsOneWidget);
+      expect(find.byKey(const ValueKey('font-apply-orbitron')), findsNothing);
     });
 
     testWidgets('事件列表模式开关持久化', (tester) async {

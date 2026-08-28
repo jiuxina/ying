@@ -84,25 +84,6 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
 
   AppSettings _currentSettings() => ref.read(appControllerProvider).settings;
 
-  Future<void> _apply(WidgetFontAsset asset) async {
-    var settings = _currentSettings();
-    if (asset.kind.coversDigits) {
-      settings = settings.copyWith(
-        widgetFontFamily: asset.selection,
-        widgetDigitFontPath: asset.filePath,
-      );
-    }
-    if (asset.kind.coversText) {
-      settings = settings.copyWith(
-        widgetTextFontFamily: asset.selection,
-        widgetTextFontPath: asset.filePath,
-      );
-    }
-    await ref.read(appControllerProvider.notifier).updateSettings(settings);
-    if (!mounted) return;
-    _showMessage('已应用“${asset.name}”');
-  }
-
   Future<void> _download(WidgetFontCatalogEntry entry) async {
     final catalog = _catalog;
     if (catalog == null) return;
@@ -147,9 +128,8 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
         dir: widget.fontDirectory,
       );
       await ref.read(fontLibraryProvider.notifier).refresh();
-      await _apply(asset);
       if (!mounted) return;
-      _showMessage('已导入“${asset.name}”并应用');
+      _showMessage('已导入“${asset.name}”');
     } catch (error) {
       if (!mounted) return;
       _showMessage(
@@ -279,7 +259,7 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                '在线字体按需下载，本地 TTF/OTF 可导入后应用到数字或文字。',
+                '在线字体按需下载，本地 TTF/OTF 可导入；下载或导入后在「字体」设置中选择应用。',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -346,10 +326,8 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
                           _CatalogFontTile(
                             entry: entry,
                             installed: _installedFor(entry),
-                            applied: _isApplied(entry),
                             downloading: _downloading.contains(entry.id),
                             onDownload: () => unawaited(_download(entry)),
-                            onApply: _apply,
                             onDelete: _delete,
                           ),
                         ],
@@ -367,7 +345,6 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
                       .installed
                       .where((asset) => asset.source == WidgetFontSource.local)
                       .toList(),
-                  onApply: _apply,
                   onDelete: _delete,
                 ),
               ),
@@ -388,15 +365,6 @@ class _FontLibraryPageState extends ConsumerState<FontLibraryPage> {
     return null;
   }
 
-  bool _isApplied(WidgetFontCatalogEntry entry) {
-    final settings = ref.watch(appControllerProvider).settings;
-    final selection = widgetFontSelection(
-      source: WidgetFontSource.catalog,
-      id: entry.id,
-    );
-    return settings.widgetFontFamily == selection ||
-        settings.widgetTextFontFamily == selection;
-  }
 }
 
 class _ImportCard extends StatelessWidget {
@@ -453,19 +421,15 @@ class _CatalogFontTile extends StatelessWidget {
   const _CatalogFontTile({
     required this.entry,
     required this.installed,
-    required this.applied,
     required this.downloading,
     required this.onDownload,
-    required this.onApply,
     required this.onDelete,
   });
 
   final WidgetFontCatalogEntry entry;
   final WidgetFontAsset? installed;
-  final bool applied;
   final bool downloading;
   final VoidCallback onDownload;
-  final ValueChanged<WidgetFontAsset> onApply;
   final ValueChanged<WidgetFontAsset> onDelete;
 
   @override
@@ -525,16 +489,26 @@ class _CatalogFontTile extends StatelessWidget {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : installed != null
-                          ? FilledButton.tonalIcon(
-                              key: ValueKey('font-apply-${entry.id}'),
-                              onPressed: applied
-                                  ? null
-                                  : () {
-                                      HapticFeedback.selectionClick();
-                                      onApply(installed!);
-                                    },
-                              icon: const Icon(Icons.check_rounded, size: 16),
-                              label: Text(applied ? '已应用' : '应用'),
+                          ? Row(
+                              key: ValueKey('font-downloaded-${entry.id}'),
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_circle_outline,
+                                  size: 16,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '已下载',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: scheme.onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
                             )
                           : FilledButton.icon(
                               key: ValueKey('font-download-${entry.id}'),
@@ -589,12 +563,10 @@ class _CatalogFontTile extends StatelessWidget {
 class _InstalledFontsSection extends StatelessWidget {
   const _InstalledFontsSection({
     required this.installed,
-    required this.onApply,
     required this.onDelete,
   });
 
   final List<WidgetFontAsset> installed;
-  final ValueChanged<WidgetFontAsset> onApply;
   final ValueChanged<WidgetFontAsset> onDelete;
 
   @override
@@ -626,11 +598,6 @@ class _InstalledFontsSection extends StatelessWidget {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    FilledButton.tonal(
-                      onPressed: () => onApply(asset),
-                      child: const Text('应用'),
-                    ),
-                    const SizedBox(width: 6),
                     IconButton(
                       tooltip: '删除',
                       onPressed: () => onDelete(asset),
