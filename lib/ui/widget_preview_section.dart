@@ -329,30 +329,11 @@ class _WidgetPreview extends StatelessWidget {
     final style = settings.widgetStyle;
     final holiday = combinedHoliday(event, DateTime.now());
     final accent = _holidayAccent(holiday) ?? Color(settings.widgetColor);
-    final primaryText = Color(render.element('title').color);
-    final borderColor = style == WidgetStyle.minimal
-        ? primaryText.withValues(alpha: 0.4)
-        : style == WidgetStyle.glass
+    final borderColor = style == WidgetStyle.glass
         ? Colors.white.withValues(alpha: 0.75)
-        : style == WidgetStyle.neon
-        ? accent
-        : style == WidgetStyle.pixel
-        ? accent.withValues(alpha: 0.9)
-        : style == WidgetStyle.crt
-        ? const Color(0xFF4ADE80).withValues(alpha: 0.75)
-        : style == WidgetStyle.neonSign ||
-              style == WidgetStyle.envelope ||
-              style == WidgetStyle.pixelHealth ||
-              style == WidgetStyle.mirror
-        ? accent.withValues(alpha: 0.85)
         : null;
     final withShadow = style == WidgetStyle.sticker ||
-        style == WidgetStyle.photo ||
-        style == WidgetStyle.neon ||
-        style == WidgetStyle.pixel ||
-        style == WidgetStyle.neonSign ||
-        style == WidgetStyle.envelope ||
-        style == WidgetStyle.mirror;
+        style == WidgetStyle.photo;
     final shadow = withShadow
         ? const [
             Shadow(
@@ -387,18 +368,14 @@ class _WidgetPreview extends StatelessWidget {
             : (settings.widgetShowPreciseTime ||
                       settings.widgetShowLunarWeek ||
                       settings.widgetShowProgress ||
-                      settings.widgetQuoteMode ||
-                      style == WidgetStyle.pixelHealth)
+                      settings.widgetQuoteMode)
                   ? 216
                   : 170,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(
             switch (style) {
-              WidgetStyle.pixel => 0,
               WidgetStyle.polaroid => 4,
-              WidgetStyle.neon ||
-              WidgetStyle.minimal => 8,
               _ => 10,
             },
           ),
@@ -437,9 +414,6 @@ class _WidgetPreview extends StatelessWidget {
               padding: EdgeInsets.all(settings.widgetContentMargin),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final content = style == WidgetStyle.mirror
-                      ? Transform.rotate(angle: -0.045, child: body)
-                      : body;
                   return Align(
                     alignment: verticalAlignment,
                     child: FittedBox(
@@ -447,15 +421,13 @@ class _WidgetPreview extends StatelessWidget {
                       alignment: Alignment.topLeft,
                       child: SizedBox(
                         width: constraints.maxWidth,
-                        child: content,
+                        child: body,
                       ),
                     ),
                   );
                 },
               ),
             ),
-            if (style == WidgetStyle.envelope)
-              const Positioned.fill(child: _EnvelopeCover()),
           ],
         ),
       ),
@@ -525,9 +497,7 @@ class _PreviewBody extends StatelessWidget {
     final nextElement = _element('nextButton');
     final daysAlign = daysElement.align;
     final digitFamily = fontFamilies[settings.widgetFontFamily] ??
-        (settings.widgetStyle == WidgetStyle.pixelHealth
-            ? 'monospace'
-            : widgetFontName(settings.widgetFontFamily));
+        widgetFontName(settings.widgetFontFamily);
     final textFamily = fontFamilies[settings.widgetTextFontFamily] ?? '';
 
     if (current == null) {
@@ -645,34 +615,21 @@ class _PreviewBody extends StatelessWidget {
     final now = DateTime.now();
     final countDisplay = widgetCountDisplay(current, settings.widgetUnitText);
     final mystery = settings.widgetMysteryMode;
-    final capsuleToday =
-        settings.widgetStyle == WidgetStyle.capsule && current.dayDelta() == 0;
-    final displayTitle = capsuleToday ? '恭喜！${current.title}' : current.title;
-    final displayCategory = capsuleToday ? '时间胶囊' : current.category;
-    final mainText = capsuleToday
-        ? '🎉'
-        : mystery
-        ? '🕯️'
-        : countDisplay.mainText;
-    final unitText = capsuleToday
-        ? '就是今天'
-        : mystery
-        ? '快到了'
-        : countDisplay.unitText;
+    final displayTitle = current.title;
+    final displayCategory = current.category;
+    final mainText = mystery ? '🕯️' : countDisplay.mainText;
+    final unitText = mystery ? '快到了' : countDisplay.unitText;
     final urgentLevel = settings.widgetUrgentHighlight
         ? widgetUrgentLevel(current)
         : 0;
-    final urgentActive = !capsuleToday && urgentLevel > 0 && !mystery;
+    final urgentActive = urgentLevel > 0 && !mystery;
     final displayUnitText = urgentActive
         ? widgetUrgentLabel(urgentLevel, current.displayDays)
         : unitText;
-    final Color? displayMainColor = capsuleToday
-        ? accent
-        : urgentActive
+    final Color? displayMainColor = urgentActive
         ? Color(widgetUrgentArgb(urgentLevel))
         : null;
-    final italic = settings.widgetFontFamily == 'hand' &&
-        settings.widgetStyle != WidgetStyle.pixelHealth;
+    final italic = settings.widgetFontFamily == 'hand';
     final dateInfoText = settings.widgetShowLunarWeek
         ? widgetDateInfo(now)
         : '';
@@ -681,12 +638,6 @@ class _PreviewBody extends StatelessWidget {
         : '';
     final noteText = quote.isNotEmpty ? quote : current.note;
     final progressValue = widgetProgress(current, now);
-    final glowShadows = settings.widgetStyle == WidgetStyle.neonSign
-        ? [
-            Shadow(color: accent.withValues(alpha: 0.9), blurRadius: 10),
-            Shadow(color: accent.withValues(alpha: 0.45), blurRadius: 22),
-          ]
-        : shadow;
     final iconVisible = iconElement.visible && current.icon.isNotEmpty;
     final titleVisible = titleElement.visible;
     final daysVisible = daysElement.visible;
@@ -698,8 +649,6 @@ class _PreviewBody extends StatelessWidget {
     final dateInfoVisible = dateInfoElement.visible && dateInfoText.isNotEmpty;
     final progressVisible =
         progressElement.visible && settings.widgetShowProgress;
-    final healthVisible = progressElement.visible &&
-        settings.widgetStyle == WidgetStyle.pixelHealth;
     final noteVisible = noteElement.visible &&
         (quote.isNotEmpty ||
             (settings.widgetShowNote && current.note.isNotEmpty));
@@ -801,14 +750,6 @@ class _PreviewBody extends StatelessWidget {
           mainAxisAlignment: daysMainAxisAlignment,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            if (healthVisible) ...[
-              _PixelHealthBar(
-                progress: progressValue,
-                accent: accent,
-                track: Color(daysElement.color).withValues(alpha: 0.16),
-              ),
-              const SizedBox(width: 9),
-            ],
             if (progressVisible) ...[
               _ProgressRing(
                 progress: progressValue,
@@ -832,7 +773,7 @@ class _PreviewBody extends StatelessWidget {
                       FontWeight.w800,
                     ),
                     height: 0.95,
-                    shadows: glowShadows,
+                    shadows: shadow,
                     fontFamily: digitFamily,
                     fontStyle: italic ? FontStyle.italic : null,
                   ),
@@ -860,7 +801,7 @@ class _PreviewBody extends StatelessWidget {
                         unitElement.weight,
                         FontWeight.w400,
                       ),
-                      shadows: glowShadows,
+                      shadows: shadow,
                       fontFamily: textFamily,
                     ),
                   ),
@@ -987,7 +928,6 @@ class _WidgetListPreview extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(
             switch (style) {
-              WidgetStyle.pixel => 0,
               WidgetStyle.polaroid => 4,
               _ => 10,
             },

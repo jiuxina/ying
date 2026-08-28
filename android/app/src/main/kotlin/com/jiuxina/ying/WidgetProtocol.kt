@@ -36,15 +36,6 @@ enum class WidgetStyle {
     photo,
     glass,
     polaroid,
-    neon,
-    pixel,
-    minimal,
-    envelope,
-    capsule,
-    crt,
-    neonSign,
-    pixelHealth,
-    mirror,
     ;
 
     companion object {

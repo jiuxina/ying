@@ -120,16 +120,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             refreshAll(context)
             return
         }
-        if (intent.action == ACTION_REVEAL) {
-            val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
-            if (widgetId >= 0) {
-                val data = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                val key = envelopeOpenKey(widgetId)
-                data.edit().putBoolean(key, !data.getBoolean(key, false)).apply()
-                refreshAll(context)
-            }
-            return
-        }
         when (intent.action) {
             ACTION_NAVIGATE -> {
                 val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
@@ -330,9 +320,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         if (compact) {
             views.setViewPadding(R.id.widget_content, 12, 12, 12, 12)
         }
-        if (style == WidgetStyle.mirror) {
-            views.setFloat(R.id.widget_content, "setRotation", -2.5f)
-        }
         views.setViewVisibility(
             R.id.widget_previous,
             if (branch.element("prevButton").visible) View.VISIBLE else View.GONE,
@@ -363,7 +350,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 "--",
                 widgetData,
                 compact,
-                style,
                 branch.element("days").size,
                 branch.element("days").color,
                 digitTypeface,
@@ -393,8 +379,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             views.setViewVisibility(R.id.widget_date_info, View.GONE)
             views.setViewVisibility(R.id.widget_progress_ring, View.GONE)
             views.setViewVisibility(R.id.widget_progress_text, View.GONE)
-            views.setViewVisibility(R.id.widget_health_bar, View.GONE)
-            views.setViewVisibility(R.id.widget_envelope_cover, View.GONE)
             if (textTypeface != null) {
                 setCustomText(
                     context,
@@ -496,7 +480,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             if (mystery) "🕯️" else countMainText(event, preset, days),
             widgetData,
             compact,
-            style,
             branch.element("days").size,
             branch.element("days").color,
             digitTypeface,
@@ -514,35 +497,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             if (branch.element("unit").visible) View.VISIBLE else View.GONE,
         )
         applyUrgentHighlight(views, widgetData, days, mystery, preset, styles)
-        if (style == WidgetStyle.capsule && days == 0L) {
-            val congratsAccent = accentColor(widgetData, holiday)
-            views.setTextViewText(R.id.widget_title, "恭喜！${event.title}")
-            setDaysText(
-                context,
-                views,
-                "🎉",
-                widgetData,
-                compact,
-                style,
-                branch.element("days").size,
-                branch.element("days").color,
-                digitTypeface,
-                maxDaysWidth,
-            )
-            views.setTextViewText(R.id.widget_unit, "就是今天")
-            if (customElementColor(styles["days"]) == null) {
-                listOf(
-                    R.id.widget_days,
-                    R.id.widget_days_mono,
-                    R.id.widget_days_pixel,
-                    R.id.widget_days_hand,
-                    R.id.widget_days_neon,
-                ).forEach { id -> views.setTextColor(id, congratsAccent) }
-            }
-            if (customElementColor(styles["unit"]) == null) {
-                views.setTextColor(R.id.widget_unit, congratsAccent)
-            }
-        }
         val categoryVisible = branch.element("category").visible
         if (categoryVisible) {
             views.setTextViewText(R.id.widget_category, event.category)
@@ -583,22 +537,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             views.setViewVisibility(R.id.widget_progress_ring, View.GONE)
             views.setViewVisibility(R.id.widget_progress_text, View.GONE)
         }
-        if (branch.element("progress").visible &&
-            style == WidgetStyle.pixelHealth
-        ) {
-            val progress = progressOf(event, System.currentTimeMillis())
-            views.setImageViewBitmap(
-                R.id.widget_health_bar,
-                pixelHealthBarBitmap(
-                    context,
-                    progress,
-                    accentColor(widgetData, holiday),
-                ),
-            )
-            views.setViewVisibility(R.id.widget_health_bar, View.VISIBLE)
-        } else {
-            views.setViewVisibility(R.id.widget_health_bar, View.GONE)
-        }
 
         val quote = if (widgetData.getBoolean("widget_quote_mode", false)) {
             quoteText(event, LocalDate.now())
@@ -618,28 +556,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_date_row,
             backgroundIntent(context, "copy", event.id),
         )
-        if (style == WidgetStyle.envelope) {
-            val open = widgetData.getBoolean(envelopeOpenKey(widgetId), false)
-            views.setImageViewBitmap(
-                R.id.widget_envelope_cover,
-                envelopeCoverBitmap(
-                    context,
-                    accentColor(widgetData, holiday),
-                    size.width,
-                    size.height,
-                ),
-            )
-            views.setViewVisibility(
-                R.id.widget_envelope_cover,
-                if (open) View.GONE else View.VISIBLE,
-            )
-            views.setOnClickPendingIntent(
-                R.id.widget_envelope_cover,
-                revealIntent(context, widgetId),
-            )
-        } else {
-            views.setViewVisibility(R.id.widget_envelope_cover, View.GONE)
-        }
 
         applyCustomTextPass(
             context,
@@ -648,11 +564,9 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             event,
             branch,
             compact,
-            style,
             textTypeface,
             size,
             styles,
-            holiday,
         )
         applyCustomDaysPass(
             context,
@@ -661,10 +575,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             event,
             branch,
             compact,
-            style,
             digitTypeface,
             maxDaysWidth,
-            holiday,
         )
 
         views.setOnClickPendingIntent(
@@ -1197,7 +1109,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_days_mono,
             R.id.widget_days_pixel,
             R.id.widget_days_hand,
-            R.id.widget_days_neon,
         ).forEach { id ->
             views.setTextColor(
                 id,
@@ -1304,7 +1215,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 R.id.widget_days_mono,
                 R.id.widget_days_pixel,
                 R.id.widget_days_hand,
-                R.id.widget_days_neon,
             ).forEach { id -> views.setTextColor(id, accent) }
         }
         if (customElementColor(styles["unit"]) == null) {
@@ -1329,15 +1239,12 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.drawable.daymark_widget_clip,
         )
         views.setBoolean(R.id.widget_root, "setClipToOutline", true)
-        val colors = resolveTextColors(data, style)
-        val baseColor = baseColor(data)
         val accent = accentColor(data, "")
         val backdrop = buildBackdrop(
             context,
+            data,
             style,
-            baseColor,
             accent,
-            colors.primary,
             data.getString("widget_background_path", ""),
             width,
             height,
@@ -1376,10 +1283,9 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
 
     private fun buildBackdrop(
         context: Context,
+        data: SharedPreferences,
         style: WidgetStyle,
-        baseColor: Int,
         accent: Int,
-        textColor: Int,
         photoPath: String?,
         width: Int,
         height: Int,
@@ -1389,7 +1295,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             WidgetStyle.card -> roundedRectBitmap(
                 width,
                 height,
-                baseColor,
+                baseColor(data),
                 10f * density,
             )
             WidgetStyle.sticker -> null
@@ -1406,43 +1312,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
                 borderWidth = 1f * density,
             )
             WidgetStyle.polaroid -> polaroidBitmap(width, height, 4f * density)
-            WidgetStyle.neon -> roundedRectBitmap(
-                width,
-                height,
-                0xFF0A0F1E.toInt(),
-                8f * density,
-                borderColor = accent,
-                borderWidth = 1f * density,
-            )
-            WidgetStyle.pixel -> roundedRectBitmap(
-                width,
-                height,
-                0xFF141414.toInt(),
-                0f,
-                borderColor = withAlpha(accent, 0xE6),
-                borderWidth = 1f * density,
-            )
-            WidgetStyle.envelope -> roundedRectBitmap(
-                width,
-                height,
-                0xFF3B2A26.toInt(),
-                10f * density,
-                borderColor = withAlpha(accent, 0x99),
-                borderWidth = 1f * density,
-            )
-            WidgetStyle.capsule -> capsuleBitmap(width, height, baseColor, accent)
-            WidgetStyle.crt -> crtBitmap(width, height, accent)
-            WidgetStyle.neonSign -> neonSignBackdropBitmap(width, height, accent)
-            WidgetStyle.pixelHealth -> pixelHealthBackdropBitmap(width, height, accent)
-            WidgetStyle.mirror -> mirrorBackdropBitmap(width, height, accent)
-            WidgetStyle.minimal -> roundedRectBitmap(
-                width,
-                height,
-                0x00000000,
-                8f * density,
-                borderColor = withAlpha(textColor, 0x66),
-                borderWidth = 1f * density,
-            )
         }
     }
 
@@ -1517,309 +1386,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             radius,
             paint,
         )
-        return bitmap
-    }
-
-    private fun capsuleBitmap(
-        width: Int,
-        height: Int,
-        baseColor: Int,
-        accent: Int,
-    ): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val background = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            shader = android.graphics.LinearGradient(
-                0f,
-                0f,
-                width.toFloat(),
-                height.toFloat(),
-                intArrayOf(0xFF24453F.toInt(), 0xFFC58A4B.toInt()),
-                floatArrayOf(0f, 1f),
-                android.graphics.Shader.TileMode.CLAMP,
-            )
-        }
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), background)
-        val capsule = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0x33FFFFFF.toInt()
-        }
-        val capsuleRect = RectF(
-            width * 0.18f,
-            height * 0.16f,
-            width * 0.82f,
-            height * 0.84f,
-        )
-        canvas.drawRoundRect(
-            capsuleRect,
-            height * 0.24f,
-            height * 0.24f,
-            capsule,
-        )
-        val band = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = withAlpha(accent, 0xCC)
-            style = Paint.Style.STROKE
-            strokeWidth = 3f
-        }
-        canvas.drawRoundRect(
-            capsuleRect,
-            height * 0.24f,
-            height * 0.24f,
-            band,
-        )
-        val dial = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xCCFFFFFF.toInt()
-            style = Paint.Style.STROKE
-            strokeWidth = 2f
-        }
-        canvas.drawCircle(
-            width / 2f,
-            height / 2f,
-            height * 0.12f,
-            dial,
-        )
-        return bitmap
-    }
-
-    private fun crtBitmap(width: Int, height: Int, accent: Int): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        canvas.drawColor(0xFF0A120C.toInt())
-        val scanline = Paint().apply {
-            color = 0x1A000000
-            strokeWidth = 1f
-        }
-        var y = 0f
-        while (y < height) {
-            canvas.drawLine(0f, y, width.toFloat(), y, scanline)
-            y += 4f
-        }
-        val border = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = withAlpha(accent, 0xA6)
-            style = Paint.Style.STROKE
-            strokeWidth = 1.5f
-        }
-        canvas.drawRoundRect(
-            1f,
-            1f,
-            width - 1f,
-            height - 1f,
-            8f,
-            8f,
-            border,
-        )
-        return bitmap
-    }
-
-    private fun neonSignBackdropBitmap(
-        width: Int,
-        height: Int,
-        accent: Int,
-    ): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        canvas.drawColor(0xFF0A0F1E.toInt())
-        val bounds = RectF(3f, 3f, width - 3f, height - 3f)
-        for (index in 4 downTo 1) {
-            val glow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = withAlpha(accent, (0x0D * index).coerceAtMost(0x66))
-                style = Paint.Style.STROKE
-                strokeWidth = index * 3f
-            }
-            canvas.drawRoundRect(bounds, 8f, 8f, glow)
-        }
-        val border = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = withAlpha(accent, 0xE6)
-            style = Paint.Style.STROKE
-            strokeWidth = 1.5f
-        }
-        canvas.drawRoundRect(bounds, 8f, 8f, border)
-        return bitmap
-    }
-
-    private fun pixelHealthBackdropBitmap(
-        width: Int,
-        height: Int,
-        accent: Int,
-    ): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        canvas.drawColor(0xFF101418.toInt())
-        val grid = Paint().apply {
-            color = withAlpha(accent, 0x24)
-            strokeWidth = 1f
-        }
-        var x = 0f
-        while (x < width) {
-            canvas.drawLine(x, 0f, x, height.toFloat(), grid)
-            x += 16f
-        }
-        var gridY = 0f
-        while (gridY < height) {
-            canvas.drawLine(0f, gridY, width.toFloat(), gridY, grid)
-            gridY += 16f
-        }
-        val block = Paint().apply { color = withAlpha(accent, 0xBF) }
-        canvas.drawRect(12f, 14f, 22f, 24f, block)
-        canvas.drawRect(34f, 30f, 44f, 40f, block)
-        canvas.drawRect(width - 40f, height - 36f, width - 26f, height - 22f, block)
-        return bitmap
-    }
-
-    private fun mirrorBackdropBitmap(
-        width: Int,
-        height: Int,
-        accent: Int,
-    ): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val background = Paint().apply {
-            shader = android.graphics.LinearGradient(
-                0f,
-                0f,
-                width.toFloat(),
-                height.toFloat(),
-                intArrayOf(0xFF312E81.toInt(), 0xFF9D174D.toInt()),
-                floatArrayOf(0f, 1f),
-                android.graphics.Shader.TileMode.CLAMP,
-            )
-        }
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), background)
-        val stripe = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = withAlpha(accent, 0x38)
-            strokeWidth = 10f
-        }
-        var startX = -height.toFloat()
-        while (startX < width) {
-            canvas.drawLine(
-                startX,
-                height.toFloat(),
-                startX + height,
-                0f,
-                stripe,
-            )
-            startX += 34f
-        }
-        return bitmap
-    }
-
-    private fun envelopeCoverBitmap(
-        context: Context,
-        accent: Int,
-        width: Int,
-        height: Int,
-    ): Bitmap {
-        val density = context.resources.displayMetrics.density
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val clip = Path().apply {
-            addRoundRect(
-                0f,
-                0f,
-                width.toFloat(),
-                height.toFloat(),
-                10f * density,
-                10f * density,
-                Path.Direction.CW,
-            )
-        }
-        canvas.clipPath(clip)
-        val background = Paint().apply {
-            shader = android.graphics.LinearGradient(
-                0f,
-                0f,
-                width.toFloat(),
-                height.toFloat(),
-                intArrayOf(0xFF5B3330.toInt(), 0xFF2C1917.toInt()),
-                floatArrayOf(0f, 1f),
-                android.graphics.Shader.TileMode.CLAMP,
-            )
-        }
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), background)
-        val envelope = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xE6FFFFFF.toInt()
-        }
-        val envelopeRect = RectF(
-            width * 0.14f,
-            height * 0.26f,
-            width * 0.86f,
-            height * 0.74f,
-        )
-        canvas.drawRoundRect(envelopeRect, 12f * density, 12f * density, envelope)
-        val flap = Path().apply {
-            moveTo(envelopeRect.left, envelopeRect.top)
-            lineTo(width / 2f, height * 0.52f)
-            lineTo(envelopeRect.right, envelopeRect.top)
-            close()
-        }
-        val flapPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = withAlpha(accent, 0xCC)
-        }
-        canvas.drawPath(flap, flapPaint)
-        val seal = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = accent
-        }
-        canvas.drawCircle(width / 2f, height * 0.52f, 13f * density, seal)
-        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            textSize = 17f * density
-            isFakeBoldText = true
-            textAlign = Paint.Align.CENTER
-        }
-        canvas.drawText(
-            "神秘信封",
-            width / 2f,
-            height * 0.16f,
-            titlePaint,
-        )
-        val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xCCFFFFFF.toInt()
-            textSize = 12f * density
-            textAlign = Paint.Align.CENTER
-        }
-        canvas.drawText(
-            "点击查看事件",
-            width / 2f,
-            height * 0.88f,
-            hintPaint,
-        )
-        return bitmap
-    }
-
-    private fun pixelHealthBarBitmap(
-        context: Context,
-        progress: Float,
-        color: Int,
-    ): Bitmap {
-        val density = context.resources.displayMetrics.density
-        val width = (90 * density).toInt().coerceAtLeast(48)
-        val height = (14 * density).toInt().coerceAtLeast(10)
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val track = Paint().apply { this.color = 0x2EFFFFFF.toInt() }
-        canvas.drawRoundRect(
-            0f,
-            0f,
-            width.toFloat(),
-            height.toFloat(),
-            2f * density,
-            2f * density,
-            track,
-        )
-        val segments = 12
-        val gap = 2f * density
-        val segmentWidth = (width - gap * (segments - 1)) / segments
-        val filled = (progress.coerceIn(0f, 1f) * segments).toInt().coerceAtLeast(0)
-        val fill = Paint().apply { this.color = color }
-        for (index in 0 until filled) {
-            val left = index * (segmentWidth + gap)
-            canvas.drawRect(
-                left,
-                1f * density,
-                left + segmentWidth,
-                height - 1f * density,
-                fill,
-            )
-        }
         return bitmap
     }
 
@@ -2076,7 +1642,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         text: String,
         data: SharedPreferences,
         compact: Boolean,
-        style: WidgetStyle = WidgetStyle.card,
         elementScale: Float = 1f,
         color: Int = 0xFFFFFFFF.toInt(),
         digitTypeface: Typeface? = null,
@@ -2093,7 +1658,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_days_custom
         } else {
             when {
-                style == WidgetStyle.neonSign -> R.id.widget_days_neon
                 data.getString("widget_font_family", "system") == "mono" ->
                     R.id.widget_days_mono
                 data.getString("widget_font_family", "system") == "pixel" ->
@@ -2108,7 +1672,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_days_mono,
             R.id.widget_days_pixel,
             R.id.widget_days_hand,
-            R.id.widget_days_neon,
             R.id.widget_days_custom,
         ).forEach { id ->
             views.setViewVisibility(id, if (id == selected) View.VISIBLE else View.GONE)
@@ -2138,7 +1701,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_days_mono,
             R.id.widget_days_pixel,
             R.id.widget_days_hand,
-            R.id.widget_days_neon,
             R.id.widget_days_custom,
             R.id.widget_days_old,
             R.id.widget_days_old_custom,
@@ -2152,11 +1714,9 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         event: WidgetEvent,
         branch: WidgetRenderBranch,
         compact: Boolean,
-        style: WidgetStyle,
         textTypeface: Typeface?,
         size: WidgetBackdropSize,
         styles: Map<String, WidgetElementStyle>,
-        holiday: String,
     ) {
         val needsPass = textTypeface != null ||
             listOf(
@@ -2175,7 +1735,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         val countUp = event.isCountUp || days < 0
         val preset = data.getString("widget_unit_text", "")
         val mystery = data.getBoolean("widget_mystery_mode", false)
-        val capsuleToday = style == WidgetStyle.capsule && days == 0L
         val urgentLevel = if (data.getBoolean("widget_urgent_highlight", false) &&
             !mystery
         ) {
@@ -2184,13 +1743,10 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             0
         }
         val urgentAccent = urgentAccent(urgentLevel)
-        val accent = accentColor(data, holiday)
-        val title = if (capsuleToday) "恭喜！${event.title}" else event.title
-        val category = if (capsuleToday) "时间胶囊" else event.category
+        val title = event.title
+        val category = event.category
         val unitText = if (mystery) {
             "快到了"
-        } else if (capsuleToday) {
-            "就是今天"
         } else if (urgentAccent != null && preset != "weeks") {
             urgentLabel(urgentLevel, days)
         } else {
@@ -2199,7 +1755,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         val unitColor = when {
             customElementColor(styles["unit"]) != null ->
                 branch.element("unit").color
-            capsuleToday -> accent
             urgentAccent != null -> urgentAccent
             else -> branch.element("unit").color
         }
@@ -2243,7 +1798,7 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_title_custom,
             title,
             textTypeface,
-            if (capsuleToday) accent else branch.element("title").color,
+            branch.element("title").color,
             (if (compact) 15f else 18f) * scale * branch.element("title").size,
             maxTitle,
             branch.element("title").visible,
@@ -2334,10 +1889,8 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         event: WidgetEvent,
         branch: WidgetRenderBranch,
         compact: Boolean,
-        style: WidgetStyle,
         digitTypeface: Typeface?,
         maxWidthPx: Int,
-        holiday: String,
     ) {
         if (digitTypeface == null && branch.element("days").weight <= 0) return
         val days = event.daysFromToday()
@@ -2345,7 +1898,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         val mystery = data.getBoolean("widget_mystery_mode", false)
         val text = if (mystery) "🕯️" else countMainText(event, preset, days)
         if (!isPureDigitText(text)) return
-        val capsuleToday = style == WidgetStyle.capsule && days == 0L
         val urgentLevel = if (data.getBoolean("widget_urgent_highlight", false) &&
             !mystery
         ) {
@@ -2355,7 +1907,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         }
         val urgentAccent = urgentAccent(urgentLevel)
         val color = when {
-            capsuleToday -> accentColor(data, holiday)
             urgentAccent != null -> urgentAccent
             else -> branch.element("days").color
         }
@@ -2370,7 +1921,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
             R.id.widget_days_mono,
             R.id.widget_days_pixel,
             R.id.widget_days_hand,
-            R.id.widget_days_neon,
         ).forEach { id -> views.setViewVisibility(id, View.GONE) }
         renderDaysCustom(
             context,
@@ -2452,23 +2002,9 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         )
     }
 
-    private fun revealIntent(context: Context, widgetId: Int): PendingIntent {
-        val intent = Intent(context, providerClass()).apply {
-            action = ACTION_REVEAL
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
-        }
-        return PendingIntent.getBroadcast(
-            context,
-            8000 + widgetId,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-    }
-
     companion object {
         private const val PREFS_NAME = "HomeWidgetPreferences"
         private const val ACTION_NAVIGATE = "com.jiuxina.ying.NAVIGATE"
-        private const val ACTION_REVEAL = "com.jiuxina.ying.REVEAL"
         private const val ACTION_REFRESH_PENDING_UNDO = "com.jiuxina.ying.REFRESH_PENDING_UNDO"
         private const val ACTION_REFRESH_FLIP = "com.jiuxina.ying.REFRESH_FLIP"
         private const val EXTRA_INDEX = "index"
@@ -2488,8 +2024,6 @@ open class DaymarkWidgetProvider : HomeWidgetProvider() {
         }
     }
 }
-
-private fun envelopeOpenKey(widgetId: Int): String = "widget_envelope_open_$widgetId"
 
 private data class WidgetRowIds(
     val root: Int,
@@ -2587,16 +2121,10 @@ internal fun resolveTextColors(
 ): WidgetTextColors {
     val wallpaperTextColor = data.getInt("widget_wallpaper_text_color", -1)
     val darkSurface = style == WidgetStyle.glass ||
-        style == WidgetStyle.polaroid ||
-        style == WidgetStyle.minimal ||
-        style == WidgetStyle.capsule
+        style == WidgetStyle.polaroid
     val primary = when {
-        style == WidgetStyle.neonSign -> baseColor(data)
-        style == WidgetStyle.crt -> Color.rgb(201, 247, 208)
-        style == WidgetStyle.pixelHealth -> Color.rgb(183, 255, 158)
         wallpaperTextColor != -1 && (style == WidgetStyle.sticker ||
-            style == WidgetStyle.photo ||
-            style == WidgetStyle.minimal) -> wallpaperTextColor
+            style == WidgetStyle.photo) -> wallpaperTextColor
         darkSurface -> Color.rgb(28, 28, 30)
         else -> Color.WHITE
     }

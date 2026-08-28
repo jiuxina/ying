@@ -147,15 +147,6 @@
             android:gravity="bottom|center_vertical"
             android:orientation="horizontal">
             <ImageView
-                android:id="@+id/widget_health_bar"
-                android:layout_width="90dp"
-                android:layout_height="14dp"
-                android:layout_marginEnd="8dp"
-                android:contentDescription="@null"
-                android:importantForAccessibility="no"
-                android:scaleType="fitXY"
-                android:visibility="gone" />
-            <ImageView
                 android:id="@+id/widget_progress_ring"
                 android:layout_width="42dp"
                 android:layout_height="42dp"
@@ -267,19 +258,6 @@
                 android:scaleType="fitStart"
                 android:visibility="gone" />
             <TextView
-                android:id="@+id/widget_days_neon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:shadowColor="#B3FFFFFF"
-                android:shadowDx="0"
-                android:shadowDy="0"
-                android:shadowRadius="12"
-                android:text="--"
-                android:textColor="#FFFFFFFF"
-                android:textSize="44sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
-            <TextView
                 android:id="@+id/widget_unit"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -358,13 +336,4 @@
             android:visibility="gone" />
     </LinearLayout>
 
-    <ImageView
-        android:id="@+id/widget_envelope_cover"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clickable="true"
-        android:contentDescription="神秘信封，点击查看事件内容"
-        android:focusable="true"
-        android:scaleType="fitXY"
-        android:visibility="gone" />
 </FrameLayout>

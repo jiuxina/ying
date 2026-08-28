@@ -42,14 +42,13 @@ void main() {
       expect(settings.widgetStyle, WidgetStyle.card);
     });
 
-    test('phase 5 fun styles round-trip by name', () {
+    test('widget styles round-trip by name', () {
       for (final style in [
-        WidgetStyle.envelope,
-        WidgetStyle.capsule,
-        WidgetStyle.crt,
-        WidgetStyle.neonSign,
-        WidgetStyle.pixelHealth,
-        WidgetStyle.mirror,
+        WidgetStyle.card,
+        WidgetStyle.sticker,
+        WidgetStyle.photo,
+        WidgetStyle.glass,
+        WidgetStyle.polaroid,
       ]) {
         final restored = AppSettings.fromMap({'widgetStyle': style.name});
         expect(restored.widgetStyle, style);

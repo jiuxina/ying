@@ -168,8 +168,7 @@ internal fun fallbackRenderBranch(
             "precise" -> data.getBoolean("widget_show_precise_time", false)
             "dateInfo" -> !compact && data.getBoolean("widget_show_lunar_week", false)
             "progress" -> !compact &&
-                (data.getBoolean("widget_show_progress", false) ||
-                    style == WidgetStyle.pixelHealth)
+                data.getBoolean("widget_show_progress", false)
             "icon" -> if (mode == "list") {
                 data.getBoolean("widget_show_icon", false)
             } else {

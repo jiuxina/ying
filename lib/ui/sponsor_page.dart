@@ -327,7 +327,6 @@ class _BenefitRow extends StatelessWidget {
 }
 
 const _sponsorBenefits = <(IconData, String, String)>[
-  (Icons.mail_outline, '整活样式', '神秘信封、时间胶囊、复古 CRT、霓虹灯牌、像素血条、镜像整活'),
   (Icons.celebration_outlined, '节日皮肤', '节日自动换肤'),
   (Icons.wallpaper_rounded, '壁纸取色', '小部件跟随壁纸配色'),
   (Icons.format_quote_outlined, '每日一句', '小部件每日轮播一句话'),

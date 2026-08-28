@@ -10,15 +10,6 @@ enum WidgetStyle {
   photo,
   glass,
   polaroid,
-  neon,
-  pixel,
-  minimal,
-  envelope,
-  capsule,
-  crt,
-  neonSign,
-  pixelHealth,
-  mirror,
 }
 
 class AppSettings {

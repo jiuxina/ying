@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'app_settings.dart';
 import 'countdown_event.dart';
 import 'widget_element_style.dart';
-import 'widget_holiday.dart';
 import '../utils/widget_element_style_utils.dart';
 
 /// 渲染协议版本；每次变更元素解析规则或 JSON 结构时递增。
@@ -265,7 +264,7 @@ WidgetRenderBranch _resolveBranch(
   final mode = settings.widgetListMode
       ? WidgetRenderMode.list
       : WidgetRenderMode.single;
-  final colors = _resolveTextColors(settings, date, visible.firstOrNull);
+  final colors = _resolveTextColors(settings);
   final elements = <String, WidgetElementRender>{};
   for (final id in widgetRenderElementIds) {
     elements[id] = _resolveElement(
@@ -288,25 +287,14 @@ class _RenderColors {
   final int secondary;
 }
 
-_RenderColors _resolveTextColors(
-  AppSettings settings,
-  DateTime date,
-  CountdownEvent? first,
-) {
+_RenderColors _resolveTextColors(AppSettings settings) {
   final style = settings.widgetStyle;
-  final holiday = combinedHoliday(first, date);
-  final accent = _holidayAccent(holiday) ?? settings.widgetColor;
   final wallpaperText = settings.widgetWallpaperTextColor == -1
       ? null
       : settings.widgetWallpaperTextColor;
   final darkSurface = style == WidgetStyle.glass ||
-      style == WidgetStyle.polaroid ||
-      style == WidgetStyle.minimal ||
-      style == WidgetStyle.capsule;
+      style == WidgetStyle.polaroid;
   final primary = switch (style) {
-    WidgetStyle.neonSign => accent,
-    WidgetStyle.crt => 0xFFC9F7D0,
-    WidgetStyle.pixelHealth => 0xFFB7FF9E,
     _ => wallpaperText ??
         (darkSurface ? 0xFF1C1C1E : 0xFFFFFFFF),
   };
@@ -362,7 +350,6 @@ bool _policyVisible(
   required WidgetRenderMode mode,
   required DateTime date,
 }) {
-  final style = settings.widgetStyle;
   switch (id) {
     case 'category':
       return !compact && settings.widgetShowCategory;
@@ -385,8 +372,7 @@ bool _policyVisible(
     case 'dateInfo':
       return !compact && settings.widgetShowLunarWeek;
     case 'progress':
-      return !compact &&
-          (settings.widgetShowProgress || style == WidgetStyle.pixelHealth);
+      return !compact && settings.widgetShowProgress;
     case 'icon':
       return mode == WidgetRenderMode.list
           ? settings.widgetShowIcon
@@ -402,19 +388,4 @@ bool _policyVisible(
 int _withAlpha(int argb, double alpha) {
   final value = (alpha.clamp(0.0, 1.0) * 255).round();
   return (argb & 0x00FFFFFF) | (value << 24);
-}
-
-int? _holidayAccent(WidgetHoliday holiday) {
-  switch (holiday) {
-    case WidgetHoliday.newYear:
-      return 0xFFE11D48;
-    case WidgetHoliday.christmas:
-      return 0xFF16A34A;
-    case WidgetHoliday.midAutumn:
-      return 0xFFD97706;
-    case WidgetHoliday.birthday:
-      return 0xFFEC4899;
-    case WidgetHoliday.none:
-      return null;
-  }
 }

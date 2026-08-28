@@ -18,13 +18,12 @@ class WidgetAppearanceTest {
     }
 
     @Test
-    fun phase5FunStylesParseByName() {
-        assertEquals(WidgetStyle.envelope, parseWidgetStyle("envelope"))
-        assertEquals(WidgetStyle.capsule, parseWidgetStyle("capsule"))
-        assertEquals(WidgetStyle.crt, parseWidgetStyle("crt"))
-        assertEquals(WidgetStyle.neonSign, parseWidgetStyle("neonSign"))
-        assertEquals(WidgetStyle.pixelHealth, parseWidgetStyle("pixelHealth"))
-        assertEquals(WidgetStyle.mirror, parseWidgetStyle("mirror"))
+    fun remainingStylesParseByName() {
+        assertEquals(WidgetStyle.card, parseWidgetStyle("card"))
+        assertEquals(WidgetStyle.sticker, parseWidgetStyle("sticker"))
+        assertEquals(WidgetStyle.photo, parseWidgetStyle("photo"))
+        assertEquals(WidgetStyle.glass, parseWidgetStyle("glass"))
+        assertEquals(WidgetStyle.polaroid, parseWidgetStyle("polaroid"))
     }
 
     @Test
@@ -285,14 +284,14 @@ class WidgetAppearanceTest {
     }
 
     @Test
-    fun phase5SingleWidgetLayoutHasEnvelopeHealthAndNeonViews() {
+    fun removedFunStyleViewsAreNotInLayoutOrProvider() {
         val layout = File("src/main/res/layout/daymark_widget.xml").readText()
-        assertTrue("single layout should have neon day view", "widget_days_neon" in layout)
-        assertTrue("single layout should have pixel health bar", "widget_health_bar" in layout)
-        assertTrue("single layout should have envelope cover", "widget_envelope_cover" in layout)
+        assertFalse("removed styles should not keep envelope cover", "widget_envelope_cover" in layout)
+        assertFalse("removed styles should not keep neon day view", "widget_days_neon" in layout)
+        assertFalse("removed styles should not keep pixel health bar", "widget_health_bar" in layout)
         val source = File("src/main/kotlin/com/jiuxina/ying/DaymarkWidgetProvider.kt").readText()
-        assertTrue("provider should handle envelope reveal", "ACTION_REVEAL" in source)
-        assertTrue("provider should keep per-widget envelope state", "envelopeOpenKey" in source)
+        assertFalse("provider should drop envelope reveal", "ACTION_REVEAL" in source)
+        assertFalse("provider should drop envelope state", "envelopeOpenKey" in source)
     }
 
     @Test

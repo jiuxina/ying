@@ -839,9 +839,9 @@ void main() {
       expect(controller.state.settings.widgetStyle, WidgetStyle.sticker);
       expect(saved.last.widgetStyle, WidgetStyle.sticker);
 
-      await tester.tap(find.bySemanticsLabel('小部件样式：霓虹'));
+      await tester.tap(find.bySemanticsLabel('小部件样式：玻璃'));
       await tester.pumpAndSettle();
-      expect(controller.state.settings.widgetStyle, WidgetStyle.neon);
+      expect(controller.state.settings.widgetStyle, WidgetStyle.glass);
       handle.dispose();
     });
 
@@ -1541,7 +1541,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('趣味主题预览同步渲染且不抛异常', (tester) async {
+    testWidgets('小部件样式预览同步渲染且不抛异常', (tester) async {
       final base = DateTime.now();
       final today = DateTime(base.year, base.month, base.day);
       final todayEvent = CountdownEvent(
@@ -1552,12 +1552,11 @@ void main() {
         createdAt: today.subtract(const Duration(days: 2)),
       );
       for (final style in [
-        WidgetStyle.envelope,
-        WidgetStyle.capsule,
-        WidgetStyle.crt,
-        WidgetStyle.neonSign,
-        WidgetStyle.pixelHealth,
-        WidgetStyle.mirror,
+        WidgetStyle.card,
+        WidgetStyle.sticker,
+        WidgetStyle.photo,
+        WidgetStyle.glass,
+        WidgetStyle.polaroid,
       ]) {
         await tester.pumpWidget(
           glassApp(
@@ -1572,34 +1571,6 @@ void main() {
         await tester.pump();
         expect(tester.takeException(), isNull);
       }
-
-      await tester.pumpWidget(
-        glassApp(
-          Scaffold(
-            body: WidgetPreviewSection(
-              events: [todayEvent],
-              settings: const AppSettings(widgetStyle: WidgetStyle.capsule),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      expect(find.textContaining('恭喜！'), findsWidgets);
-      expect(find.text('就是今天'), findsWidgets);
-
-      await tester.pumpWidget(
-        glassApp(
-          Scaffold(
-            body: WidgetPreviewSection(
-              events: [todayEvent],
-              settings: const AppSettings(widgetStyle: WidgetStyle.envelope),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      expect(find.text('神秘信封'), findsWidgets);
-      expect(tester.takeException(), isNull);
     });
 
     testWidgets('逐元素样式同步渲染到预览', (tester) async {
