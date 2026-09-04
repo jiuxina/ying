@@ -110,7 +110,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${GITHUB_REF_NAME}"
-          NOTES="docs/RELEASE_NOTES-${TAG#v}.md"
+          NOTES="docs/RELEASE_NOTES-${TAG}.md"
+          ALT_NOTES="docs/RELEASE_NOTES-${TAG#v}.md"
+          if [ ! -f "$NOTES" ] && [ -f "$ALT_NOTES" ]; then
+            NOTES="$ALT_NOTES"
+          fi
           ASSETS=()
           for apk in build/app/outputs/flutter-apk/*-release.apk; do
             ASSETS+=("$apk")
