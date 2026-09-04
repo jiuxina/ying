@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/countdown_event.dart';
@@ -13,6 +12,7 @@ import '../utils/event_date_utils.dart';
 import '../utils/widget_content_utils.dart';
 import 'glass_ui.dart';
 import 'reminder_editor.dart';
+import 'wheel_datetime_picker.dart';
 
 enum _SaveState { idle, saving, done }
 
@@ -37,6 +37,16 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
   };
   static const maxReminderCount = 5;
 
+  /// 分类标签对应图标，与首页筛选、事件卡片的分类保持一致观感。
+  static const categoryIcons = <String, IconData>{
+    '生活': Icons.home_outlined,
+    '工作': Icons.work_outline,
+    '学习': Icons.school_outlined,
+    '纪念日': Icons.favorite_outline,
+    '旅行': Icons.flight_takeoff,
+    '其他': Icons.more_horiz,
+  };
+
   final formKey = GlobalKey<FormState>();
   late final TextEditingController titleController;
   late final TextEditingController noteController;
@@ -48,7 +58,6 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
   late EventRepeatType repeatType;
   late TimeOfDay rememberedTime;
   late List<EventReminder> selectedReminders;
-  int reminderToAdd = 1440;
   _SaveState _saveState = _SaveState.idle;
 
   @override
@@ -96,15 +105,19 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
             key: formKey,
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+                maxHeight: MediaQuery.sizeOf(context).height * 0.88,
               ),
-              child: SingleChildScrollView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                     Row(
                       children: [
                         Expanded(
@@ -183,6 +196,7 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
                         for (final value in categories)
                           _FormCategoryChip(
                             label: value,
+                            icon: categoryIcons[value],
                             selected: category == value,
                             onTap: () => setState(() => category = value),
                           ),
@@ -239,12 +253,8 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
                     ReminderEditor(
                       reminders: selectedReminders,
                       options: reminderOptions,
-                      reminderToAdd: reminderToAdd,
                       maxCount: maxReminderCount,
-                      onOptionChanged: (value) {
-                        setState(() => reminderToAdd = value);
-                      },
-                      onAdd: _addReminder,
+                      onAdd: _addReminderAt,
                       onRemove: _removeReminder,
                     ),
                     const SizedBox(height: 12),
@@ -258,53 +268,67 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
                         prefixIcon: Icon(Icons.notes_rounded),
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: _saveState == _SaveState.idle ? _save : null,
-                        icon: AnimatedSwitcher(
-                          duration: motionDuration(context, AppMotion.state),
-                          transitionBuilder: (child, animation) =>
-                              FadeTransition(
-                                opacity: animation,
-                                child: ScaleTransition(
-                                  scale: Tween<double>(begin: 0.8, end: 1)
-                                      .animate(
-                                        CurvedAnimation(
-                                          parent: animation,
-                                          curve: AppMotion.enter,
-                                        ),
-                                      ),
-                                  child: child,
-                                ),
-                              ),
-                          child: switch (_saveState) {
-                            _SaveState.idle => const Icon(
-                              Icons.check_rounded,
-                              key: ValueKey('save-idle'),
-                            ),
-                            _SaveState.saving => const SizedBox.square(
-                              key: ValueKey('save-loading'),
-                              dimension: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            _SaveState.done => const Icon(
-                              Icons.check_circle_rounded,
-                              key: ValueKey('save-done'),
-                            ),
-                          },
-                        ),
-                        label: Text(widget.event == null ? '创建日子' : '保存修改'),
-                      ),
-                    ),
+                    const SizedBox(height: 16),
                   ],
+                  ),
                 ),
+              ),
+                  const SizedBox(height: 12),
+                  _buildFooter(theme),
+                ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  /// 固定在弹层底部的操作栏：保存始终可见，不再随内容滚动。
+  Widget _buildFooter(ThemeData theme) {
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: _saveState == _SaveState.idle ? _save : null,
+            icon: AnimatedSwitcher(
+              duration: motionDuration(context, AppMotion.state),
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.8, end: 1).animate(
+                    CurvedAnimation(parent: animation, curve: AppMotion.enter),
+                  ),
+                  child: child,
+                ),
+              ),
+              child: switch (_saveState) {
+                _SaveState.idle => const Icon(
+                  Icons.check_rounded,
+                  key: ValueKey('save-idle'),
+                ),
+                _SaveState.saving => const SizedBox.square(
+                  key: ValueKey('save-loading'),
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                _SaveState.done => const Icon(
+                  Icons.check_circle_rounded,
+                  key: ValueKey('save-done'),
+                ),
+              },
+            ),
+            label: Text(widget.event == null ? '创建日子' : '保存修改'),
+          ),
+        ),
+        const SizedBox(width: 10),
+        OutlinedButton(
+          onPressed: _saveState == _SaveState.idle
+              ? () => Navigator.pop(context)
+              : null,
+          child: const Text('取消'),
+        ),
+      ],
     );
   }
 
@@ -319,6 +343,10 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
         labels: const {
           EventRepeatType.none: '不重复',
           EventRepeatType.yearly: '每年',
+        },
+        descriptions: const {
+          EventRepeatType.none: '只在目标日期提醒一次',
+          EventRepeatType.yearly: '完成后自动进入下一年的同一天',
         },
       ),
     );
@@ -361,7 +389,7 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
   }
 
   Future<void> _pickDate() async {
-    final date = await showDatePicker(
+    final date = await showGlassWheelDatePicker(
       context: context,
       initialDate: targetDate,
       firstDate: DateTime(1970),
@@ -382,43 +410,46 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
   }
 
   Future<void> _pickDateTime() async {
-    final date = await showDatePicker(
+    // 日期与时间在同一个轮盘弹层内完成，避免原生两段式弹窗打断。
+    final result = await showGlassWheelDateTimePicker(
       context: context,
-      initialDate: targetDate,
+      initialDateTime: targetDate,
       firstDate: DateTime(1970),
       lastDate: DateTime(2100),
     );
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: rememberedTime,
-    );
-    if (time == null || !mounted) return;
+    if (result == null || !mounted) return;
     setState(() {
-      rememberedTime = time;
-      targetDate = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
+      rememberedTime = TimeOfDay.fromDateTime(result);
+      targetDate = result;
     });
   }
 
-  void _addReminder() {
-    if (selectedReminders.length >= maxReminderCount ||
-        selectedReminders.any(
-          (reminder) => reminder.minutesBefore == reminderToAdd,
-        )) {
+  void _addReminderAt(int minutes) {
+    if (selectedReminders.length >= maxReminderCount) {
+      _showFormToast('最多添加 $maxReminderCount 条提醒');
+      return;
+    }
+    if (selectedReminders.any((reminder) => reminder.minutesBefore == minutes)) {
+      _showFormToast('该提醒时间已存在');
       return;
     }
     setState(() {
       selectedReminders = EventReminder.normalize([
         ...selectedReminders,
-        EventReminder(id: const Uuid().v4(), minutesBefore: reminderToAdd),
+        EventReminder(id: const Uuid().v4(), minutesBefore: minutes),
       ]);
     });
+  }
+
+  void _showFormToast(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 2),
+        ),
+      );
   }
 
   void _removeReminder(EventReminder reminder) {
@@ -435,8 +466,13 @@ class _EventFormSheetState extends ConsumerState<EventFormSheet> {
     setState(() => _saveState = _SaveState.saving);
     var notificationsAllowed = true;
     if (selectedReminders.isNotEmpty) {
-      notificationsAllowed = await NotificationService.instance
-          .ensureNotificationPermission();
+      try {
+        notificationsAllowed = await NotificationService.instance
+            .ensureNotificationPermission();
+      } catch (_) {
+        // 平台实现缺失（桌面/测试环境）时不阻断保存，仅提示可能无法提醒。
+        notificationsAllowed = false;
+      }
     }
     final existing = widget.event;
     final event = CountdownEvent(
@@ -621,6 +657,7 @@ class _DateTimeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final weekday = chineseWeekday(targetDate);
     return GlassPressable(
       child: InkWell(
         onTap: onTap,
@@ -632,8 +669,8 @@ class _DateTimeTile extends StatelessWidget {
           ),
           child: Text(
             isAllDay
-                ? '${DateFormat('yyyy年M月d日', 'zh_CN').format(targetDate)} · 全天'
-                : DateFormat('yyyy年M月d日  HH:mm', 'zh_CN').format(targetDate),
+                ? '${formatCnDate(targetDate)} $weekday · 全天'
+                : '${formatCnDate(targetDate)} $weekday  ${formatCnTime(TimeOfDay.fromDateTime(targetDate))}',
           ),
         ),
       ),
@@ -747,11 +784,13 @@ class _FormCategoryChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.icon,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -780,12 +819,29 @@ class _FormCategoryChip extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: scheme.outlineVariant),
             ),
-            child: Text(
-              label,
-              style: TextStyle(
-                color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(
+                    icon,
+                    size: 15,
+                    color: selected
+                        ? scheme.onSurface
+                        : scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 5),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: selected
+                        ? scheme.onSurface
+                        : scheme.onSurfaceVariant,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -800,11 +856,13 @@ class _FormChoiceSheet<T> extends StatelessWidget {
     required this.value,
     required this.options,
     this.labels = const {},
+    this.descriptions = const {},
   });
   final String title;
   final T value;
   final List<T> options;
   final Map<T, String> labels;
+  final Map<T, String> descriptions;
 
   @override
   Widget build(BuildContext context) => SafeArea(
@@ -836,6 +894,7 @@ class _FormChoiceSheet<T> extends StatelessWidget {
                 child: GlassChoiceTile(
                   icon: Icons.radio_button_checked_rounded,
                   title: labels[option] ?? '$option',
+                  subtitle: descriptions[option],
                   value: '',
                   selected: option == value,
                   onTap: () => Navigator.pop(context, option),
